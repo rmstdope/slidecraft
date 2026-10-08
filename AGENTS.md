@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 5 (server, content sources, MCP) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 6 (editor and language service) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -43,7 +43,7 @@ Component Developer. Otherwise Framework Developer.
 ## Tech stack
 
 TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · Vite 8 · Bun 1.4
-(package manager, test runner, server runtime) · Monaco (Phase 6).
+(package manager, test runner, server runtime) · Monaco 0.57 (bundled locally, editor route only).
 
 ## Project layout
 
@@ -51,7 +51,10 @@ TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · V
 src/            client: App router (src/router.ts), views, styles
 src/components/slides/   slide components, defineComponent registry, accents, contexts
 src/animations/ springs and variant tables
-shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, themes, mdxImports
+src/editor/     deck editor: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
+src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
+src/language-service-monaco/ Monaco adapter for the language service
+shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, deckModel, tagAttrs, themes, mdxImports
 server/         Bun server: router (index.ts), routes/, lib/ (content sources, decks, tools, watcher, SSE), mcp.ts
 scripts/        dev orchestrator and build scripts
 tests/          bun test suites

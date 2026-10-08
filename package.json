@@ -25,6 +25,8 @@
     "@mdx-js/mdx": "3.1.1",
     "@mdx-js/react": "3.1.1",
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@monaco-editor/react": "4.7.0",
+    "monaco-editor": "0.57.0",
     "motion": "14.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

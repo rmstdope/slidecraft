@@ -384,6 +384,19 @@ until their phases. The repo's `content/` gained a hand-written `AGENTS.md` (hou
 reload, toolbar edits rewrite props without losing the cursor, completion and hover work on every
 registered component, a raw `<div>` gets a quick fix, an unknown component is underlined.
 
+**Status (2026-10-08): done.** The editor keeps a text model of the deck (`shared/deckModel.ts`:
+head, slide texts, separators, tail), so half-typed slides never break it and saving changes only
+what was edited; a tolerant tag scanner (`shared/tagAttrs.ts`) rewrites props on invalid text.
+Delivered: `usePresentation`, the API client, `EditorPage` (resizable rail and split, capture-phase
+keys, paste/drop upload, beforeunload, live reload when clean), the Monaco wrapper with
+minimal-diff edits, cursor context, contextual and selection toolbars, insert palette (components
+or templates), image picker, help panel, live preview, `formatMdx`, and a whole-file fallback
+for decks that do not parse. The language service (`src/language-service/`, platform-agnostic)
+and its Monaco adapter cover completion, diagnostics, hover and quick fixes; theme ids and the
+deck theme's frames feed value completion. Saving adds newly used components to the deck's
+`@components` import. Monaco is bundled locally without its language workers
+(`src/editor/monacoCore.ts`) and loads only on the editor route.
+
 ### Phase 7 — Home, gallery, command palette, errors
 
 - Home page (*Part 3 §1.5*): navbar, hero, filter bar with URL-persisted filters, grid,

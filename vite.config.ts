@@ -38,6 +38,8 @@ export default defineConfig(({ command }) => {
       dedupe: ['react', 'react-dom'],
       alias: [
         ...(bundleContent ? [] : [{ find: /^(?:\.\/|@\/)bundledDecks$/, replacement: r('./src/bundledDecks.empty.ts') }]),
+        // Deep imports into monaco-editor's ESM tree (its exports map hides the CSS files).
+        { find: /^monaco-editor-esm\//, replacement: r('./node_modules/monaco-editor/esm/vs') + '/' },
         { find: /^@components$/, replacement: r('./src/components/index.ts') },
         { find: /^@components\//, replacement: r('./src/components') + '/' },
         { find: /^@content\//, replacement: r('./content') + '/' },

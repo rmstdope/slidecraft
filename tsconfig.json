@@ -23,7 +23,8 @@
       "@components/*": ["./src/components/*"],
       "@content/*": ["./content/*"],
       "@server/*": ["./server/*"],
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "monaco-editor-esm/*": ["./node_modules/monaco-editor/esm/vs/*"]
     }
   },
   "include": ["src", "server", "shared", "scripts", "tests", "*.ts", "*.d.ts"]

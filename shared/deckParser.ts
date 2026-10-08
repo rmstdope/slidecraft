@@ -5,11 +5,15 @@
  * between slides survive byte for byte.
  */
 import type { Root } from 'mdast'
-import type { MdxJsxAttribute, MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx'
+import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx'
 import remarkMdx from 'remark-mdx'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { splitMdxFrontmatter } from './frontmatter.ts'
+import { openingTagEnd } from './openingTag.ts'
+import { setTagAttr } from './tagAttrs.ts'
+
+export { openingTagEnd }
 
 export type AttrValue = string | true | { expression: string }
 
@@ -102,31 +106,6 @@ function findFirst(node: unknown, name: string): JsxNode | undefined {
     if (found) return found
   }
   return undefined
-}
-
-/**
- * Index just past the `>` that ends the opening tag starting at `from` (which points at `<`).
- * Quotes and `{…}` expressions are skipped, so `x={a > b}` does not end the tag.
- */
-export function openingTagEnd(text: string, from = 0): number {
-  let depth = 0
-  let quote: string | null = null
-  for (let i = from + 1; i < text.length; i++) {
-    const c = text[i]
-    if (quote) {
-      if (c === quote) quote = null
-    } else if (depth > 0) {
-      if (c === '{') depth++
-      else if (c === '}') depth--
-      else if (c === '"' || c === "'" || c === '`') {
-        const close = text.indexOf(c, i + 1)
-        if (close !== -1) i = close
-      }
-    } else if (c === '"' || c === "'") quote = c
-    else if (c === '{') depth++
-    else if (c === '>') return i + 1
-  }
-  return -1
 }
 
 export function parseDeck(source: string): ParsedDeck {
@@ -233,55 +212,15 @@ export function moveSlide(deck: ParsedDeck, from: number, to: number): string {
   return insertSlide(without, to >= without.slides.length ? -1 : to, slide.text)
 }
 
-const formatAttr = (name: string, value: AttrValue): string => {
-  if (value === true) return name
-  if (typeof value === 'object') return `${name}={${value.expression}}`
-  return value.includes('"') ? `${name}='${value}'` : `${name}="${value}"`
-}
-
 /** Set, replace or (with null) remove one attribute on a slide's opening tag. */
 export function setSlideAttr(deck: ParsedDeck, index: number, name: string, value: AttrValue | null): string {
   const slide = slideAt(deck, index)
-  const tree = processor.parse(slide.text) as Root
-  const node = flowChildren(tree).find((n) => isJsx(n, 'Slide')) as JsxNode | undefined
-  const attr = node?.attributes.find((a): a is MdxJsxAttribute & { position: NonNullable<MdxJsxAttribute['position']> } => a.type === 'mdxJsxAttribute' && a.name === name && !!a.position)
-  let text = slide.text
-  if (attr) {
-    const aStart = attr.position.start.offset!
-    const aEnd = attr.position.end.offset!
-    if (value === null) {
-      let s = aStart
-      while (s > 0 && /[ \t]/.test(text[s - 1])) s--
-      text = text.slice(0, s) + text.slice(aEnd)
-    } else text = text.slice(0, aStart) + formatAttr(name, value) + text.slice(aEnd)
-  } else if (value !== null) {
-    const tagEnd = openingTagEnd(text)
-    const insertAt = text[tagEnd - 2] === '/' ? tagEnd - 2 : tagEnd - 1
-    const before = text.slice(0, insertAt).replace(/\s+$/, '')
-    text = `${before} ${formatAttr(name, value)}${text.slice(insertAt)}`
-  }
-  return splice(deck.source, slide.start, slide.end, text)
+  return splice(deck.source, slide.start, slide.end, setTagAttr(slide.text, name, value))
 }
 
 /** Set, replace or (with null) remove one attribute on the <Presentation> tag. */
 export function setPresentationAttr(deck: ParsedDeck, name: string, value: AttrValue | null): string {
-  const start = deck.presentation.start
-  const tagEnd = openingTagEnd(deck.source, start)
-  const tag = deck.source.slice(start, tagEnd)
-  const tree = processor.parse(`${tag}</Presentation>`) as Root
-  const node = flowChildren(tree).find((n) => isJsx(n, 'Presentation')) as JsxNode | undefined
-  const attr = node?.attributes.find((a): a is MdxJsxAttribute & { position: NonNullable<MdxJsxAttribute['position']> } => a.type === 'mdxJsxAttribute' && a.name === name && !!a.position)
-  let next = tag
-  if (attr) {
-    const aStart = attr.position.start.offset!
-    const aEnd = attr.position.end.offset!
-    if (value === null) {
-      let s = aStart
-      while (s > 0 && /[ \t]/.test(next[s - 1])) s--
-      next = next.slice(0, s) + next.slice(aEnd)
-    } else next = next.slice(0, aStart) + formatAttr(name, value) + next.slice(aEnd)
-  } else if (value !== null) next = `${next.slice(0, -1).replace(/\s+$/, '')} ${formatAttr(name, value)}>`
-  return splice(deck.source, start, tagEnd, next)
+  return setTagAttr(deck.source, name, value, deck.presentation.start)
 }
 
 export const setSlideHidden = (deck: ParsedDeck, index: number, hidden: boolean): string =>

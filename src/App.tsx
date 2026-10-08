@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { MDXProvider } from '@mdx-js/react'
 import type { MDXComponents } from 'mdx/types'
 import { BUILT_IN_SOURCE_ID, deckName, type DeckRef, type PresentationInfo } from '@shared/decks.ts'
@@ -10,7 +10,6 @@ import { bundledDeckNames, DeckNotFoundError, deckModuleLoader } from './deckLoa
 import { useSSE } from './hooks/useSSE'
 import {
   chatUrl,
-  editorUrl,
   galleryUrl,
   homeUrl,
   isSameDeckView,
@@ -23,6 +22,9 @@ import {
 import { startContentThemes } from './themes/contentThemes'
 import { HomeStub } from './views/HomeStub'
 import { Placeholder } from './views/Placeholder'
+
+/** Monaco is large: the editor loads only when someone opens it. */
+const EditorPage = lazy(() => import('./editor/EditorPage'))
 
 const currentRoute = (): Route => parseRoute(routePath(), window.location.search)
 
@@ -148,9 +150,9 @@ export function App() {
       )
     case 'editor':
       return (
-        <Placeholder title={`Edit: ${deckName(view.deck)}`} onHome={goHome}>
-          Arrives in Phase 6. <a href={editorUrl(view.deck)}>Permalink</a>
-        </Placeholder>
+        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading editor" />}>
+          <EditorPage key={`${view.deck.source}:${view.deck.path}`} deck={view.deck} defaultSource={content?.defaultSource} onExit={goHome} />
+        </Suspense>
       )
     case 'presentation-error':
       return (

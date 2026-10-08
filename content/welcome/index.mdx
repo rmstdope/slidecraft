@@ -11,6 +11,7 @@ import {
   ContentImage, Code, PersonRow, PersonCard,
 } from '@components'
 import stage from './images/stage.svg'
+import editorShot from './images/editor.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -523,6 +524,66 @@ import stage from './images/stage.svg'
     <Card title="AGENTS.md" subtitle="Generated in the content folder">Components, templates, themes and the authoring rules, rewritten when they change. A hand-written file is left alone.</Card>
   </TwoColumn>
   <Notes>Register the MCP server with your agent, e.g. claude mcp add slidecraft -- bun server/mcp.ts --content ~/decks.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Editor</Subtitle>
+  <Title>Edit any slide in the browser</Title>
+  <Text muted>Press Esc while presenting and the editor opens on that slide.</Text>
+  <Notes>9:40-10:00. Section opener for the editor. Press Esc now to jump into it and come back with Present.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Editor</Subtitle>
+  <Title>Slides, source and a live preview</Title>
+  <ContentImage src={editorShot} alt="The editor: a rail of slide thumbnails, the slide source with a toolbar, and the rendered slide" width={1150} />
+  <Notes>The rail reorders, hides and deletes slides. The preview recompiles the slide 300 ms after you stop typing.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Toolbars</Subtitle>
+  <Title>Toolbars write the code for you</Title>
+  <TwoColumn>
+    <Code title="Accent: Red in the Stat toolbar" fontSize={24} width={760}>{`
+    <Stat value="42%" label="faster" />
+
+    <Stat value="42%" label="faster" accent="red" />`}</Code>
+    <List compact>
+      <ListItem>The toolbar follows the cursor: slide props, or the component under it.</ListItem>
+      <ListItem>Select text and a pill wraps it in an accent colour.</ListItem>
+      <ListItem>Cmd+K inserts any component; Add slide starts from a template.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>Toolbar edits are ordinary text edits, so Cmd+Z undoes them.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="red" layout="document">
+  <Subtitle>Checks</Subtitle>
+  <Title>Mistakes show up while you type</Title>
+  <TwoColumn>
+    <Code title="index.mdx" fontSize={24} width={760}>{`
+    <Tilte>Quarterly results</Tilte>
+    <div>Revenue grew</div>
+    <Stat value="12" accent="pink" />`}</Code>
+    <List compact>
+      <ListItem>Unknown component: did you mean Title? The quick fix renames it.</ListItem>
+      <ListItem>Raw HTML: use a component such as Stack instead.</ListItem>
+      <ListItem>Pink is not an accent: yellow, red, teal, navy or gray.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>Completion offers components, props and their allowed values; hovering a tag shows its documentation.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" layout="document">
+  <Subtitle>Saving</Subtitle>
+  <Title>Saving writes one file</Title>
+  <FourColumn>
+    <Card compact title="Cmd+S" step={1}>The deck is reassembled; text between slides stays.</Card>
+    <Card compact title="Images" step={2}>Paste or drop one; it lands in the deck's images folder.</Card>
+    <Card compact title="Imports" step={3}>New components join the import line.</Card>
+    <Card compact title="Broken files" step={4}>Edit the whole file until it parses again.</Card>
+  </FourColumn>
+  <Notes>Other open views reload on save. An editor with unsaved changes is left alone when the file changes elsewhere.</Notes>
 </Slide>
 
 <Slide hidden>
