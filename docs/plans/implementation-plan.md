@@ -409,6 +409,15 @@ deck theme's frames feed value completion. Saving adds newly used components to 
 **Done when:** every registered component and template shows a live preview in the gallery; the
 home page filters, sorts and launches present/dev/edit/chat.
 
+**Status (2026-10-08): done.** Home page (`src/home/`): navbar on scroll, hero, filter bar with
+filters (and a non-default sort) in the URL, Create New card, lazily compiled deck cards with
+Present/Dev overlay and Chat/Edit actions, empty states, Cmd+K commands, a deck list that refreshes
+on server events. Gallery (`src/gallery/`, lazy route): token search with five-letter stems (name
+parts of camel-case names count as words), All/Components/Templates tabs, previews compiled four
+at a time and cached, detail panel with props and a copyable snippet; all 72 previews render.
+`ErrorBoundary` and `PresentationErrorUI` replace the placeholder error view. Shared tool styles
+live in `src/styles/tool.css`. Card export buttons arrive with the export routes in Phase 9.
+
 ### Phase 8 — Presenter view and drawing
 
 - `PresentationContext` (*Part 1 §4*, *Part 5 §B.2*) fed by `analyzeDeck` (no hidden deck mount),

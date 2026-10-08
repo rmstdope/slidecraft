@@ -12,6 +12,10 @@ import {
 } from '@components'
 import stage from './images/stage.svg'
 import editorShot from './images/editor.png'
+import homeShot from './images/home.png'
+import galleryShot from './images/gallery.png'
+import galleryDetailShot from './images/gallery-detail.png'
+import errorShot from './images/error.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -584,6 +588,44 @@ import editorShot from './images/editor.png'
     <Card compact title="Broken files" step={4}>Edit the whole file until it parses again.</Card>
   </FourColumn>
   <Notes>Other open views reload on save. An editor with unsaved changes is left alone when the file changes elsewhere.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Home and gallery</Subtitle>
+  <Title>Every deck and every part, one click away</Title>
+  <Text muted>Decks from every content folder on one page, and every component rendered live.</Text>
+  <Notes>10:00-10:20. Section opener for the home page, the component gallery and error screens.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Home</Subtitle>
+  <Title>Each card shows its deck's first slide</Title>
+  <ContentImage src={homeShot} alt="The home page: filters for source, path and name, and a grid of deck cards" width={1150} />
+  <Notes>Filter by source, path or name and sort by date or name; the filters stay in the URL. Cmd+K presents, edits or opens dev mode for any deck. A deck that does not compile says so on its card.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Gallery</Subtitle>
+  <Title>Every component, rendered live</Title>
+  <TwoColumn>
+    <ContentImage src={galleryShot} alt="The gallery grid with a live preview per component" width={780} />
+    <ContentImage src={galleryDetailShot} alt="A gallery detail panel with preview, use cases and props" width={780} />
+  </TwoColumn>
+  <Notes>Search matches word stems, so "compare" finds ComparisonTable. A card opens its props, use cases and a snippet to copy. The gallery lives at /gallery.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="red" layout="document">
+  <Subtitle>Errors</Subtitle>
+  <Title>A broken deck says where it broke</Title>
+  <TwoColumn>
+    <ContentImage src={errorShot} alt="A syntax error screen naming the line, with Open in Editor and Go Home buttons" width={760} />
+    <List compact>
+      <ListItem>The compiler's message, with line and column.</ListItem>
+      <ListItem>Hints for the usual causes: unclosed tags and stray braces.</ListItem>
+      <ListItem>One click opens the editor, which edits the whole file until it parses.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>Render errors inside a deck get the same screen instead of a blank page.</Notes>
 </Slide>
 
 <Slide hidden>

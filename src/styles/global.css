@@ -10,6 +10,7 @@
 @import '@fontsource/source-sans-3/latin-700.css';
 @import './presentation.css';
 @import './editor.css';
+@import './tool.css';
 
 :root {
   --brand-yellow: #f5b400;
@@ -232,15 +233,6 @@ pre {
   position: fixed;
   top: 1rem;
   left: 1rem;
-}
-
-.home-stub__actions,
-.home-stub__decks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
-  list-style: none;
 }
 
 .pill-button {

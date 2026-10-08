@@ -1,15 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { MDXProvider } from '@mdx-js/react'
 import type { MDXComponents } from 'mdx/types'
-import { BUILT_IN_SOURCE_ID, deckName, type DeckRef, type PresentationInfo } from '@shared/decks.ts'
+import { BUILT_IN_SOURCE_ID, deckName, sameDeck, type ContentSourceInfo, type DeckRef, type PresentationInfo } from '@shared/decks.ts'
 import { fetchContents, fetchPresentations } from './api'
 import { IS_STATIC, routePath } from './basePath'
+import { ErrorBoundary, PresentationErrorUI } from './components/ErrorBoundary'
 import { mdxComponentScope } from './components/mdxScope'
 import { assetResolverFor, DeckContext } from './components/slides/deckContext'
 import { bundledDeckNames, DeckNotFoundError, deckModuleLoader } from './deckLoading'
-import { useSSE } from './hooks/useSSE'
+import { subscribeServerEvents, useSSE } from './hooks/useSSE'
+import { HomePage } from './home/HomePage'
 import {
   chatUrl,
+  editorUrl,
   galleryUrl,
   homeUrl,
   isSameDeckView,
@@ -20,11 +23,12 @@ import {
   type ViewState,
 } from './router'
 import { startContentThemes } from './themes/contentThemes'
-import { HomeStub } from './views/HomeStub'
 import { Placeholder } from './views/Placeholder'
 
 /** Monaco is large: the editor loads only when someone opens it. */
 const EditorPage = lazy(() => import('./editor/EditorPage'))
+/** The gallery compiles previews in the browser, so it also loads on demand. */
+const GalleryPage = lazy(() => import('./gallery/GalleryPage'))
 
 const currentRoute = (): Route => parseRoute(routePath(), window.location.search)
 
@@ -34,11 +38,16 @@ const bundledInfo = (): PresentationInfo[] =>
 interface ContentContext {
   defaultSource: string
   builtInSource: string
+  sources: ContentSourceInfo[]
+  /** The current content folder is read-only: no "Create New". */
+  readOnly: boolean
 }
+
+const OFFLINE_CONTENT: ContentContext = { defaultSource: BUILT_IN_SOURCE_ID, builtInSource: BUILT_IN_SOURCE_ID, sources: [], readOnly: true }
 
 export function App() {
   const [view, setView] = useState<ViewState>({ type: 'loading' })
-  const [content, setContent] = useState<ContentContext | null>(IS_STATIC ? { defaultSource: BUILT_IN_SOURCE_ID, builtInSource: BUILT_IN_SOURCE_ID } : null)
+  const [content, setContent] = useState<ContentContext | null>(IS_STATIC ? OFFLINE_CONTENT : null)
   const [decks, setDecks] = useState<PresentationInfo[]>(bundledInfo)
   const [loadError, setLoadError] = useState<string>()
   const viewRef = useRef(view)
@@ -53,14 +62,29 @@ export function App() {
       const [contents] = await Promise.all([fetchContents(), startContentThemes()])
       if (!contents.data) {
         setLoadError(`Could not reach the Slidecraft server (${contents.error}).`)
-        setContent({ defaultSource: BUILT_IN_SOURCE_ID, builtInSource: BUILT_IN_SOURCE_ID })
+        setContent(OFFLINE_CONTENT)
         return
       }
       const builtIn = contents.data.sources.find((s) => s.builtIn)?.id ?? BUILT_IN_SOURCE_ID
-      setContent({ defaultSource: contents.data.current.id, builtInSource: builtIn })
+      setContent({ defaultSource: contents.data.current.id, builtInSource: builtIn, sources: contents.data.sources, readOnly: contents.data.current.readOnly })
       const list = await fetchPresentations()
       if (list.data) setDecks(list.data)
     })()
+  }, [])
+
+  // New or changed decks (from any editor or agent) refresh the home list.
+  useEffect(() => {
+    if (IS_STATIC) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = subscribeServerEvents((message) => {
+      if (message.type !== 'presentation-created' && message.type !== 'presentation-updated') return
+      clearTimeout(timer)
+      timer = setTimeout(() => void fetchPresentations().then((list) => list.data && setDecks(list.data)), 300)
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
   }, [])
 
   const loadContent = useCallback(
@@ -134,14 +158,34 @@ export function App() {
     [show],
   )
   const goHome = useCallback(() => go(homeUrl()), [go])
+  /** Editing needs the server and a writable deck. */
+  const editable = (deck: DeckRef) => !IS_STATIC && !decks.find((d) => sameDeck(d, deck))?.readOnly
 
   switch (view.type) {
     case 'loading':
       return <div className="spinner" role="status" aria-label="Loading" />
     case 'home':
-      return <HomeStub decks={decks} error={loadError} onPresent={(deck) => go(presentationUrl(deck))} onGallery={() => go(galleryUrl())} onChat={() => go(chatUrl())} />
+      return (
+        <HomePage
+          decks={decks}
+          sources={content?.sources ?? []}
+          canCreate={!IS_STATIC && !!content && !content.readOnly}
+          isStatic={IS_STATIC}
+          error={loadError}
+          defaultSource={content?.defaultSource}
+          loadDeck={loadContent}
+          onPresent={(deck, dev) => go(presentationUrl(deck, { dev }))}
+          onEdit={(deck) => go(editorUrl(deck))}
+          onChat={(deck) => go(chatUrl(deck))}
+          onGallery={() => go(galleryUrl())}
+        />
+      )
     case 'gallery':
-      return <Placeholder title="Component gallery" onHome={goHome}>Arrives in Phase 7.</Placeholder>
+      return (
+        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading gallery" />}>
+          <GalleryPage onExit={goHome} />
+        </Suspense>
+      )
     case 'chat':
       return (
         <Placeholder title={view.deck ? `Chat: ${deckName(view.deck)}` : 'Chat'} onHome={goHome}>
@@ -155,15 +199,13 @@ export function App() {
         </Suspense>
       )
     case 'presentation-error':
-      return (
-        <Placeholder title="Presentation error" onHome={goHome}>
-          <pre className="error-text">{view.error}</pre>
-        </Placeholder>
-      )
+      return <PresentationErrorUI errorMessage={view.error} presentationName={deckName(view.deck)} onGoHome={goHome} onGoToEditor={editable(view.deck) ? () => go(editorUrl(view.deck)) : undefined} />
     case 'presentation':
       return (
         <>
-          <DeckView deck={view.deck} content={view.content} defaultSource={content?.defaultSource} />
+          <ErrorBoundary key={`${view.deck.source}:${view.deck.path}`} presentationName={deckName(view.deck)} onGoHome={goHome} onGoToEditor={editable(view.deck) ? () => go(editorUrl(view.deck)) : undefined}>
+            <DeckView deck={view.deck} content={view.content} defaultSource={content?.defaultSource} />
+          </ErrorBoundary>
           <button type="button" className="presentation-view-button deck-home-button" onClick={goHome}>
             Home
           </button>

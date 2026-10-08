@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 6 (editor and language service) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 7 (home page, gallery, error screens) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -51,6 +51,8 @@ TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · V
 src/            client: App router (src/router.ts), views, styles
 src/components/slides/   slide components, defineComponent registry, accents, contexts
 src/animations/ springs and variant tables
+src/home/       home page: deck cards, filters, home commands
+src/gallery/    component gallery: search, lazy preview scheduler
 src/editor/     deck editor: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
 src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
 src/language-service-monaco/ Monaco adapter for the language service
