@@ -435,6 +435,18 @@ live in `src/styles/tool.css`. Card export buttons arrive with the export routes
 **Done when:** `P` opens a presenter window that follows and drives the audience window; the laser
 pointer and live strokes appear on the audience window; annotations persist across reload.
 
+**Status (2026-10-08): done.** The `Presentation` component renders either the audience player or
+the presenter view from the same `analyzeDeck` result, so the presenter window mounts no hidden
+deck and has one writer. `useDeckNavigation` (shared by both) mirrors the hash and syncs through
+one `BroadcastChannel slidecraft-sync-<source:path>` (navigation with an echo guard, a `hello`
+handshake for newly opened windows, the presenter's pointer with 32 ms throttle, 500 ms heartbeat
+and 2 s expiry, and live strokes). Deviation: the last position is **not** restored from
+localStorage, so "Present" from the home page starts at slide 1; reloads keep the hash. The timer
+start and annotations (`slidecraft-annotations-<key>`, synced by `storage` events) persist.
+Drawing (`src/drawing/`): one annotation union, seven tools with a working eraser, toolbar,
+per-slide undo/redo, keys A, 1–7, C, Cmd+Z / Cmd+Shift+Z, Esc leaves draw mode before anything
+else. Verified with two browser tabs: navigation both ways, pointer, live strokes, persistence.
+
 ### Phase 9 — Exports and reader mode
 
 - `vite.viewer.config.ts` and `src/exportViewer.tsx` (*Part 4 §8.1*), fonts inlined as data URLs.

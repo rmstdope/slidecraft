@@ -1,4 +1,10 @@
 import { cloneElement, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { DrawingProvider, useDrawing } from '../../drawing/DrawingContext'
+import { DrawingOverlay } from '../../drawing/DrawingOverlay'
+import { PresenterView } from '../../presenter/PresenterView'
+import { RemotePointer, useRemoteOverlay } from '../../presenter/RemoteOverlay'
+import { createSyncChannel, deckSyncKey, type SyncChannel } from '../../presenter/sync'
+import { useDeckNavigation } from '../../presenter/useDeckNavigation'
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react'
 import { ALL_STEPS_STATE, StepContext } from '../../animations/stepContext'
 import { springs } from '../../animations/springs'
@@ -17,19 +23,9 @@ import { PdfView } from '../presentation/PdfView'
 import { ProgressIndicator } from '../presentation/ProgressIndicator'
 import { analyzeDeck, type DeckAnalysis } from './analyzeDeck'
 import { CanvasStage } from './CanvasStage'
+import { deckName } from '@shared/decks.ts'
 import { useDeck } from './deckContext'
 import { defineComponent } from './defineComponent'
-import {
-  advance,
-  formatSlideHash,
-  goToSlide,
-  INITIAL_NAV,
-  nextSlide,
-  parseSlideHash,
-  prevSlide,
-  retreat,
-  type NavState,
-} from './navigation'
 import { useInThumbnail } from './thumbnailContext'
 
 export interface PresentationProps {
@@ -46,33 +42,59 @@ function readPdfParams(): { only?: number } | null {
   return { only: Number.isInteger(slide) && slide > 0 ? slide : undefined }
 }
 
-/** The deck root (Part 1 §3). Decides between a still, the PDF render and the live player. */
+/** The deck root (Part 1 §3). Decides between a still, the PDF render, the presenter and the live player. */
 function PresentationComponent({ children, theme }: PresentationProps) {
   const inThumbnail = useInThumbnail()
   const analysis = useMemo(() => analyzeDeck(children), [children])
   const [pdf] = useState(readPdfParams)
   return (
     <ThemeScope theme={theme}>
-      {inThumbnail ? (analysis.slides[0] ?? null) /* a deck card shows its first slide */ : pdf ? <PdfView slides={analysis.slides} only={pdf.only} /> : <LivePresentation analysis={analysis} />}
+      {inThumbnail ? (analysis.slides[0] ?? null) /* a deck card shows its first slide */ : pdf ? <PdfView slides={analysis.slides} only={pdf.only} /> : <SyncedDeck analysis={analysis} />}
     </ThemeScope>
   )
 }
 
+/** One sync channel and one annotation store per window; the URL decides audience or presenter. */
+function SyncedDeck({ analysis }: { analysis: DeckAnalysis }) {
+  const { deck } = useDeck()
+  const deckKey = deckSyncKey(deck)
+  const [channel, setChannel] = useState<SyncChannel | null>(null)
+  useEffect(() => {
+    const c = createSyncChannel(deckKey)
+    setChannel(c)
+    return () => c.close()
+  }, [deckKey])
+  const presenter = useMemo(() => new URLSearchParams(window.location.search).has('presenter'), [])
+  if (!channel) return null
+  return (
+    <DrawingProvider deckKey={deckKey}>
+      {presenter ? (
+        <PresenterDeck analysis={analysis} deckKey={deckKey} deckLabel={deck ? deckName(deck) : document.title} channel={channel} />
+      ) : (
+        <LivePresentation analysis={analysis} channel={channel} />
+      )}
+    </DrawingProvider>
+  )
+}
+
+function PresenterDeck({ analysis, deckKey, deckLabel, channel }: { analysis: DeckAnalysis; deckKey: string; deckLabel: string; channel: SyncChannel }) {
+  const { nav, actions } = useDeckNavigation(analysis.stepCounts, channel)
+  if (analysis.slides.length === 0) return <div className="presentation__empty">No slides yet</div>
+  return <PresenterView analysis={analysis} nav={nav} actions={actions} deckKey={deckKey} deckLabel={deckLabel} channel={channel} />
+}
+
 const SWIPE_DISTANCE = 60
 
-function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
+function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; channel: SyncChannel }) {
   const { slides, stepCounts } = analysis
   const total = slides.length
   const { deck } = useDeck()
   const deckTheme = useTheme()
   useThemesVersion()
   const exported = useMemo(isExported, [])
-  const presenterView = useMemo(() => new URLSearchParams(window.location.search).has('presenter'), [])
-
-  const [nav, setNav] = useState<NavState>(() => {
-    const parsed = parseSlideHash(window.location.hash, stepCounts)
-    return parsed ? { ...parsed, direction: 0 } : INITIAL_NAV
-  })
+  const { nav, actions } = useDeckNavigation(stepCounts, channel)
+  const drawing = useDrawing()
+  const remote = useRemoteOverlay(channel, true)
   const [devMode, setDevMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'dev')
   const [devFitMode, setDevFitMode] = useState(true)
   const [overviewOpen, setOverviewOpen] = useState(false)
@@ -82,50 +104,6 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-
-  const actions = useMemo(
-    () => ({
-      advance: () => setNav((s) => advance(s, stepCounts)),
-      retreat: () => setNav((s) => retreat(s, stepCounts)),
-      nextSlide: () => setNav((s) => nextSlide(s, stepCounts)),
-      prevSlide: () => setNav((s) => prevSlide(s)),
-      goTo: (index: number, atLastStep = false) => setNav((s) => goToSlide(s, index, stepCounts, atLastStep)),
-    }),
-    [stepCounts],
-  )
-
-  // A live reload can remove slides; keep the position in range.
-  useEffect(() => {
-    if (total > 0 && nav.current > total - 1) actions.goTo(total - 1)
-  }, [total, nav.current, actions])
-
-  // URL hash mirrors the position (Part 1 §3.4). The first write replaces, later ones push history.
-  const firstHashWrite = useRef(true)
-  useEffect(() => {
-    if (total === 0) return
-    const hash = formatSlideHash(nav.current, nav.step)
-    if (window.location.hash !== hash) {
-      if (firstHashWrite.current) {
-        window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}${hash}`)
-      } else window.location.hash = hash
-    }
-    firstHashWrite.current = false
-  }, [nav.current, nav.step, total])
-
-  // Browser back/forward moves slides and steps.
-  useEffect(() => {
-    const onHashChange = () => {
-      const parsed = parseSlideHash(window.location.hash, stepCounts)
-      if (!parsed) return
-      setNav((s) => {
-        if (s.current === parsed.current && s.step === parsed.step) return s
-        const direction = parsed.current !== s.current ? Math.sign(parsed.current - s.current) : parsed.step >= s.step ? 1 : -1
-        return { ...parsed, direction }
-      })
-    }
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [stepCounts])
 
   // Dev mode is state; the URL follows so links and reloads keep it.
   useEffect(() => {
@@ -161,7 +139,7 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
     if (deck) navigateTo(editorUrl(deck, nav.current + 1))
   }, [deck, nav.current])
 
-  const canPresent = !presenterView && !exported
+  const canPresent = !exported
   const stepsOnSlide = stepCounts[nav.current] ?? 0
 
   // Keyboard map (Part 1 §3.7). The handler is rebuilt every render and read through a ref.
@@ -194,6 +172,14 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
       case 'p':
         if (canPresent) openPresenter()
         return
+      case 'a':
+        drawing?.toggleDrawMode()
+        return
+    }
+    if (key === 'Escape' && drawing?.isDrawMode) {
+      drawing.setDrawMode(false)
+      event.preventDefault()
+      return
     }
 
     if (overviewOpen) {
@@ -305,6 +291,7 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
       ...(canPresent
         ? [{ id: 'presenter', name: 'Open Presenter View', description: 'Open presenter notes and timer in new window', category: 'view' as const, shortcut: ['P'], action: openPresenter }]
         : []),
+      { id: 'draw', name: drawing?.isDrawMode ? 'Leave Draw Mode' : 'Draw on Slides', description: 'Pen, highlighter, arrows, boxes, text and a laser pointer', category: 'action', shortcut: ['A'], action: () => drawing?.toggleDrawMode() },
       { id: 'shortcuts', name: 'Keyboard Shortcuts', category: 'action', shortcut: ['?'], action: () => setShortcutsOpen(true) },
     ]
     if (!exported) {
@@ -316,7 +303,7 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
     }
     slides.forEach((_, i) => list.push({ id: `slide-${i}`, name: `Go to Slide ${i + 1}`, category: 'navigation', action: () => actions.goTo(i) }))
     return list
-  }, [overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, devMode, devFitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
+  }, [drawing, overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, devMode, devFitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
 
   const mode: AppMode = overviewOpen ? 'miniature' : devMode ? 'dev' : 'presentation'
 
@@ -400,6 +387,9 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
             </motion.div>
           </AnimatePresence>
         </LayoutGroup>
+
+        <DrawingOverlay slideIndex={current} liveAnnotation={remote.preview?.slideIndex === current ? remote.preview.annotation : null} />
+        {remote.pointer?.slideIndex === current && <RemotePointer point={remote.pointer.point} />}
 
         <ProgressIndicator total={total} current={nav.current} step={nav.step} stepsOnSlide={stepsOnSlide} light={light} onSelect={(i) => actions.goTo(i)} />
 

@@ -1,7 +1,7 @@
 import { isMac } from './environment'
 
 /** The single source of truth for the shortcuts modal and help panel (Part 3 §1.9). */
-export type AppMode = 'home' | 'presentation' | 'miniature' | 'dev' | 'editor'
+export type AppMode = 'home' | 'presentation' | 'miniature' | 'dev' | 'editor' | 'presenter'
 
 export interface Shortcut {
   keys: string[]
@@ -12,6 +12,15 @@ export interface Shortcut {
 const GLOBAL: Shortcut[] = [
   { keys: ['Cmd', 'K'], action: 'Open command palette', category: 'General' },
   { keys: ['?'], action: 'Show keyboard shortcuts', category: 'General' },
+]
+
+const DRAWING_KEYS: Shortcut[] = [
+  { keys: ['A'], action: 'Toggle draw mode', category: 'Drawing' },
+  { keys: ['1–7'], action: 'Pen, highlighter, arrow, rectangle, text, eraser, laser', category: 'Drawing' },
+  { keys: ['C'], action: 'Clear the slide (in draw mode)', category: 'Drawing' },
+  { keys: ['Cmd', 'Z'], action: 'Undo stroke (in draw mode)', category: 'Drawing' },
+  { keys: ['Cmd', 'Shift', 'Z'], action: 'Redo stroke (in draw mode)', category: 'Drawing' },
+  { keys: ['Esc'], action: 'Leave draw mode', category: 'Drawing' },
 ]
 
 const PRESENTING: Shortcut[] = [
@@ -29,6 +38,7 @@ const PRESENTING: Shortcut[] = [
   { keys: ['D'], action: 'Toggle dev mode', category: 'Views' },
   { keys: ['P'], action: 'Open presenter view', category: 'Views' },
   { keys: ['Esc'], action: 'Edit this slide', category: 'Views' },
+  ...DRAWING_KEYS,
 ]
 
 const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
@@ -52,6 +62,21 @@ const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
   dev: {
     label: 'Dev',
     shortcuts: [...PRESENTING, { keys: ['F'], action: 'Switch fit and actual size', category: 'Dev' }],
+  },
+  presenter: {
+    label: 'Presenter',
+    shortcuts: [
+      { keys: ['→'], action: 'Next step or slide', category: 'Navigation' },
+      { keys: ['Space'], action: 'Next step or slide', category: 'Navigation' },
+      { keys: ['←'], action: 'Previous step or slide', category: 'Navigation' },
+      { keys: ['↓'], action: 'Next slide, skipping remaining steps', category: 'Navigation' },
+      { keys: ['↑'], action: 'Previous slide', category: 'Navigation' },
+      { keys: ['Home'], action: 'First slide', category: 'Navigation' },
+      { keys: ['End'], action: 'Last slide', category: 'Navigation' },
+      { keys: ['R'], action: 'Start or reset the timer', category: 'Timer' },
+      { keys: ['Esc'], action: 'Close the presenter window', category: 'Views' },
+      ...DRAWING_KEYS,
+    ],
   },
   editor: {
     label: 'Editor',

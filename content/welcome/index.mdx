@@ -16,6 +16,8 @@ import homeShot from './images/home.png'
 import galleryShot from './images/gallery.png'
 import galleryDetailShot from './images/gallery-detail.png'
 import errorShot from './images/error.png'
+import presenterShot from './images/presenter.png'
+import drawingShot from './images/drawing.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -626,6 +628,41 @@ import errorShot from './images/error.png'
     </List>
   </TwoColumn>
   <Notes>Render errors inside a deck get the same screen instead of a blank page.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" gradient="radial-accent">
+  <Subtitle>Presenter view</Subtitle>
+  <Title>Your notes on your screen, the slides on theirs</Title>
+  <Text muted>Press P. The two windows follow each other, key for key.</Text>
+  <Notes>10:40-11:00. Section opener for the presenter view and drawing. Press P now to open it.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Presenter view</Subtitle>
+  <Title>Notes, a timer and the next slide</Title>
+  <ContentImage src={presenterShot} alt="The presenter window: current slide, up next, speaker notes, timer and controls" width={1150} />
+  <Notes>R starts and resets the timer. Pointing at the current slide shows a red dot on the audience screen. Esc closes the window.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="red" layout="document">
+  <Subtitle>Drawing</Subtitle>
+  <Title>Mark up a slide while you talk</Title>
+  <TwoColumn>
+    <ContentImage src={drawingShot} alt="A slide with a highlighted title, a box, an arrow and a label, and the drawing toolbar" width={800} />
+    <List compact>
+      <ListItem>A opens the toolbar; keys 1 to 7 pick pen, highlighter, arrow, box, text, eraser and laser.</ListItem>
+      <ListItem>Strokes from the presenter window appear on the audience screen as they form.</ListItem>
+      <ListItem>Annotations stay with the deck after a reload; C clears the slide.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>Cmd+Z and Cmd+Shift+Z undo and redo per slide. The eraser removes one mark at a time.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Try it</Subtitle>
+  <Title>Press A and circle something</Title>
+  <Text muted>Esc puts the pen away. Your marks stay on this slide until you clear them.</Text>
+  <Notes>An empty canvas on purpose: draw on it live.</Notes>
 </Slide>
 
 <Slide hidden>
