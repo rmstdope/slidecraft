@@ -20,6 +20,7 @@ import presenterShot from './images/presenter.png'
 import drawingShot from './images/drawing.png'
 import readerShot from './images/reader.png'
 import chatShot from './images/chat.png'
+import docsShot from './images/docs.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -720,6 +721,39 @@ import chatShot from './images/chat.png'
     ]}
   />
   <Notes>All three get the same context: the components, the templates, the themes, the author guide and the folder's own AGENTS.md.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" gradient="radial-accent">
+  <Subtitle>Packaging</Subtitle>
+  <Title>One file runs it all</Title>
+  <Text muted>Download a binary, run it in a folder of decks, open the browser.</Text>
+  <Notes>11:40-12:00. Section opener for releases, the docs site and CI.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Packaging</Subtitle>
+  <Title>A binary per platform, built on every tag</Title>
+  <TwoColumn>
+    <Code title="~/decks" fontSize={24} width={760}>{`
+    $ slidecraft
+    Slidecraft 0.1.0
+    Content directory: ~/decks
+    Serving the embedded app
+    Listening on http://localhost:6110`}</Code>
+    <List compact>
+      <ListItem>The app, the export viewer and the author guide live inside the binary.</ListItem>
+      <ListItem>macOS, Linux and Windows builds come from one runner.</ListItem>
+      <ListItem>A version tag tests, builds and publishes a release.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>PDF export needs an installed Chrome; everything else works with the binary alone.</Notes>
+</Slide>
+
+<Slide scheme="light" accent="teal" layout="document">
+  <Subtitle>Docs site</Subtitle>
+  <Title>The catalogue is generated from the registry</Title>
+  <ContentImage src={docsShot} alt="The docs site: a sidebar of guides and the generated component catalogue entry for Stat" width={1150} />
+  <Notes>The site bundles the example decks and the gallery as a static app; every push to main republishes it to GitHub Pages.</Notes>
 </Slide>
 
 <Slide hidden>

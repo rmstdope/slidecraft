@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 10 (AI chat assistant) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 11 (release binaries, docs site, CI) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -31,6 +31,8 @@ Component Developer. Otherwise Framework Developer.
 | `bun start` | serve `dist/` and the API from one process (folder mode) |
 | `bun run mcp` | MCP server over stdio with the deck tools (`--content <dir>` to pick a folder) |
 | `bun run export --name <deck> [--pdf]` | write `<content>/exports/<deck>.html` (or `.pdf`; PDF needs the server and Chrome) |
+| `bun run build:release [--target macos-arm64]` | binaries in `release/` (after `bun run build`) |
+| `bun run build:site [--base /slidecraft/]` | static docs site with the example decks in `site/` |
 | `bun run content-dir` | print the content directory the server would use |
 
 ## Dev-server etiquette

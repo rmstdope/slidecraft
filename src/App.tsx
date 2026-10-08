@@ -58,7 +58,10 @@ export function App() {
 
   // Content sources, themes and the deck list come from the server (not in static builds).
   useEffect(() => {
-    if (IS_STATIC) return
+    if (IS_STATIC) {
+      void startContentThemes() // registers the bundled theme folders
+      return
+    }
     void (async () => {
       const [contents] = await Promise.all([fetchContents(), startContentThemes()])
       if (!contents.data) {

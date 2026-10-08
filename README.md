@@ -4,8 +4,26 @@ An MDX presentation framework. Write each deck as one `index.mdx` file, compose 
 registered React components, present with build steps, shared-element morphs and a pannable
 canvas, edit in a browser editor with live preview, and export to a single HTML file or PDF.
 
-> Status: early development. Phase 0 (bootstrap) is in place; see
-> [the implementation plan](docs/plans/implementation-plan.md) for what comes next.
+> Status: feature complete through packaging; documentation and example decks come next. See
+> [the implementation plan](docs/plans/implementation-plan.md).
+
+## Run a release binary
+
+Download the binary for your system from the releases page, put it on your `PATH`, and run it in
+a folder of decks (one `<name>/index.mdx` per deck):
+
+```sh
+cd ~/decks
+slidecraft                 # http://localhost:6110 ; --port 7000 to change
+```
+
+The binary contains the whole app; nothing else needs installing. PDF export uses an installed
+Chrome or Chromium (`CHROME_PATH` to point at one). On macOS, clear the quarantine flag of a
+downloaded, unsigned binary first:
+
+```sh
+xattr -d com.apple.quarantine ./slidecraft-macos-arm64
+```
 
 ## Run from a checkout
 
@@ -51,6 +69,19 @@ claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --content ~/d
 
 The MCP server offers tools to list, read, create and edit decks slide by slide, and to list and
 set themes. Every change is compile-checked before it is written.
+
+## Build binaries, the docs site, a release
+
+```sh
+bun run build && bun run build:release            # release/slidecraft-<os>-<arch>
+bun run build:release --target macos-arm64        # one target
+bun run build:site --base /slidecraft/            # site/: docs, catalogue, example decks
+```
+
+To publish a release, bump `version` in `package.json` (the binary reports it), commit, and push
+a matching tag: `git tag v0.2.0 && git push origin v0.2.0`. The release workflow builds and tests,
+cross-compiles every binary and attaches them to a GitHub release. Pushes to `main` rebuild the
+docs site on GitHub Pages.
 
 ## Develop
 

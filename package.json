@@ -1,6 +1,10 @@
 {
   "name": "slidecraft",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rmstdope/slidecraft"
+  },
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -18,6 +22,8 @@
     "test": "bun test",
     "mcp": "bun server/mcp.ts",
     "export": "bun scripts/export.ts",
+    "build:release": "bun scripts/buildRelease.ts",
+    "build:site": "bun scripts/buildSite.ts",
     "content-dir": "bun scripts/contentDir.ts"
   },
   "dependencies": {
@@ -27,6 +33,7 @@
     "@mdx-js/react": "3.1.1",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@monaco-editor/react": "4.7.0",
+    "marked": "15.0.12",
     "monaco-editor": "0.57.0",
     "motion": "14.0.0",
     "react": "19.3.0",

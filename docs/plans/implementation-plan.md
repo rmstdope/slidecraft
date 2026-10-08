@@ -523,6 +523,20 @@ hand-repaired slide. The repair editor reuses the editor's Monaco with the langu
 **Done when:** `bun run build:release` produces a binary that serves the current directory with
 no install; `bun run build:site` produces a browsable site; a `v*` tag publishes a release.
 
+**Status (2026-10-08): done.** `scripts/buildRelease.ts` embeds `public/`, `dist/` and the author
+guide (`with { type: 'file' }`), compiles `server/index.ts` for five targets (macOS arm64/x64,
+Linux x64/arm64, Windows x64) with `--external sharp` and the version defined, and restores the
+empty stub. Verified: the macOS binary, run with a bare environment from a folder with one deck,
+serves the app, the editor (Monaco worker included) and both exports; Linux and Windows
+cross-compile. Fixed on the way: export read embedded logos through `Bun.file().name`, which is
+not a readable path inside a binary (`readAppBytes` now). `scripts/buildSite.ts` builds the static
+app (example decks and the repo's content-folder themes bundled, now registered in static mode),
+renders the Markdown docs with `marked` and repo-aware links, generates the catalogue, and writes
+`404.html` and `.nojekyll`; checked under a `/slidecraft/` base with a Pages-like server.
+`scripts/generate-favicons.mjs` (run; PNG icons in `public/`) and `scripts/process-images.mjs`.
+Workflows: `pages.yml` (base = repository name) and `release.yml` (tag must match
+`package.json`; `gh release create`).
+
 ### Phase 12 — Documentation and example decks
 
 - Root `AGENTS.md` complete (*Part 6 §4.1*), three persona docs (*§4.3*), `docs/guide.md`,

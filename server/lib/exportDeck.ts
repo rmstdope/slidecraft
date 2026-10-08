@@ -9,7 +9,7 @@ import { deckName, type DeckRef } from '../../shared/decks.ts'
 import { assetKey, mimeType, PAYLOAD_ELEMENT_ID, type ExportedTheme, type ExportPayload } from '../../shared/exportPayload.ts'
 import { stripMdxFrontmatter } from '../../shared/frontmatter.ts'
 import { ASSET_IMPORT_RE, DeckImportError, resolveDeckRelative, rewriteDeckImports } from '../../shared/mdxImports.ts'
-import { appFile, readAppText } from './appFiles.ts'
+import { readAppBytes, readAppText } from './appFiles.ts'
 import { resolveDeckFile, resolveDeckRefInSources, type ResolvedDeck } from './decks.ts'
 import { readDeckSource } from './deckStore.ts'
 import { discoverThemes, THEMES_DIR } from './themes.ts'
@@ -41,8 +41,8 @@ function loadViewer(): { js: string; css: string } {
   const css = readAppText('dist/viewer/viewer.css') ?? ''
   if (!js) throw new ExportError('Export viewer not built. Run "bun run build" first.')
   js = js.replace(/([`"'])\/([\w.-]+\.(?:svg|png|jpe?g|gif|webp|avif))\1/g, (literal, quote: string, name: string) => {
-    const file = appFile(`dist/${name}`) ?? appFile(`public/${name}`)
-    return file ? `${quote}${dataUrl(file.name!)}${quote}` : literal
+    const bytes = readAppBytes(`dist/${name}`) ?? readAppBytes(`public/${name}`)
+    return bytes ? `${quote}data:${mimeType(name)};base64,${bytes.toString('base64')}${quote}` : literal
   })
   viewerCache = { js, css }
   return viewerCache

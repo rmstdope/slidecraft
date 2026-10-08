@@ -4,6 +4,8 @@
  */
 import { fetchThemes } from '../api'
 import { IS_STATIC } from '../basePath'
+import { bundledThemeAssets, bundledThemeSpecs } from '../bundledDecks'
+import { BUILT_IN_SOURCE_ID } from '@shared/decks.ts'
 import { subscribeServerEvents } from '../hooks/useSSE'
 import { BUILTIN_SOURCE, registerTheme, unregisterSource } from './registry'
 
@@ -22,9 +24,29 @@ export async function loadContentThemes(): Promise<void> {
   }
 }
 
+/** The repo's own theme folders, bundled into the build (the static site has no server). */
+export function registerBundledThemes(source = BUILT_IN_SOURCE_ID): number {
+  let count = 0
+  for (const [file, raw] of Object.entries(bundledThemeSpecs)) {
+    const id = /\/content\/themes\/([^/]+)\/theme\.json$/.exec(file)?.[1]
+    if (!id) continue
+    const prefix = `/content/themes/${id}/`
+    const assets: Record<string, string> = {}
+    for (const [path, url] of Object.entries(bundledThemeAssets)) if (path.startsWith(prefix)) assets[path.slice(prefix.length)] = url
+    registerTheme({ id, source, raw, baseUrl: prefix, assets })
+    count++
+  }
+  return count
+}
+
 /** Load content themes once and keep them current. */
 export function startContentThemes(): Promise<void> {
-  if (started || IS_STATIC) return Promise.resolve()
+  if (started) return Promise.resolve()
+  if (IS_STATIC) {
+    started = true
+    registerBundledThemes()
+    return Promise.resolve()
+  }
   started = true
   subscribeServerEvents((message) => {
     if (message.type === 'themes-updated') void loadContentThemes()

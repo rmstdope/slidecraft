@@ -21,6 +21,15 @@ export function appFile(rel: string): ReturnType<typeof Bun.file> | null {
   }
 }
 
+/** An app file's bytes, from disk or the binary's embedded table. */
+export function readAppBytes(rel: string): Buffer | null {
+  const path = clean(rel)
+  if (!path) return null
+  if (IS_BUNDLED) return embedded[path] ? readFileSync(embedded[path]) : null
+  const full = join(APP_ROOT, path)
+  return existsSync(full) && statSync(full).isFile() ? readFileSync(full) : null
+}
+
 export function readAppText(rel: string): string | null {
   const path = clean(rel)
   if (!path) return null

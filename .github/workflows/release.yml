@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Check the tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")" || { echo "Tag $GITHUB_REF_NAME does not match package.json"; exit 1; }
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun test
+      # Cross-compiles every target from one runner; sharp stays external and optional.
+      - run: bun scripts/buildRelease.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slidecraft-binaries
+          path: release/*
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --title "Slidecraft ${GITHUB_REF_NAME#v}" --generate-notes
