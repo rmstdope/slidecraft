@@ -1,0 +1,20 @@
+node_modules/
+dist/
+release/
+dist-export/
+exports/
+site/
+.vite/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+# Agent tool working directories and per-tool pointer files (AGENTS.md is the tracked instruction file)
+.claude/settings.local.json
+.copilot/
+.github/copilot-instructions.md
