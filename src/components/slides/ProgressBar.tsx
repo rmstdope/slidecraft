@@ -59,7 +59,7 @@ export const ProgressBar = defineComponent<ProgressBarProps>({
     description: 'Segmented progress/percentage bar visualization.',
     props: [{ name: 'segments', type: 'Array<{ label: string; flex: number; color: "teal" | "yellow" | "red" | "navy" }>', description: 'Segments with relative widths' }],
     snippet: '<ProgressBar segments={[{ label: "Done 70%", flex: 7, color: "teal" }, { label: "Left 30%", flex: 3, color: "red" }]} />',
-    previewCode: '<Slide theme="dark">\n  <ProgressBar segments={[{ label: "Done 70%", flex: 7, color: "teal" }, { label: "Left 30%", flex: 3, color: "red" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <ProgressBar segments={[{ label: "Done 70%", flex: 7, color: "teal" }, { label: "Left 30%", flex: 3, color: "red" }]} />\n</Slide>',
     keywords: ['progress', 'bar', 'percentage', 'visualization', 'segment'],
     useCases: ['A split of a whole', 'Progress towards a goal'],
   },

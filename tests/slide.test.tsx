@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { render } from '@testing-library/react'
-import { accentRgb, onAccent, tint } from '../src/components/slides/accents'
+import { onAccent, tint } from '../src/components/slides/accents'
 import { gradientFor } from '../src/components/slides/gradients'
 import { Slide, splitHeaderBody } from '../src/components/slides/Slide'
 import { Subtitle } from '../src/components/slides/Subtitle'
@@ -13,33 +13,35 @@ useDom()
 const root = (container: HTMLElement) => container.querySelector('.slide') as HTMLElement
 
 describe('Slide', () => {
-  test('applies theme and accent classes', () => {
-    const { container } = render(<Slide theme="light" accent="teal"><Title>Hi</Title></Slide>)
-    expect(root(container).className).toContain('theme-light')
+  test('applies scheme and accent classes', () => {
+    const { container } = render(<Slide scheme="light" accent="teal"><Title>Hi</Title></Slide>)
+    expect(root(container).className).toContain('scheme-light')
     expect(root(container).className).toContain('accent-teal')
   })
 
   test('invalid enum values fall back to their defaults', () => {
     // @ts-expect-error deliberately invalid values, as typed by an author mid-edit
-    const { container } = render(<Slide theme="purple" accent="pink" gradient="rainbow" layout="grid"><Title>Hi</Title></Slide>)
-    expect(root(container).className).toContain('theme-dark')
+    const { container } = render(<Slide scheme="purple" accent="pink" gradient="rainbow" layout="grid"><Title>Hi</Title></Slide>)
+    expect(root(container).className).toContain('scheme-dark')
     expect(root(container).className).toContain('accent-yellow')
     expect(container.querySelector('.slide__header')).toBeNull()
   })
 
-  test('chrome forces the light theme, content chrome implies document layout, and hides the logo', () => {
+  test('a theme frame forces its scheme and layout, drops gradients and draws its own logo', () => {
     const { container } = render(
-      <Slide chrome="content" theme="dark" gradient="radial">
+      <Slide theme="corporate" scheme="dark" gradient="radial">
         <Subtitle>Eyebrow</Subtitle>
         <Title>Assertion</Title>
         <Text>Body</Text>
       </Slide>,
     )
-    expect(root(container).className).toContain('theme-light')
+    expect(root(container).className).toContain('scheme-light')
+    expect(root(container).getAttribute('data-frame')).toBe('content')
     expect(root(container).style.backgroundImage).toBe('')
     expect(container.querySelector('.slide__header')).not.toBeNull()
-    expect(container.querySelector('.slide__sheared-rule')).not.toBeNull()
-    expect(container.querySelector('.slide__logo')).toBeNull()
+    expect(container.querySelector('.slide__header-bar')).not.toBeNull()
+    expect(container.querySelector('.slide__frame')?.getAttribute('src')).toContain('content.svg')
+    expect((container.querySelector('.slide__logo') as HTMLElement).style.right).toBe('110px')
   })
 
   test('document layout splits the leading Subtitle and Title into the header band', () => {
@@ -59,7 +61,7 @@ describe('Slide', () => {
     const dark = render(<Slide><Title>a</Title></Slide>)
     expect(dark.container.querySelector('img')?.getAttribute('src')).toBe('/logo-on-dark.svg')
     dark.unmount()
-    const light = render(<Slide theme="light"><Title>a</Title></Slide>)
+    const light = render(<Slide scheme="light"><Title>a</Title></Slide>)
     expect(light.container.querySelector('img')?.getAttribute('src')).toBe('/logo-on-light.svg')
   })
 })
@@ -78,14 +80,14 @@ describe('splitHeaderBody', () => {
 })
 
 describe('gradients and accents', () => {
-  test('light gradients substitute the accent rgb triplet', () => {
-    const value = gradientFor('light', 'spotlight', 'teal')!
-    expect(value).toContain(`rgba(${accentRgb('teal')}, 0.22)`)
-    expect(value).not.toContain('var(--accent-rgb)')
-    expect(gradientFor('dark', 'none', 'teal')).toBeUndefined()
+  test('light gradients tint the slide accent through color-mix', () => {
+    const value = gradientFor('light', 'spotlight')!
+    expect(value).toContain('color-mix(in srgb, var(--accent) 22%, transparent)')
+    expect(gradientFor('dark', 'none')).toBeUndefined()
   })
-  test('tint and onAccent', () => {
-    expect(tint('red', 0.5)).toBe('rgba(224, 69, 43, 0.5)')
+  test('tint and onAccent follow the theme variables', () => {
+    expect(tint('red', 0.5)).toBe('color-mix(in srgb, var(--brand-red) 50%, transparent)')
+    expect(tint('gray', 0.125)).toBe('color-mix(in srgb, var(--accent-gray) 12.5%, transparent)')
     expect(onAccent('yellow')).toBe('var(--ink)')
     expect(onAccent('navy')).toBe('var(--on-navy, #ffffff)')
     expect(onAccent('teal')).toBe('#ffffff')

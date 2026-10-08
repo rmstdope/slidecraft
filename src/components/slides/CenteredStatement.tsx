@@ -37,7 +37,7 @@ export const CenteredStatement = defineComponent<CenteredStatementProps>({
       { name: 'maxWidth', type: 'number', default: '1200', description: 'Statement width in px' },
     ],
     snippet: '<CenteredStatement label="Rule" statement="One idea per slide." />',
-    previewCode: '<Slide theme="light">\n  <CenteredStatement label="Rule" statement="One idea per slide, stated as an assertion." />\n</Slide>',
+    previewCode: '<Slide scheme="light">\n  <CenteredStatement label="Rule" statement="One idea per slide, stated as an assertion." />\n</Slide>',
     keywords: ['rule', 'principle', 'statement', 'centered', 'guideline'],
     useCases: ['A rule or principle', 'A single takeaway'],
   },

@@ -20,6 +20,7 @@ Date of decisions: 2026-10-08.
 | AI chat providers | **As specified**: an OpenAI-compatible HTTP chat-completions provider with the server-side tool loop, plus two spawned CLI agents: **Claude Code** (agent A, resumes by returned session id) and **GitHub Copilot CLI** (agent B, caller-supplied session id). The internal knowledge MCP client and the skills directory are dropped. | Provider ids: `http`, `claude-code`, `copilot`. Guideline 8 ("knowledge and skills") is omitted from the system prompt. |
 | Deck parser | **One shared syntax-tree parser** in `shared/deckParser.ts` built on `remark-parse` + `remark-mdx`, used by the editor, the server routes, the chat tools and the MCP server. Replaces the regex parser (*Part 3 §3*) and the character scanner (*Part 4 §7.1*). | Lossless: `<Presentation>` props, comments and text between slides, and nested `<Slide>` all survive edits. See §2.3. |
 | ScatterChart | **Own SVG implementation** with motion springs; no chart library. | No `resolve.dedupe` workaround; the threshold handle, axis tabs and legend are implemented directly. See Phase 4. |
+| Themes (Phase 4b) | **Deck-level themes replace the corporate special case** (decided after Phase 4). A theme is a data folder (`theme.json`, frame SVGs, logos, fonts); built-in themes ship in `src/themes/builtin/`, more are discovered in `<content-dir>/themes/<id>/`. `theme` now names the look on `<Presentation>` (and optionally on one `<Slide>`); the dark/light prop is renamed `scheme`; `chrome` is replaced by `frame`, whose masters come from the theme. | Supersedes the chrome row below. |
 | Corporate chrome | **Keep the mechanism**, ship a **neutral default frame**. `chrome="title|section|content"` works exactly as specified (forces light theme, `content` implies `document` layout, frame never scales, geometry from a module), but the geometry module ships a simple generic design instead of an extracted slide master. | `src/components/slides/chrome/geometry.ts` is the single file to replace with an extracted table later. |
 | Brand assets | **Open defaults chosen by the implementer**: self-hosted OFL fonts and an own palette; accent role names stay `yellow`, `red`, `teal`, `navy` (+ `gray`). | See §2.1. Everything is a token swap as the spec requires (*Part 0 §0.5 item 6*). |
 | Packaging | Bun `--compile` binaries for four targets, static docs site with generated catalogue, GitHub workflows (CI, Pages, release). **No Swift/WebKit macOS launcher.** | *Part 4 §14* is not implemented. |
@@ -284,6 +285,34 @@ ScatterChart in plain SVG. Further deviations from the spec, all deliberate:
 - **PersonCard** shows initials when there is no photo.
 - **Card `accent`** also accepts a bare attribute (slide accent), as the spec's minimal corporate deck uses.
 
+### Phase 4b — Themes
+
+**Goal:** apply a look and feel to a whole deck; the corporate deck becomes an ordinary deck.
+
+- `shared/themes.ts`: the theme format (tokens, fonts, logos, logo placement, footer, frames,
+  defaults, constraints), validation that keeps valid fields and reports the rest, `extends` merging.
+- Built-in themes as folders in `src/themes/builtin/`: `slidecraft` (the default look), `corporate`
+  (the neutral master as three SVG frames, extends slidecraft), `paper` (palette only).
+- `src/themes/registry.ts`: register theme folders per content source; resolve by id with the
+  deck's source first, then built-ins; `extends` chains with cycle detection; every theme sits on
+  top of the default; asset paths become URLs before merging so each asset keeps its own folder.
+- Scoped styling: tokens become CSS custom properties on each deck and slide root, so differently
+  themed decks render side by side; theme fonts with files load under theme-private family names.
+  Accents, tints, shades and gradients use `color-mix()` on the variables (no hex table).
+- `resolveSlideLook()`: slide props, then the frame, then theme defaults and constraints; used by
+  `Slide` and by `Presentation` for transitions and progress colours.
+- Renames: slide `theme` → `scheme`, `chrome` → `frame`; `Slide` accepts `theme` to borrow another
+  look. Frames carry title size and colour, sub-headline styling, alignment (text defaults left in
+  a left-aligned frame), header rule (`accent` / `bar` / `none`), logo and footer placement.
+- Frame templates preview inside `<Presentation theme="corporate">`. `themes` is a reserved deck name.
+
+**Done when:** a deck with `theme="corporate"` gets frames on every slide without per-slide props;
+a content-folder theme can extend a built-in; mixed-theme thumbnails render correctly.
+
+**Status (2026-10-08): done.** Content-folder discovery and asset serving land in Phase 5 (the
+registry API is ready: `registerTheme({ id, source, raw, baseUrl })`). Also fixed: overview cells
+were `<button>`s that could contain buttons (chart tabs); they are now divs with `role="button"`.
+
 ### Phase 5 — Server, content model, agent tools, MCP
 
 **Goal:** the Bun server serves decks from any content directory; external agents can edit decks.
@@ -305,6 +334,9 @@ ScatterChart in plain SVG. Further deviations from the spec, all deliberate:
   `export_pdf` (the last two land in Phase 9 and return "not built" until then).
 - `agentContext.ts`: `buildDynamicDocs()` from the registry, `syncFolderInstructions()` writing
   the generated `AGENTS.md` with the version marker (*Part 4 §7.6*).
+- Themes: discover `<source>/themes/<id>/theme.json` per mounted source, `GET /api/themes` (parsed
+  spec, validation errors, base URL `/content-source/<id>/themes/<theme>/`), client registration on
+  load and on SSE `themes-updated`; the generated `AGENTS.md` lists themes and their frames.
 - `src/deckLoader.ts` runtime compile (*Part 1 §14.2*), `useSSE` (*Part 3 §1.10*), so folder mode
   works end to end; `bun start` serves `dist/`.
 - Tests: `content-sources.test.ts`, `content.test.ts`, parser round-trip, multipart, validator.
@@ -333,6 +365,8 @@ folder receives a generated `AGENTS.md`.
   type-string parser, completion (component, prop name, prop value, closing tag), diagnostics
   (raw HTML + unknown component + invalid union value), hover, quick fixes, language configuration.
 - Editor-mode entries in the shortcuts registry; `PreviewErrorBoundary`.
+- Themes in the editor: previews render inside the deck's theme; completion for `theme`, `scheme`
+  and `frame` values from the registry; a theme picker on the deck and a frame picker on slides.
 
 **Done when:** editing a slide updates the preview within 300 ms, Cmd+S saves and other tabs
 reload, toolbar edits rewrite props without losing the cursor, completion and hover work on every
@@ -370,7 +404,8 @@ pointer and live strokes appear on the audience window; annotations persist acro
 
 - `vite.viewer.config.ts` and `src/exportViewer.tsx` (*Part 4 §8.1*), fonts inlined as data URLs.
 - `exportDeck.ts` (*§8.2*): placeholder asset rewriting, string-prop images, logo literal
-  replacement, HTML shell with base64 code and viewer; `scripts/export.ts` CLI.
+  replacement, HTML shell with base64 code and viewer; `scripts/export.ts` CLI. Content-folder
+  themes used by the deck are embedded with their assets as data URLs.
 - `ReaderView`, `readerNotes.ts` timing stripper with tests, print CSS (*Part 1 §11*), Read button
   in exported mode (*Part 4 §8.3*).
 - `exportPdf.ts` (*§9*): Chrome discovery, per-slide `?pdf=1&slide=n` rendering, animation
@@ -456,6 +491,10 @@ no knowledge-MCP or skills modules under `server/lib/`.
   Phase 5's server watcher must not rely on recursive directory events alone: watch each
   discovered `index.mdx` file directly and keep directory watching only for new decks, with a
   polling fallback behind the same switch.
+- **MDX strips indentation inside JSX**: lines of a template literal in `<Code>{`…`}</Code>` lose
+  the enclosing JSX indentation. Authors indent code by the slide's indentation plus the code's
+  own. Document this in the `Code` registry entry and the author guide (Phase 10/12), or have
+  `Code` accept a `dedent`-style source prop.
 - **Export size**: fontsource CSS lists `woff2` and `woff`, so the viewer CSS inlines both
   (about 260 KB). Phase 9 should inline only `woff2`.
 - The spec's `@tanstack/charts` dependency is intentionally absent; ScatterChart behaviour is

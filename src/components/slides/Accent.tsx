@@ -53,7 +53,7 @@ export const Accent = defineComponent<AccentProps>({
       { name: 'angle', type: 'number', default: '90', description: 'Gradient direction in degrees' },
     ],
     snippet: '<Accent gradient="teal">highlighted text</Accent>',
-    previewCode: '<Slide theme="dark">\n  <Title>Make it <Accent gradient="teal">stand out</Accent></Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Make it <Accent gradient="teal">stand out</Accent></Title>\n</Slide>',
     keywords: ['highlight', 'gradient', 'color', 'emphasis', 'inline', 'span'],
     useCases: ['One emphasised word in a title', 'A key phrase in a paragraph'],
   },

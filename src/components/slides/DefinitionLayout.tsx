@@ -65,7 +65,7 @@ export const DefinitionLayout = defineComponent<DefinitionLayoutProps>({
     snippet:
       '<DefinitionLayout\n  title="Term"\n  subtitle="What the term means, in one sentence."\n  leftContent={<Text align="left">Explanation</Text>}\n  rightContent={<List compact><ListItem>Part one</ListItem></List>}\n/>',
     previewCode:
-      '<Slide theme="light" background="transparent">\n  <DefinitionLayout\n    title="Term"\n    subtitle="What the term means, in one sentence."\n    leftContent={<Text align="left">Explanation</Text>}\n    rightContent={<List compact><ListItem>Part one</ListItem></List>}\n  />\n</Slide>',
+      '<Slide scheme="light" background="transparent">\n  <DefinitionLayout\n    title="Term"\n    subtitle="What the term means, in one sentence."\n    leftContent={<Text align="left">Explanation</Text>}\n    rightContent={<List compact><ListItem>Part one</ListItem></List>}\n  />\n</Slide>',
     keywords: ['definition', 'full-width', 'sidebar', 'card', 'colored'],
     useCases: ['Defining a term with its parts'],
   },

@@ -58,7 +58,7 @@ export const Callout = defineComponent<CalloutProps>({
       { name: 'morph', type: 'string', description: 'Shared-element id' },
     ],
     snippet: '<Callout label="Note:">The one thing to remember.</Callout>',
-    previewCode: '<Slide theme="dark">\n  <Callout label="Note:">The one thing to remember.</Callout>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Callout label="Note:">The one thing to remember.</Callout>\n</Slide>',
     keywords: ['callout', 'note', 'banner', 'alert', 'info'],
     useCases: ['A rule or warning under a slide body', 'The one emphasised element'],
   },

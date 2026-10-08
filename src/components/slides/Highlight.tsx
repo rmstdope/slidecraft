@@ -22,7 +22,7 @@ export const Highlight = defineComponent<HighlightProps>({
       { name: 'bold', type: 'boolean', default: 'true', description: 'Semi-bold weight' },
     ],
     snippet: '<Highlight>highlighted text</Highlight>',
-    previewCode: '<Slide theme="light">\n  <Text>A sentence with <Highlight>one highlighted phrase</Highlight> in it.</Text>\n</Slide>',
+    previewCode: '<Slide scheme="light">\n  <Text>A sentence with <Highlight>one highlighted phrase</Highlight> in it.</Text>\n</Slide>',
     keywords: ['highlight', 'inline', 'color', 'emphasis'],
     useCases: ['Emphasis on light document-style slides'],
   },

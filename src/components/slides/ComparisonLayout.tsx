@@ -81,7 +81,7 @@ export const ComparisonLayout = defineComponent<ComparisonLayoutProps>({
     snippet:
       '<ComparisonLayout\n  leftHeader={{ label: "Option A", title: "Build" }}\n  rightHeader={{ label: "Option B", title: "Buy" }}\n  centerTitle="Trade-offs"\n  leftContent={<List compact><ListItem>Full control</ListItem></List>}\n  rightContent={<List compact><ListItem>Faster start</ListItem></List>}\n/>',
     previewCode:
-      '<Slide theme="light" background="transparent">\n  <ComparisonLayout\n    leftHeader={{ label: "Option A", title: "Build" }}\n    rightHeader={{ label: "Option B", title: "Buy" }}\n    centerTitle="Trade-offs"\n    leftContent={<List compact><ListItem>Full control</ListItem></List>}\n    rightContent={<List compact><ListItem>Faster start</ListItem></List>}\n  />\n</Slide>',
+      '<Slide scheme="light" background="transparent">\n  <ComparisonLayout\n    leftHeader={{ label: "Option A", title: "Build" }}\n    rightHeader={{ label: "Option B", title: "Buy" }}\n    centerTitle="Trade-offs"\n    leftContent={<List compact><ListItem>Full control</ListItem></List>}\n    rightContent={<List compact><ListItem>Faster start</ListItem></List>}\n  />\n</Slide>',
     keywords: ['comparison', 'versus', 'split', 'two-column', 'contrast'],
     useCases: ['Two options compared on one light slide'],
   },

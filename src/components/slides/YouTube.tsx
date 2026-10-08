@@ -45,7 +45,7 @@ export const YouTube = defineComponent<YouTubeProps>({
       { name: 'height', type: 'number', default: '540', description: 'Height in px' },
     ],
     snippet: '<YouTube videoId="VIDEO_ID" />',
-    previewCode: '<Slide theme="dark">\n  <Title size="compact">An embedded video plays here</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title size="compact">An embedded video plays here</Title>\n</Slide>',
     keywords: ['video', 'youtube', 'embed', 'media', 'player', 'iframe'],
     useCases: ['A short demo video'],
   },

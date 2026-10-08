@@ -31,7 +31,7 @@ export const Legend = defineComponent<LegendProps>({
       { name: 'title', type: 'string', description: 'Small heading before the swatches' },
     ],
     snippet: '<Legend title="Key" items={[{ color: "teal", label: "Fine" }, { color: "red", label: "Risk" }]} />',
-    previewCode: '<Slide theme="dark">\n  <Legend title="Key" items={[{ color: "teal", label: "Fine" }, { color: "yellow", label: "Caution" }, { color: "red", label: "Risk" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Legend title="Key" items={[{ color: "teal", label: "Fine" }, { color: "yellow", label: "Caution" }, { color: "red", label: "Risk" }]} />\n</Slide>',
     keywords: ['legend', 'key', 'swatch', 'colours', 'diagram'],
     useCases: ['Explaining the colours of a diagram'],
   },

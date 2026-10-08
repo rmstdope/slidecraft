@@ -67,7 +67,7 @@ export const PersonCard = defineComponent<PersonCardProps>({
       { name: 'step', type: 'number', description: 'Reveal on this build step' },
     ],
     snippet: '<PersonCard name="Jane Doe" role="Software Engineer" email="jane.doe@example.com" />',
-    previewCode: '<Slide theme="dark">\n  <PersonCard name="Jane Doe" role="Software Engineer" email="jane.doe@example.com" />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <PersonCard name="Jane Doe" role="Software Engineer" email="jane.doe@example.com" />\n</Slide>',
     keywords: ['person', 'people', 'contact', 'avatar', 'photo', 'team', 'bio', 'headshot'],
     useCases: ['Who to contact', 'The speaker'],
   },

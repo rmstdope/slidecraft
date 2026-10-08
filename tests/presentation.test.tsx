@@ -16,7 +16,7 @@ function Beat(_: { step: number }) {
 const deck = () => (
   <Presentation>
     <Slide><Title>One</Title></Slide>
-    <Slide theme="light"><Title>Two</Title><Beat step={2} /></Slide>
+    <Slide scheme="light"><Title>Two</Title><Beat step={2} /></Slide>
     <Slide hidden><Title>Hidden</Title></Slide>
     <Slide><Title>Three</Title></Slide>
   </Presentation>

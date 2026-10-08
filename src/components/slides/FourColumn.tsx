@@ -28,7 +28,7 @@ export const FourColumn = defineComponent<FourColumnProps>({
     description: 'Four-column grid layout container.',
     props: [{ name: 'gap', type: 'string', default: '"40px"', description: 'Gap between the columns' }],
     snippet: '<FourColumn>\n  <Card compact title="One">First</Card>\n  <Card compact title="Two">Second</Card>\n  <Card compact title="Three">Third</Card>\n  <Card compact title="Four">Fourth</Card>\n</FourColumn>',
-    previewCode: '<Slide theme="dark">\n  <FourColumn>\n    <Card compact title="One">First</Card>\n    <Card compact title="Two">Second</Card>\n    <Card compact title="Three">Third</Card>\n    <Card compact title="Four">Fourth</Card>\n  </FourColumn>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <FourColumn>\n    <Card compact title="One">First</Card>\n    <Card compact title="Two">Second</Card>\n    <Card compact title="Three">Third</Card>\n    <Card compact title="Four">Fourth</Card>\n  </FourColumn>\n</Slide>',
     keywords: ['layout', 'columns', 'grid', 'four'],
     useCases: ['Four peers', 'A row of stats'],
   },

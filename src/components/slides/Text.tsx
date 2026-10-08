@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useStepMotion } from '../../animations/stepMotion'
 import { itemVariants } from '../../animations/variants'
 import { defineComponent } from './defineComponent'
+import { useSlideLayout } from './slideLayoutContext'
 
 export interface TextProps {
   children?: ReactNode
@@ -23,8 +24,10 @@ export interface TextProps {
 
 export const TEXT_SIZES = { xs: 18, sm: 32, md: 40, lg: 48 } as const
 
-function TextComponent({ children, muted = false, size = 'md', align = 'center', tight = false, fontSize, step, morph, className }: TextProps) {
+function TextComponent({ children, muted = false, size = 'md', align, tight = false, fontSize, step, morph, className }: TextProps) {
   const stepMotion = useStepMotion(step, morph)
+  // Centred by default; inside a left-aligned frame (e.g. a corporate content master), left.
+  const { align: frameAlign } = useSlideLayout()
   return (
     <motion.span
       className={className}
@@ -37,7 +40,7 @@ function TextComponent({ children, muted = false, size = 'md', align = 'center',
         fontSize: fontSize ?? TEXT_SIZES[size] ?? TEXT_SIZES.md,
         lineHeight: tight ? 1.25 : 1.6,
         color: muted ? 'var(--muted)' : 'var(--text)',
-        textAlign: align,
+        textAlign: align ?? frameAlign,
         maxWidth: 1400,
       }}
     >
@@ -56,14 +59,14 @@ export const Text = defineComponent<TextProps>({
     props: [
       { name: 'muted', type: 'boolean', default: 'false', description: 'Muted colour' },
       { name: 'size', type: '"xs" | "sm" | "md" | "lg"', default: '"md"', description: '18, 32, 40 or 48 px' },
-      { name: 'align', type: '"left" | "center" | "right"', default: '"center"', description: 'Text alignment' },
+      { name: 'align', type: '"left" | "center" | "right"', default: '"center"', description: 'Text alignment; left by default inside a left-aligned frame' },
       { name: 'tight', type: 'boolean', default: 'false', description: 'Line-height 1.25 instead of 1.6' },
       { name: 'fontSize', type: 'number', description: 'Exact px size; overrides size' },
       { name: 'step', type: 'number', description: 'Reveal on this build step' },
       { name: 'morph', type: 'string', description: 'Shared-element id; pair with transition="morph" on the next slide' },
     ],
     snippet: '<Text>Your body text here</Text>',
-    previewCode: '<Slide theme="dark">\n  <Text>Your body text here</Text>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Text>Your body text here</Text>\n</Slide>',
     keywords: ['paragraph', 'body', 'content', 'p'],
     useCases: ['Explanatory paragraph', 'Supporting sentence under a title'],
   },

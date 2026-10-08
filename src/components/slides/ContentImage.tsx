@@ -39,7 +39,7 @@ export const ContentImage = defineComponent<ContentImageProps>({
       { name: 'fadeSize', type: 'number', default: '70', description: 'Percent fully visible when fading' },
     ],
     snippet: '<ContentImage src="images/photo.png" alt="Description" width={800} />',
-    previewCode: '<Slide theme="dark">\n  <Title size="compact">Images come from the deck folder</Title>\n  <Text muted>import photo from "./images/photo.png"</Text>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title size="compact">Images come from the deck folder</Title>\n  <Text muted>import photo from "./images/photo.png"</Text>\n</Slide>',
     keywords: ['image', 'picture', 'photo', 'graphic', 'png', 'jpg'],
     useCases: ['A screenshot', 'A photo with a soft edge'],
   },

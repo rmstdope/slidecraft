@@ -3,7 +3,7 @@ export interface ProgressIndicatorProps {
   current: number
   step: number
   stepsOnSlide: number
-  /** Light slides (light theme or any chrome) flip the pill colours for contrast. */
+  /** Light-scheme slides flip the pill colours for contrast. */
   light: boolean
   onSelect: (index: number) => void
 }

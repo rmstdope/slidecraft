@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { itemVariants } from '../../animations/variants'
 import { defineComponent } from './defineComponent'
-import { useSlideLayout, type SlideChrome } from './slideLayoutContext'
+import { useSlideLayout } from './slideLayoutContext'
 import { textSignature } from './textSignature'
 
 export type TitleSize = 'hero' | 'standard' | 'compact' | number
@@ -33,7 +33,6 @@ const SIZE_PRESETS: Record<'hero' | 'standard' | 'compact', SizePreset> = {
 }
 
 export const DOCUMENT_TITLE_SIZE = 88
-export const CORPORATE_TITLE_SIZE: Partial<Record<SlideChrome, number>> = { title: 116, section: 56, content: 60 }
 export const LINE_HEIGHT = 1.1
 
 const countLines = (el: HTMLElement, size: number) => Math.round(el.offsetHeight / (size * LINE_HEIGHT))
@@ -61,15 +60,16 @@ const GRADE_TOOLTIP = {
 } as const
 
 function TitleComponent({ children, size = 'hero', accent = false, nowrap = false, className = '' }: TitleProps) {
-  const { layout, devMode, chrome } = useSlideLayout()
+  const { layout, devMode, frame, align } = useSlideLayout()
   const isDocument = layout === 'document'
-  const corporateSize = CORPORATE_TITLE_SIZE[chrome]
+  // A theme frame can fix the title size and colour, like a slide master's title placeholder.
+  const frameSize = frame?.title?.size
   const isNumeric = typeof size === 'number'
   const preset: SizePreset = isNumeric
     ? { ceiling: size, floor: size, fit: false, maxLines: Infinity, maxWidth: '90%' }
     : (SIZE_PRESETS[size] ?? SIZE_PRESETS.hero)
-  const shouldFit = preset.fit && !nowrap && !isDocument && !corporateSize
-  const baseSize = corporateSize && !isNumeric ? corporateSize : isDocument ? (isNumeric ? size : DOCUMENT_TITLE_SIZE) : preset.ceiling
+  const shouldFit = preset.fit && !nowrap && !isDocument && !frameSize
+  const baseSize = frameSize && !isNumeric ? frameSize : isDocument ? (isNumeric ? size : DOCUMENT_TITLE_SIZE) : preset.ceiling
 
   const ref = useRef<HTMLHeadingElement>(null)
   const [fitted, setFitted] = useState<number | null>(null)
@@ -102,9 +102,9 @@ function TitleComponent({ children, size = 'hero', accent = false, nowrap = fals
     }
   }, [shouldFit, grade, preset.floor, preset.ceiling, preset.maxLines, baseSize, signature])
 
-  const alignLeft = isDocument || chrome !== 'none'
-  const color = chrome === 'title' ? 'var(--brand-yellow)' : accent ? 'var(--accent)' : 'var(--text)'
-  const maxWidth = nowrap || chrome !== 'none' ? undefined : isDocument ? '100%' : preset.maxWidth
+  const alignLeft = isDocument || align === 'left'
+  const color = accent ? 'var(--accent)' : (frame?.title?.color ?? 'var(--text)')
+  const maxWidth = nowrap || frame ? undefined : isDocument ? '100%' : preset.maxWidth
   const gradeLevel = grade ? (lines >= 3 ? 3 : lines === 2 ? 2 : 0) : 0
 
   return (
@@ -145,7 +145,7 @@ export const Title = defineComponent<TitleProps>({
       { name: 'nowrap', type: 'boolean', default: 'false', description: 'Keep on one line; disables fitting' },
     ],
     snippet: '<Title>Your heading here</Title>',
-    previewCode: '<Slide theme="dark">\n  <Title>Your heading here</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Your heading here</Title>\n</Slide>',
     keywords: ['heading', 'h1', 'header', 'headline'],
     useCases: ['Main slide heading', 'Section opener', 'Key statement'],
   },

@@ -70,7 +70,7 @@ export const StackDiagram = defineComponent<StackDiagramProps>({
       { name: 'width', type: 'number', default: '1500', description: 'Width in px' },
     ],
     snippet: '<StackDiagram\n  layers={[\n    { title: "Interface", items: ["Web", "CLI"] },\n    { title: "Services", items: ["Auth", "Billing"] },\n    { title: "Storage", items: ["Postgres"] },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <StackDiagram width={1200} layers={[{ title: "Interface", items: ["Web", "CLI"] }, { title: "Services", items: ["Auth", "Billing"] }, { title: "Storage", items: ["Postgres"] }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <StackDiagram width={1200} layers={[{ title: "Interface", items: ["Web", "CLI"] }, { title: "Services", items: ["Auth", "Billing"] }, { title: "Storage", items: ["Postgres"] }]} />\n</Slide>',
     keywords: ['stack', 'layers', 'layered', 'architecture', 'tiers', 'platform', 'diagram'],
     useCases: ['A layered architecture', 'What sits on what'],
   },

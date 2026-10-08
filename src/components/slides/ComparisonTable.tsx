@@ -89,7 +89,7 @@ export const ComparisonTable = defineComponent<ComparisonTableProps>({
     ],
     snippet:
       '<ComparisonTable\n  headers={["Option", "Cost", "Speed"]}\n  rows={[\n    ["A", "Low", "Slow"],\n    { cells: ["B", "Medium", "Fast"], highlight: true },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <ComparisonTable headers={["Option", "Cost", "Speed"]} rows={[["A", "Low", "Slow"], { cells: ["B", "Medium", "Fast"], highlight: true }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <ComparisonTable headers={["Option", "Cost", "Speed"]} rows={[["A", "Low", "Slow"], { cells: ["B", "Medium", "Fast"], highlight: true }]} />\n</Slide>',
     keywords: ['table', 'comparison', 'matrix', 'options', 'criteria', 'grid'],
     useCases: ['Feature grid with a recommendation'],
   },

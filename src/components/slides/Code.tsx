@@ -90,7 +90,7 @@ export const Code = defineComponent<CodeProps>({
       { name: 'accent', type: 'boolean', default: 'false', description: 'Accent-coloured border' },
     ],
     snippet: '<Code title="deck.mdx">{`<Slide>\n  <Title>Hello</Title>\n</Slide>`}</Code>',
-    previewCode: '<Slide theme="dark">\n  <Code title="hello.ts">{`export const hello = (name: string) => \\`Hello, \\${name}\\``}</Code>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Code title="hello.ts">{`export const hello = (name: string) => \\`Hello, \\${name}\\``}</Code>\n</Slide>',
     keywords: ['code', 'source', 'syntax', 'programming', 'snippet', 'scroll'],
     useCases: ['A short code example', 'Scrolling through a longer file'],
   },

@@ -86,7 +86,7 @@ export const SequenceDiagram = defineComponent<SequenceDiagramProps>({
       { name: 'width', type: 'number', description: 'Render width in px; the drawing scales to fit' },
     ],
     snippet: '<SequenceDiagram\n  actors={[{ id: "client", label: "Client", color: "teal" }, { id: "server", label: "Server", color: "navy" }]}\n  messages={[\n    { from: "client", to: "server", label: "GET /deck" },\n    { from: "server", to: "client", label: "200 OK", type: "dashed" },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <SequenceDiagram actors={[{ id: "client", label: "Client", color: "teal" }, { id: "server", label: "Server", color: "navy" }]} messages={[{ from: "client", to: "server", label: "GET /deck" }, { from: "server", to: "client", label: "200 OK", type: "dashed" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <SequenceDiagram actors={[{ id: "client", label: "Client", color: "teal" }, { id: "server", label: "Server", color: "navy" }]} messages={[{ from: "client", to: "server", label: "GET /deck" }, { from: "server", to: "client", label: "200 OK", type: "dashed" }]} />\n</Slide>',
     keywords: ['sequence', 'diagram', 'uml', 'message', 'actor', 'flow', 'api'],
     useCases: ['A request and its response', 'A protocol between services'],
   },

@@ -28,7 +28,7 @@ describe('deck refs', () => {
     expect(deckQuery(ref)).toBe('source=team+space&path=presentations%2Fquarterly')
   })
   test('app routes are reserved deck names', () => {
-    for (const name of ['gallery', 'chat', 'edit', 'api', 'content', 'content-source', 'images']) {
+    for (const name of ['gallery', 'chat', 'edit', 'api', 'content', 'content-source', 'images', 'themes']) {
       expect(RESERVED_DECK_NAMES.has(name)).toBe(true)
     }
   })

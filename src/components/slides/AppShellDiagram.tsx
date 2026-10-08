@@ -65,7 +65,7 @@ export const AppShellDiagram = defineComponent<AppShellDiagramProps>({
       { name: 'accent', type: '"yellow" | "teal" | "navy" | "red" | "gray"', description: 'Defaults to the slide accent' },
     ],
     snippet: '<AppShellDiagram\n  title="Host app"\n  topBar={{ label: "Top bar", items: ["Search", "Profile"] }}\n  sidebar={{ label: "Modules", items: ["Decks", "Gallery", "Chat"] }}\n  mainArea={{ label: "Main area", subtitle: "The active module renders here" }}\n/>',
-    previewCode: '<Slide theme="dark">\n  <AppShellDiagram title="Host app" topBar={{ label: "Top bar", items: ["Search"] }} sidebar={{ label: "Modules", items: ["Decks", "Gallery"] }} mainArea={{ label: "Main area" }} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <AppShellDiagram title="Host app" topBar={{ label: "Top bar", items: ["Search"] }} sidebar={{ label: "Modules", items: ["Decks", "Gallery"] }} mainArea={{ label: "Main area" }} />\n</Slide>',
     keywords: ['architecture', 'shell', 'diagram', 'layout', 'host', 'sidebar'],
     useCases: ['How a host app frames its modules'],
   },

@@ -94,7 +94,7 @@ export const Timeline = defineComponent<TimelineProps>({
     ],
     snippet:
       '<Timeline\n  color="teal"\n  events={[\n    { date: "Jan", title: "Kick-off" },\n    { date: "Mar", title: "Beta" },\n    { date: "Jun", title: "Launch", isDeadline: true },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <Timeline events={[{ date: "Jan", title: "Kick-off" }, { date: "Mar", title: "Beta" }, { date: "Jun", title: "Launch", isDeadline: true }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Timeline events={[{ date: "Jan", title: "Kick-off" }, { date: "Mar", title: "Beta" }, { date: "Jun", title: "Launch", isDeadline: true }]} />\n</Slide>',
     keywords: ['timeline', 'schedule', 'milestone', 'deadline', 'events', 'dates', 'roadmap', 'plan'],
     useCases: ['Milestones towards a deadline', 'A short history'],
   },

@@ -144,7 +144,7 @@ export const ActivityDiagram = defineComponent<ActivityDiagramProps>({
     ],
     snippet:
       '<ActivityDiagram\n  nodes={[\n    { id: "s", type: "start" },\n    { id: "a", type: "action", label: "Write deck", color: "teal" },\n    { id: "d", type: "decision", label: "OK?" },\n    { id: "e", type: "end" },\n  ]}\n  edges={[{ from: "s", to: "a" }, { from: "a", to: "d" }, { from: "d", to: "e", label: "yes" }]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <ActivityDiagram nodes={[{ id: "s", type: "start" }, { id: "a", type: "action", label: "Write deck", color: "teal" }, { id: "e", type: "end" }]} edges={[{ from: "s", to: "a" }, { from: "a", to: "e" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <ActivityDiagram nodes={[{ id: "s", type: "start" }, { id: "a", type: "action", label: "Write deck", color: "teal" }, { id: "e", type: "end" }]} edges={[{ from: "s", to: "a" }, { from: "a", to: "e" }]} />\n</Slide>',
     keywords: ['activity', 'diagram', 'uml', 'flow', 'flowchart', 'decision', 'process'],
     useCases: ['A process with decisions'],
   },

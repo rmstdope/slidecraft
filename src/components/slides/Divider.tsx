@@ -48,7 +48,7 @@ export const Divider = defineComponent<DividerProps>({
       { name: 'spacing', type: 'number', default: '8', description: 'Gap between dots or dashes in px' },
     ],
     snippet: '<Divider orientation="horizontal" length={800} />',
-    previewCode: '<Slide theme="dark">\n  <Divider orientation="horizontal" length={800} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Divider orientation="horizontal" length={800} />\n</Slide>',
     keywords: ['line', 'separator', 'dotted', 'vertical', 'horizontal'],
     useCases: ['Separate two groups', 'A quiet rule between sections'],
   },

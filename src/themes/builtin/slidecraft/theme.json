@@ -1,0 +1,28 @@
+{
+  "name": "Slidecraft",
+  "description": "The default look: dark slides, slab-serif headings, four accents.",
+  "tokens": {
+    "accents": {
+      "yellow": "#f5b400",
+      "red": "#e0452b",
+      "teal": "#1f9e89",
+      "navy": "#1f3a5f",
+      "navyOnDark": "#7fa7d9",
+      "gray": "#8a8f98"
+    },
+    "dark": { "bg": "#111111", "text": "#ffffff", "muted": "rgba(255, 255, 255, 0.6)" },
+    "light": { "bg": "#ffffff", "text": "#1a1a1a", "muted": "rgba(26, 26, 26, 0.6)" },
+    "ink": "#1a1a1a",
+    "bar": "#f5b400"
+  },
+  "fonts": {
+    "display": { "family": "Zilla Slab", "fallback": "Georgia, serif" },
+    "body": { "family": "Source Sans 3", "fallback": "system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }
+  },
+  "logos": { "onDark": "/logo-on-dark.svg", "onLight": "/logo-on-light.svg" },
+  "logo": { "right": 32, "bottom": 32, "height": 40, "opacity": 0.8 },
+  "footer": { "text": null, "rule": true },
+  "frames": {},
+  "defaults": { "scheme": "dark", "accent": "yellow", "transition": "slide", "layout": "centered", "frame": "none" },
+  "constraints": {}
+}

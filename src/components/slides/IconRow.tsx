@@ -47,7 +47,7 @@ export const IconRow = defineComponent<IconRowProps>({
       { name: 'label', type: 'string', description: 'Label above the row' },
     ],
     snippet: '<IconRow label="The team" items={[{ icon: "🧑‍💻" }, { icon: "🧑‍🎨", highlight: true }, { icon: "🧑‍🔬" }]} />',
-    previewCode: '<Slide theme="dark">\n  <IconRow label="The team" items={[{ icon: "🧑‍💻" }, { icon: "🧑‍🎨", highlight: true }, { icon: "🧑‍🔬" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <IconRow label="The team" items={[{ icon: "🧑‍💻" }, { icon: "🧑‍🎨", highlight: true }, { icon: "🧑‍🔬" }]} />\n</Slide>',
     keywords: ['icons', 'emoji', 'visual', 'team', 'mob'],
     useCases: ['A visual headcount', 'Who is involved'],
   },

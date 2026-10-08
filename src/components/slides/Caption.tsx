@@ -25,7 +25,7 @@ export const Caption = defineComponent<CaptionProps>({
     description: 'Italic secondary text for annotations inside Cards.',
     props: [],
     snippet: '<Caption>Secondary text</Caption>',
-    previewCode: '<Slide theme="dark">\n  <Card title="Card">\n    <Caption>An annotation</Caption>\n    <Text>Body text</Text>\n  </Card>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Card title="Card">\n    <Caption>An annotation</Caption>\n    <Text>Body text</Text>\n  </Card>\n</Slide>',
     keywords: ['secondary', 'annotation', 'italic', 'muted', 'subtitle'],
     useCases: ['Image or diagram captions', 'Source attribution', 'Footnotes'],
   },

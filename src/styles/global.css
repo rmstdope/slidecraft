@@ -14,9 +14,12 @@
   --brand-yellow: #f5b400;
   --brand-red: #e0452b;
   --accent-teal: #1f9e89;
-  --accent-navy: #1f3a5f;
+  --accent-navy-base: #1f3a5f;
   --accent-navy-light: #7fa7d9;
+  --accent-navy: var(--accent-navy-base);
+  --accent-gray: #8a8f98;
   --ink: #1a1a1a;
+  --theme-bar: var(--brand-yellow);
 
   --dark-bg: #111111;
   --dark-text: #ffffff;
@@ -45,8 +48,11 @@
   --on-navy: var(--ink);
 }
 
-/* Theme classes sit on the slide root and set the role tokens. */
-.theme-dark {
+/*
+ * Scheme classes sit on the slide root and pick the dark or light tokens. The deck theme sets the
+ * tokens themselves as custom properties on the same root (src/themes/themeStyle.ts).
+ */
+.scheme-dark {
   --bg: var(--dark-bg);
   --text: var(--dark-text);
   --muted: var(--dark-muted);
@@ -56,11 +62,11 @@
   color: var(--text);
 }
 
-.theme-light {
+.scheme-light {
   --bg: var(--light-bg);
   --text: var(--light-text);
   --muted: var(--light-muted);
-  --accent-navy: #1f3a5f;
+  --accent-navy: var(--accent-navy-base);
   --on-navy: #ffffff;
   background-color: var(--bg);
   color: var(--text);
@@ -124,13 +130,22 @@ pre {
 }
 
 /* Slide stage furniture (Part 1 §6). */
-.slide__logo {
+.slide__frame {
   position: absolute;
-  right: 32px;
-  bottom: 32px;
-  height: 40px;
-  opacity: 0.8;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+}
+
+.slide__logo,
+.slide__footer-text {
+  pointer-events: none;
+}
+
+.slide__footer-text {
+  font-family: var(--font-body);
+  font-weight: 600;
 }
 
 .slide__footer-rule {
@@ -139,15 +154,16 @@ pre {
   right: 90px;
   bottom: 84px;
   height: 1px;
-  background: rgba(138, 143, 152, 0.35);
+  background: color-mix(in srgb, var(--accent-gray) 35%, transparent);
   pointer-events: none;
 }
 
-.slide__sheared-rule {
+/* The sheared bar a theme frame can use under a document title instead of the accent border. */
+.slide__header-bar {
   align-self: stretch;
   height: 13px;
   margin-top: 6px;
-  background: var(--brand-yellow);
+  background: var(--theme-bar);
   clip-path: polygon(13px 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
 }
 

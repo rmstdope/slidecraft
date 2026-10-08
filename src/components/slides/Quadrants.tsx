@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { accentColors, accentHex, isAccent, tint, type AccentColor } from './accents'
+import { accentColors, isAccent, tint, type AccentColor } from './accents'
 import { defineComponent } from './defineComponent'
 import { fadeRise, OVERSHOOT } from './styles'
 
@@ -53,7 +53,7 @@ function QuadrantsComponent({ xAxis, yAxis, items = [], quadrants = {}, size = 8
                   textAlign: right ? 'right' : 'left',
                   borderRight: right ? undefined : '2px dashed rgba(255,255,255,0.25)',
                   borderBottom: i < 2 ? '2px dashed rgba(255,255,255,0.25)' : undefined,
-                  background: color ? `linear-gradient(135deg, ${accentHex[color]}55, ${accentHex[color]}21)` : 'color-mix(in srgb, var(--text) 3%, transparent)',
+                  background: color ? `linear-gradient(135deg, ${tint(color, 0.33)}, ${tint(color, 0.13)})` : 'color-mix(in srgb, var(--text) 3%, transparent)',
                 }}
               >
                 {cell.label && <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', color: color ? accentColors[color] : 'var(--muted)', opacity: 0.85 }}>{cell.label}</span>}
@@ -105,7 +105,7 @@ export const Quadrants = defineComponent<QuadrantsProps>({
     snippet:
       '<Quadrants\n  xAxis={{ label: "Effort", low: "Low", high: "High" }}\n  yAxis={{ label: "Impact", low: "Low", high: "High" }}\n  quadrants={{ topLeft: { label: "Quick wins", color: "teal" } }}\n  items={[{ label: "Cache", x: 0.2, y: 0.8 }]}\n/>',
     previewCode:
-      '<Slide theme="dark">\n  <Quadrants size={640} xAxis={{ label: "Effort", low: "Low", high: "High" }} yAxis={{ label: "Impact", low: "Low", high: "High" }} quadrants={{ topLeft: { label: "Quick wins", color: "teal" } }} items={[{ label: "Cache", x: 0.2, y: 0.8 }]} />\n</Slide>',
+      '<Slide scheme="dark">\n  <Quadrants size={640} xAxis={{ label: "Effort", low: "Low", high: "High" }} yAxis={{ label: "Impact", low: "Low", high: "High" }} quadrants={{ topLeft: { label: "Quick wins", color: "teal" } }} items={[{ label: "Cache", x: 0.2, y: 0.8 }]} />\n</Slide>',
     keywords: ['matrix', 'quadrant', 'four', 'axis', 'eisenhower', 'priority', '2x2', 'fyrfältare'],
     useCases: ['Prioritising by two criteria'],
   },

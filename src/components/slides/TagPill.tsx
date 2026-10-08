@@ -49,7 +49,7 @@ export const TagPill = defineComponent<TagPillProps>({
     description: 'Small inline status badge.',
     props: [{ name: 'variant', type: '"neutral" | "good" | "warn" | "bad"', default: '"neutral"', description: 'Semantic colour: neutral for labels, good/warn/bad for status' }],
     snippet: '<TagPill variant="good">Shipped</TagPill>',
-    previewCode: '<Slide theme="dark">\n  <Text>Status: <TagPill variant="good">Shipped</TagPill> <TagPill variant="warn">At risk</TagPill></Text>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Text>Status: <TagPill variant="good">Shipped</TagPill> <TagPill variant="warn">At risk</TagPill></Text>\n</Slide>',
     keywords: ['pill', 'tag', 'badge', 'label', 'status', 'chip'],
     useCases: ['Status next to an item', 'A small label'],
   },

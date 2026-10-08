@@ -67,9 +67,13 @@ export function Overview({ slides, current, focused, previewMode, onFocus, onSel
       <div className={`overview__body${previewMode ? ' is-preview' : ''}`}>
         <div className="overview__grid" ref={gridRef}>
           {slides.map((slide, i) => (
-            <motion.button
+            // A div, not a <button>: thumbnails can contain buttons (chart tabs, legends), and
+            // buttons must not nest. Keyboard navigation is handled by the presentation.
+            <motion.div
               key={i}
-              type="button"
+              role="button"
+              aria-label={`Slide ${i + 1}`}
+              aria-current={i === current ? 'true' : undefined}
               data-index={i}
               className={`overview__cell${i === focused ? ' is-focused' : ''}${i === current ? ' is-current' : ''}`}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -89,7 +93,7 @@ export function Overview({ slides, current, focused, previewMode, onFocus, onSel
                 Slide {i + 1}
                 {i === current && ' · current'}
               </span>
-            </motion.button>
+            </motion.div>
           ))}
         </div>
         {previewMode && slides[focused] && (

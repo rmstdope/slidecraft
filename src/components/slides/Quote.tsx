@@ -63,7 +63,7 @@ export const Quote = defineComponent<QuoteProps>({
       { name: 'noWrap', type: 'boolean', default: 'false', description: 'Keep the quote on one line' },
     ],
     snippet: '<Quote author="Author Name">The quotation goes here.</Quote>',
-    previewCode: '<Slide theme="dark">\n  <Quote author="Author Name">Simple things should be simple.</Quote>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Quote author="Author Name">Simple things should be simple.</Quote>\n</Slide>',
     keywords: ['quotation', 'cite', 'attribution', 'blockquote'],
     useCases: ['A testimonial', 'A principle in someone’s words'],
   },

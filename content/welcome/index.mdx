@@ -23,16 +23,16 @@ import stage from './images/stage.svg'
   Everything without one of these meanings takes the slide accent: omit the accent prop.
 */}
 
-<Presentation>
+<Presentation theme="slidecraft">
 
-<Slide theme="dark" accent="yellow" gradient="radial-accent">
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
   <Subtitle>Slidecraft</Subtitle>
   <Title>Decks as MDX</Title>
   <Text muted>One file per deck. Components instead of boxes. Motion that means something.</Text>
   <Notes>0:00-0:30. Open with the idea: a deck is a text file you can diff, review and generate.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Presenting</Subtitle>
   <Title>Keys, clicks and a map of the deck</Title>
   <Step at={1}>
@@ -47,42 +47,42 @@ import stage from './images/stage.svg'
   <Notes>0:30-1:10. This slide builds in three beats. Press M to show the overview, then Esc.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" gradient="radial" layout="document">
+<Slide scheme="dark" accent="teal" gradient="radial" layout="document">
   <Subtitle>The stage</Subtitle>
   <Title>A slide is a fixed 1920 by 1080 stage</Title>
   <Text align="left">Every size is in pixels on that stage. The stage is scaled to the screen as a whole, so nothing reflows between a laptop and a projector.</Text>
   <Notes>1:10-1:40. Resize the window to show letterboxing.</Notes>
 </Slide>
 
-<Slide theme="light" accent="red" gradient="diagonal" layout="document">
+<Slide scheme="light" accent="red" gradient="diagonal" layout="document">
   <Subtitle>Document layout</Subtitle>
   <Title>Header band, body and footer</Title>
   <Text align="left">The leading Subtitle and Title form the header band. Everything after them is the body, centred vertically in the space that remains.</Text>
 </Slide>
 
-<Slide theme="light" accent="navy" gradient="spotlight">
+<Slide scheme="light" accent="navy" gradient="spotlight">
   <Subtitle>Light theme</Subtitle>
   <Title size="standard">Standard titles shrink until they fit on two lines, however long the wording gets</Title>
   <Text muted>Spotlight gradient, navy accent.</Text>
 </Slide>
 
-<Slide theme="dark" accent="navy" gradient="spotlight">
+<Slide scheme="dark" accent="navy" gradient="spotlight">
   <Title accent>Navy turns light on dark slides</Title>
   <Text muted>Dark spotlight gradient.</Text>
 </Slide>
 
-<Slide theme="light" accent="teal" gradient="radial">
+<Slide scheme="light" accent="teal" gradient="radial">
   <Title size="compact" accent>Compact title, teal accent, radial vignette</Title>
 </Slide>
 
-<Slide theme="dark" accent="yellow" gradient="radial-accent">
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
   <Subtitle>Motion</Subtitle>
   <Title>Motion that means something</Title>
   <Text muted>Each kind of movement says one thing. Nothing moves for decoration.</Text>
   <Notes>2:00-2:20. Section opener for the motion features.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Steps</Subtitle>
   <Title>Direction can carry the argument</Title>
   <Step at={1} enter="left">
@@ -97,7 +97,7 @@ import stage from './images/stage.svg'
   <Notes>2:20-3:00. Left is what came before, right replaces it, falling is the consequence. Hidden beats keep their space, so nothing reflows.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Stagger</Subtitle>
   <Title>A row can land one item at a time</Title>
   <Step at={1} stagger row gap={120}>
@@ -109,14 +109,14 @@ import stage from './images/stage.svg'
   <Notes>3:00-3:30. One beat lands the whole row, item by item. The second beat uses step on the Text itself.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="red">
+<Slide scheme="dark" accent="red">
   <Subtitle>Morph</Subtitle>
   <Title>Same thing, new place</Title>
   <Text size="lg" morph="claim">One file per deck</Text>
   <Notes>3:30-3:50. Watch the line move on the next slide: it is the same element, not a new one.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="red" layout="document" transition="morph">
+<Slide scheme="dark" accent="red" layout="document" transition="morph">
   <Subtitle>Morph</Subtitle>
   <Title>The claim moves; the frame only fades</Title>
   <Text align="left" size="lg" morph="claim">One file per deck</Text>
@@ -124,34 +124,34 @@ import stage from './images/stage.svg'
   <Notes>3:50-4:20. Going back plays the morph in reverse.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="navy" canvas="map" transition="fade">
+<Slide scheme="dark" accent="navy" canvas="map" transition="fade">
   <Subtitle>Canvas</Subtitle>
   <Title>Slides can share one plane</Title>
   <Text muted>The camera moves between them. The neighbours stay visible, dimmed: they are the map.</Text>
   <Notes>4:20-4:50. Three slides on one canvas. Moving between them pans and zooms instead of changing slides.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="navy" canvas="map" camera={{ x: 2240, y: 0, scale: 0.6 }}>
+<Slide scheme="dark" accent="navy" canvas="map" camera={{ x: 2240, y: 0, scale: 0.6 }}>
   <Subtitle>Detail</Subtitle>
   <Title>Drawn small, seen up close</Title>
   <Text muted>This slide sits at 60% on the plane, so the camera zooms in to read it.</Text>
 </Slide>
 
-<Slide theme="dark" accent="navy" canvas="map" camera={{ x: 4480, y: 700, rotate: -4 }}>
+<Slide scheme="dark" accent="navy" canvas="map" camera={{ x: 4480, y: 700, rotate: -4 }}>
   <Subtitle>Off the line</Subtitle>
   <Title>Placed anywhere, tilted on purpose</Title>
   <Text muted step={1}>Only the focused slide builds; the rest of the map is always complete.</Text>
   <Notes>5:00-5:30. Keep scale near 1 and rotation for background slides in real decks: fractional scale and rotation soften text.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" gradient="radial-accent">
+<Slide scheme="dark" accent="teal" gradient="radial-accent">
   <Subtitle>Components</Subtitle>
   <Title>Fifty components, one registry</Title>
   <Text muted>Every component describes itself once: props, snippet, preview. The palette, gallery, docs and AI prompts all read the same registry.</Text>
   <Notes>5:30-5:50. Section opener for the component tour.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Cards</Subtitle>
   <Title>Peers share one accent</Title>
   <TwoColumn>
@@ -161,7 +161,7 @@ import stage from './images/stage.svg'
   <Notes>Both cards take the slide accent because they are peers. Colour would suggest a grouping that is not there.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="navy" layout="document">
+<Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Grid</Subtitle>
   <Title>Four parts, one beat each</Title>
   <FourColumn>
@@ -173,7 +173,7 @@ import stage from './images/stage.svg'
   <Notes>step on each card keeps the grid intact while they arrive in order.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Numbers</Subtitle>
   <Title>A measurement counts up when it lands</Title>
   <FourColumn>
@@ -185,7 +185,7 @@ import stage from './images/stage.svg'
   <Notes>The year does not count up: it is a label, not a measurement.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Lists</Subtitle>
   <Title>Bullets stagger in, one rule stands out</Title>
   <List>
@@ -196,7 +196,7 @@ import stage from './images/stage.svg'
   <Callout label="Rule:">If a document title wraps, rewrite it shorter.</Callout>
 </Slide>
 
-<Slide theme="dark" accent="red" layout="document">
+<Slide scheme="dark" accent="red" layout="document">
   <Subtitle>Inline</Subtitle>
   <Title>Emphasis inside the text</Title>
   <Text align="left">A word can take <Accent>the accent</Accent> or a <Accent gradient="sunset">gradient</Accent>.</Text>
@@ -205,12 +205,12 @@ import stage from './images/stage.svg'
   <Notes>The legend shows this deck's colour meanings; the same three appear on the verdict slides.</Notes>
 </Slide>
 
-<Slide theme="light" accent="red" gradient="radial-accent">
+<Slide scheme="light" accent="red" gradient="radial-accent">
   <Subtitle>In their words</Subtitle>
   <Quote author="A presenter, after the switch">I stopped moving boxes and started writing the argument.</Quote>
 </Slide>
 
-<Slide theme="dark" accent="navy" layout="document">
+<Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Decisions</Subtitle>
   <Title>Options against criteria, one recommended</Title>
   <ComparisonTable
@@ -223,7 +223,7 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Trade-offs</Subtitle>
   <Title>Arguments tagged by verdict</Title>
   <ProConList
@@ -235,14 +235,14 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Process</Subtitle>
   <Title>Phases, ranges and splits</Title>
   <PhaseRow phases={[{ title: "Draft", items: ["Outline in MDX", "Pick templates"] }, { title: "Refine", items: ["Steps and morphs", "Check in dev mode"] }, { title: "Share", items: ["Present", "Export"] }]} />
   <ProgressBar segments={[{ label: "Built 80%", flex: 8, color: "teal" }, { label: "To do 20%", flex: 2, color: "yellow" }]} />
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Time</Subtitle>
   <Title>Milestones toward a deadline</Title>
   <Timeline
@@ -256,13 +256,13 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="dark" accent="red" layout="document">
+<Slide scheme="dark" accent="red" layout="document">
   <Subtitle>Risk</Subtitle>
   <Title>From safe to risky</Title>
   <Spectrum segments={[{ label: "Text", sub: "Always fine" }, { label: "Steps", sub: "When order matters" }, { label: "Canvas", sub: "Only for a real map" }]} />
 </Slide>
 
-<Slide theme="dark" accent="yellow">
+<Slide scheme="dark" accent="yellow">
   <Quadrants
     size={700}
     xAxis={{ label: "Effort", low: "Low", high: "High" }}
@@ -272,7 +272,7 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Data</Subtitle>
   <Title>Drag the cut-off, watch the count</Title>
   <ScatterChart
@@ -296,7 +296,7 @@ import stage from './images/stage.svg'
   <Notes>Drag the dashed line or focus it and use the arrow keys. Press N to switch the x axis: the same points move.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="navy" layout="document">
+<Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Architecture</Subtitle>
   <Title>Boxes, arrows, drawn in reading order</Title>
   <BlockDiagram
@@ -318,13 +318,13 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Loops</Subtitle>
   <Title>A loop is easier to see than to describe</Title>
   <CycleDiagram size={720} centerTitle="Authoring" steps={[{ title: "Write", meta: "MDX" }, { title: "Preview", meta: "Live" }, { title: "Present", meta: "Steps" }, { title: "Revise", meta: "Notes" }]} />
 </Slide>
 
-<Slide theme="dark" accent="navy" layout="document">
+<Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Layers</Subtitle>
   <Title>What sits on what</Title>
   <TwoColumn>
@@ -333,7 +333,7 @@ import stage from './images/stage.svg'
   </TwoColumn>
 </Slide>
 
-<Slide theme="dark" accent="teal" layout="document">
+<Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Protocols and models</Subtitle>
   <Title>Who talks to whom, and what they store</Title>
   <TwoColumn>
@@ -357,7 +357,7 @@ import stage from './images/stage.svg'
   </TwoColumn>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Feedback</Subtitle>
   <Title>Earlier feedback, cheaper fixes</Title>
   <FeedbackLoops
@@ -374,11 +374,11 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="light" accent="teal">
+<Slide scheme="light" accent="teal">
   <BracketDiagram title="Two kinds of slide" items={[{ content: "Centered: openers, statements, closers", color: "teal" }, { content: "Document: a header band, then the body", color: "navy" }]} />
 </Slide>
 
-<Slide theme="light" background="transparent">
+<Slide scheme="light" background="transparent">
   <ComparisonLayout
     leftHeader={{ label: "Before", title: "Drawing", subtitle: "Box by box" }}
     rightHeader={{ label: "After", title: "Writing", subtitle: "Component by component" }}
@@ -389,12 +389,12 @@ import stage from './images/stage.svg'
   />
 </Slide>
 
-<Slide theme="light" accent="navy">
+<Slide scheme="light" accent="navy">
   <CenteredStatement label="Principle" statement="Colour and motion are information. Use them only when they say something." />
   <ContentBox color="navy" width={900} title="Why">The audience reads every change of colour or movement as meaning, so unmotivated variation teaches them to ignore both.</ContentBox>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Media</Subtitle>
   <Title>Images live next to the deck</Title>
   <Code title="index.mdx" fontSize={24}>{`import stage from './images/stage.svg'
@@ -403,7 +403,7 @@ import stage from './images/stage.svg'
   <ContentImage src={stage} alt="A slide stage inside a screen" width={600} />
 </Slide>
 
-<Slide theme="dark" accent="teal">
+<Slide scheme="dark" accent="teal">
   <Subtitle>People</Subtitle>
   <PersonRow>
     <PersonCard name="Ada Author" role="Writes the decks" email="ada@example.com" />
@@ -413,23 +413,54 @@ import stage from './images/stage.svg'
   <Notes>Without a photo, a PersonCard shows initials.</Notes>
 </Slide>
 
-<Slide chrome="title">
-  <Title>The corporate frame</Title>
-  <Subtitle>Official decks wear the brand's slide master</Subtitle>
-  <Notes>7:30-7:50. In a real corporate deck every slide has chrome. Here three slides show the three variants.</Notes>
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Themes</Subtitle>
+  <Title>One attribute changes the whole look</Title>
+  <Text muted>A theme sets the palette, fonts, logos and slide masters for a deck. This deck uses the built-in slidecraft theme.</Text>
+  <Notes>8:00-8:20. Section opener for themes.</Notes>
 </Slide>
 
-<Slide chrome="section">
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Themes</Subtitle>
+  <Title>A theme is a folder of data</Title>
+  <Code title="themes/acme/theme.json" fontSize={22}>{`{
+    "name": "Acme",
+    "extends": "corporate",
+    "tokens": { "accents": { "yellow": "#ffb000" } },
+    "logos": { "onLight": "logo.svg" },
+    "frames": { "title": { "svg": "frames/title.svg" } }
+  }`}</Code>
+  <Text align="left" muted>Put it under themes/ in the content folder, then write theme="acme" on the Presentation.</Text>
+  <Notes>Themes extend each other: this one keeps everything from the corporate theme and changes one colour, the logo and the title master.</Notes>
+</Slide>
+
+<Slide theme="paper" accent="teal" layout="document">
+  <Subtitle>The paper theme</Subtitle>
+  <Title>Same components, another palette</Title>
+  <TwoColumn>
+    <Card title="Tokens only">Paper changes colours and the default scheme. Everything else comes from slidecraft.</Card>
+    <Stat value="12" label="lines of theme.json" />
+  </TwoColumn>
+  <Notes>A slide can borrow another theme with theme="…" on the Slide; normally the whole deck uses one.</Notes>
+</Slide>
+
+<Slide theme="corporate" frame="title">
+  <Title>The corporate theme</Title>
+  <Subtitle>Frames are the theme's slide masters</Subtitle>
+  <Notes>8:40-9:00. In a corporate deck, theme="corporate" goes on the Presentation and every slide gets the content frame unless it names another.</Notes>
+</Slide>
+
+<Slide theme="corporate" frame="section">
   <Title>A section divider</Title>
 </Slide>
 
-<Slide chrome="content">
+<Slide theme="corporate">
   <Subtitle>Corporate content</Subtitle>
   <Title>The frame never scales; the body does</Title>
   <List>
-    <ListItem>Title, section and content variants map onto the slide master.</ListItem>
-    <ListItem>Chrome forces the light theme and the document layout.</ListItem>
-    <ListItem>The geometry lives in one file, ready to replace with your own master.</ListItem>
+    <ListItem>Title, section and content frames map onto the slide master.</ListItem>
+    <ListItem>The theme fixes the light scheme and turns gradients off.</ListItem>
+    <ListItem>Text aligns left inside this frame without being told.</ListItem>
   </List>
 </Slide>
 
@@ -437,13 +468,13 @@ import stage from './images/stage.svg'
   <Title>This slide is hidden when presenting</Title>
 </Slide>
 
-<Slide theme="dark" accent="yellow" layout="document">
+<Slide scheme="dark" accent="yellow" layout="document">
   <Subtitle>Dev mode</Subtitle>
   <Title>A document title that runs on far too long becomes a signal to rewrite it shorter, because the eyebrow already names the subject and the title should only assert</Title>
   <Text align="left">Press D to see the outline: amber for two lines, red for three or more.</Text>
 </Slide>
 
-<Slide theme="dark" accent="red" layout="document">
+<Slide scheme="dark" accent="red" layout="document">
   <Subtitle>Auto-fit</Subtitle>
   <Title>Crowded bodies shrink to fit</Title>
   <Text align="left" size="lg">First paragraph of a deliberately crowded slide that holds more text than the body can show at full size.</Text>

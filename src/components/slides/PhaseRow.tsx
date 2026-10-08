@@ -64,7 +64,7 @@ export const PhaseRow = defineComponent<PhaseRowProps>({
     description: 'Horizontal row of phase cards, e.g. a framework or a process.',
     props: [{ name: 'phases', type: 'Array<{ title: string; items: string[]; color?: "teal" | "yellow" | "red" | "navy" | "gray" }>', description: 'Phases in order; colour defaults to the slide accent' }],
     snippet: '<PhaseRow\n  phases={[\n    { title: "Research", items: ["Read the code", "Map the flow"] },\n    { title: "Plan", items: ["Write the steps"] },\n    { title: "Implement", items: ["Small commits"] },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <PhaseRow phases={[{ title: "Research", items: ["Read the code"] }, { title: "Plan", items: ["Write the steps"] }, { title: "Implement", items: ["Small commits"] }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <PhaseRow phases={[{ title: "Research", items: ["Read the code"] }, { title: "Plan", items: ["Write the steps"] }, { title: "Implement", items: ["Small commits"] }]} />\n</Slide>',
     keywords: ['phases', 'steps', 'framework', 'process', 'rpi'],
     useCases: ['Phases of a process'],
   },

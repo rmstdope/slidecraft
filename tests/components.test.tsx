@@ -80,12 +80,29 @@ describe('ScatterChart', () => {
   })
 })
 
-describe('corporate frame', () => {
-  for (const chrome of ['title', 'section', 'content'] as const) {
-    test(`${chrome} chrome draws its frame and the light logo`, () => {
-      const { container } = render(<Slide chrome={chrome}><Title>T</Title></Slide>)
-      expect(container.querySelector('.corporate-frame polygon')).not.toBeNull()
-      expect(container.querySelector('img[src="/logo-on-light.svg"]')).not.toBeNull()
+describe('corporate theme frames', () => {
+  for (const frame of ['title', 'section', 'content'] as const) {
+    test(`the ${frame} frame draws its art and the light logo`, () => {
+      const { container } = render(<Slide theme="corporate" frame={frame}><Title>T</Title></Slide>)
+      expect(container.querySelector('.slide__frame')?.getAttribute('src')).toContain(`${frame}.svg`)
+      expect(container.querySelector('img.slide__logo')?.getAttribute('src')).toBe('/logo-on-light.svg')
     })
   }
+})
+
+describe('overview', () => {
+  test('cells never nest buttons, even around slides that contain buttons', async () => {
+    const { Presentation } = await import('../src/components/slides')
+    window.history.replaceState(null, '', '/demo')
+    const { container } = render(
+      <Presentation>
+        <Slide>
+          <ScatterChart data={[{ series: 'a', x: 1, z: 2, y: 1 }]} x={[{ key: 'x', label: 'X' }, { key: 'z', label: 'Z' }]} y={{ key: 'y', label: 'Y' }} />
+        </Slide>
+      </Presentation>,
+    )
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm' })))
+    expect(container.querySelectorAll('.overview__cell')).toHaveLength(1)
+    expect(container.querySelectorAll('button button')).toHaveLength(0)
+  })
 })

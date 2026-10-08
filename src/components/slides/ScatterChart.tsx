@@ -370,7 +370,7 @@ export const ScatterChart = defineComponent<ScatterChartProps>({
     snippet:
       '<ScatterChart\n  detail\n  pointLabel="run"\n  data={[\n    { series: "small", run: "a", cost: 2, tokens: 40, score: 61 },\n    { series: "small", run: "b", cost: 4, tokens: 90, score: 70 },\n    { series: "large", run: "a", cost: 9, tokens: 60, score: 78 },\n    { series: "large", run: "b", cost: 15, tokens: 120, score: 86 },\n  ]}\n  x={[{ key: "cost", label: "Cost", format: "${v}" }, { key: "tokens", label: "Tokens", format: "{v}k" }]}\n  y={{ key: "score", label: "Score", format: "{v}%" }}\n/>',
     previewCode:
-      '<Slide theme="dark">\n  <ScatterChart width={1400} height={560} data={[{ series: "small", cost: 2, score: 61 }, { series: "small", cost: 4, score: 70 }, { series: "large", cost: 9, score: 78 }, { series: "large", cost: 15, score: 86 }]} x={{ key: "cost", label: "Cost", format: "${v}" }} y={{ key: "score", label: "Score", format: "{v}%" }} />\n</Slide>',
+      '<Slide scheme="dark">\n  <ScatterChart width={1400} height={560} data={[{ series: "small", cost: 2, score: 61 }, { series: "small", cost: 4, score: 70 }, { series: "large", cost: 9, score: 78 }, { series: "large", cost: 15, score: 86 }]} x={{ key: "cost", label: "Cost", format: "${v}" }} y={{ key: "score", label: "Score", format: "{v}%" }} />\n</Slide>',
     keywords: ['chart', 'scatter', 'plot', 'line', 'benchmark', 'data', 'series', 'axis', 'metric'],
     useCases: ['Benchmark results across two metrics', 'A cut-off you drag live'],
   },

@@ -64,7 +64,7 @@ export const Spectrum = defineComponent<SpectrumProps>({
     description: 'Range bar that runs teal to yellow to red across its segments.',
     props: [{ name: 'segments', type: 'Array<{ label: string; sub?: string; flex?: number }>', description: 'Segments from the safe end to the risky end' }],
     snippet: '<Spectrum segments={[{ label: "Low", sub: "Safe" }, { label: "Medium" }, { label: "High", sub: "Risky" }]} />',
-    previewCode: '<Slide theme="dark">\n  <Spectrum segments={[{ label: "Low", sub: "Safe" }, { label: "Medium" }, { label: "High", sub: "Risky" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Spectrum segments={[{ label: "Low", sub: "Safe" }, { label: "Medium" }, { label: "High", sub: "Risky" }]} />\n</Slide>',
     keywords: ['range', 'gradient', 'bar', 'scale', 'visualization', 'risk'],
     useCases: ['A scale from fine to risky'],
   },

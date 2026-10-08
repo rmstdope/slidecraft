@@ -29,7 +29,7 @@ export const Svg = defineComponent<SvgProps>({
       { name: 'height', type: 'string | number', description: 'Height' },
     ],
     snippet: '<Svg src="images/diagram.svg" alt="Diagram" width={1200} />',
-    previewCode: '<Slide theme="dark">\n  <Title size="compact">Vector drawings from the deck folder</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title size="compact">Vector drawings from the deck folder</Title>\n</Slide>',
     keywords: ['svg', 'image', 'vector', 'graphic', 'diagram'],
     useCases: ['A diagram exported from a drawing tool'],
   },

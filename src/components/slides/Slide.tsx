@@ -1,24 +1,19 @@
 import { Children, isValidElement, useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { slideVariants, TRANSITIONS, type SlideTransition } from '../../animations/variants'
-import { appPath } from '../../basePath'
-import { SLIDE_ACCENTS, type SlideAccent } from './accents'
-import { CorporateFrame } from './chrome/CorporateFrame'
-import { CHROME_PADDING, SECTION_TEXT_MAX_WIDTH } from './chrome/geometry'
+import type { Placement, Scheme } from '@shared/themes.ts'
+import { slideVariants, type SlideTransition } from '../../animations/variants'
+import { resolveSlideLook, type SlideLayout } from '../../themes/resolveSlideLook'
+import { ThemeContext, useResolvedTheme } from '../../themes/ThemeContext'
+import { themeCssVars, useThemeFonts } from '../../themes/themeStyle'
+import type { SlideAccent } from './accents'
 import { defineComponent } from './defineComponent'
-import { gradientFor, GRADIENTS, type SlideGradient } from './gradients'
-import { SlideLayoutContext, type SlideChrome, type SlideLayout } from './slideLayoutContext'
+import { gradientFor, type SlideGradient } from './gradients'
+import { SlideLayoutContext } from './slideLayoutContext'
 import { useInThumbnail } from './thumbnailContext'
 
 export const DESIGN_WIDTH = 1920
 export const DESIGN_HEIGHT = 1080
 export const DOCUMENT_BODY_GAP = 56
-
-const THEMES = ['dark', 'light'] as const
-const LAYOUTS = ['centered', 'document'] as const
-const CHROMES = ['none', 'title', 'section', 'content'] as const
-
-export type SlideTheme = (typeof THEMES)[number]
 
 export interface SlideCamera {
   x?: number
@@ -29,15 +24,19 @@ export interface SlideCamera {
 
 export interface SlideProps {
   children?: ReactNode
-  theme?: SlideTheme
+  /** Dark or light colour scheme. Some themes and frames fix it. */
+  scheme?: Scheme
+  /** Use another theme than the deck's for this slide. */
+  theme?: string
+  /** A frame (slide master) from the theme, e.g. "title"; "none" for no frame. */
+  frame?: string
   accent?: SlideAccent
   gradient?: SlideGradient
   /** Any CSS background; wins over gradient. */
   background?: string
   layout?: SlideLayout
-  chrome?: SlideChrome
   transition?: SlideTransition
-  /** Slides sharing a canvas name lie on one plane (Phase 3). */
+  /** Slides sharing a canvas name lie on one plane. */
   canvas?: string
   camera?: SlideCamera
   /** Skipped when presenting; shown dimmed in the editor. */
@@ -51,11 +50,6 @@ export interface SlideProps {
   _fixedScale?: number
   _devMode?: boolean
   _devFitMode?: boolean
-}
-
-/** Enum props fall back to their default: a typo while editing must not crash the deck. */
-function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
-  return typeof value === 'string' && (allowed as readonly string[]).includes(value) ? (value as T) : fallback
 }
 
 const displayNameOf = (node: ReactNode): string | undefined => {
@@ -95,14 +89,28 @@ function useStageScale(fixedScale: number | undefined, inThumbnail: boolean): nu
 
 const px = (value: string) => Number.parseFloat(value) || 0
 
+const placementStyle = (p: Placement): CSSProperties => ({
+  position: 'absolute',
+  top: p.top,
+  right: p.right,
+  bottom: p.bottom,
+  left: p.left,
+  height: p.height,
+  opacity: p.opacity,
+  pointerEvents: 'none',
+})
+
+const DEFAULT_FOOTER_TEXT: Placement = { left: 90, bottom: 44 }
+
 function SlideComponent({
   children,
+  scheme: schemeProp,
   theme: themeProp,
+  frame: frameProp,
   accent: accentProp,
   gradient: gradientProp,
   background,
   layout: layoutProp,
-  chrome: chromeProp,
   transition: transitionProp,
   className = '',
   direction = 1,
@@ -111,16 +119,17 @@ function SlideComponent({
   _devMode = false,
   _devFitMode = true,
 }: SlideProps) {
-  const chrome = pick(chromeProp, CHROMES, 'none')
-  const corporate = chrome !== 'none'
-  const theme: SlideTheme = corporate ? 'light' : pick(themeProp, THEMES, 'dark')
-  const accent = pick(accentProp, SLIDE_ACCENTS, 'yellow')
-  const gradient = corporate ? 'none' : pick(gradientProp, GRADIENTS, 'none')
-  const layout: SlideLayout = chrome === 'content' ? 'document' : pick(layoutProp, LAYOUTS, 'centered')
-  const transition = pick(transitionProp, TRANSITIONS, 'slide')
+  const theme = useResolvedTheme(themeProp)
+  useThemeFonts(theme)
+  const look = resolveSlideLook(
+    { scheme: schemeProp, accent: accentProp, gradient: gradientProp, layout: layoutProp, transition: transitionProp, frame: frameProp },
+    theme,
+  )
+  const { scheme, accent, gradient, layout, transition, frame, frameName } = look
   const isDocument = layout === 'document'
+  const alignLeft = frame?.align === 'left'
+  const unknownFrame = frameName !== 'none' && !frame
 
-  const slideRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -138,8 +147,7 @@ function SlideComponent({
     const target = isDocument ? bodyRef.current : innerRef.current
     const content = contentRef.current
     if (!target || !content) return
-    // Measure the untransformed layout: a hidden build step offset sideways, or an item mid-entry,
-    // must not count as overflow. The class turns off every transform in the subtree (see global.css).
+    // A hidden build step offset sideways, or an item mid-entry, must not count as overflow.
     target.classList.add('is-measuring')
     void target.offsetWidth // force reflow
     const cs = getComputedStyle(content)
@@ -149,11 +157,11 @@ function SlideComponent({
     const overflowX = target.scrollWidth > availableWidth + 1
     const overflowY = target.scrollHeight > availableHeight + 1
     const overflow = overflowX || overflowY
-    const scale = overflow
+    const next = overflow
       ? Math.min(overflowX ? availableWidth / target.scrollWidth : 1, overflowY ? availableHeight / target.scrollHeight : 1)
       : 1
     target.classList.remove('is-measuring')
-    setFit((current) => (Math.abs(current.scale - scale) < 0.001 && current.overflow === overflow ? current : { scale, overflow }))
+    setFit((current) => (Math.abs(current.scale - next) < 0.001 && current.overflow === overflow ? current : { scale: next, overflow }))
   }, [isDocument, hasHeader])
 
   useLayoutEffect(() => {
@@ -173,25 +181,60 @@ function SlideComponent({
   const actualMode = _devMode && !_devFitMode
   const appliedFit = actualMode ? 1 : fit.scale
   const fitTransform = appliedFit < 1 ? `scale(${appliedFit})` : undefined
-  const showBadge = _devMode && fit.scale < 0.99
+  const fitBadge = _devMode && fit.scale < 0.99
 
-  const backgroundStyle: CSSProperties = background
-    ? { background }
-    : { backgroundImage: gradientFor(theme, gradient, accent) }
-
-  const contentPadding = corporate ? CHROME_PADDING[chrome] : isDocument ? '72px 90px 132px' : 80
-  const alignStart = isDocument || corporate
+  const backgroundStyle: CSSProperties = background ? { background } : { backgroundImage: gradientFor(scheme, gradient) }
+  const padding = frame?.padding ? frame.padding.map((v) => `${v}px`).join(' ') : isDocument ? '72px 90px 132px' : 80
+  const headerRule = isDocument ? (frame?.headerRule ?? 'accent') : 'none'
+  const footerRule = isDocument && (frame ? frame.footerRule === true : theme.spec.footer?.rule !== false)
+  const footerText = theme.spec.footer?.text
+  const footerPlacement = frame ? frame.footerText : isDocument ? DEFAULT_FOOTER_TEXT : null
+  const logoPlacement = frame ? frame.logo : theme.spec.logo
+  const logoSrc = scheme === 'dark' ? theme.spec.logos?.onDark : theme.spec.logos?.onLight
 
   const variantProps = _skipAnimation
     ? {}
     : { variants: slideVariants[transition], initial: 'initial', animate: 'animate', exit: 'exit', custom: direction }
 
+  const content = (
+    <SlideLayoutContext.Provider value={{ layout, devMode: _devMode, accent, frame, align: alignLeft ? 'left' : 'center' }}>
+      {isDocument ? (
+        <>
+          {hasHeader && (
+            <div
+              ref={headerRef}
+              className="slide__header"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 18,
+                paddingBottom: 24,
+                borderBottom: headerRule === 'accent' ? '4px solid var(--accent)' : undefined,
+              }}
+            >
+              {header}
+              {headerRule === 'bar' && <div className="slide__header-bar" aria-hidden />}
+            </div>
+          )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 0, paddingTop: hasHeader ? DOCUMENT_BODY_GAP : 0 }}>
+            <div ref={bodyRef} style={{ display: 'flex', flexDirection: 'column', gap: 40, transform: fitTransform, transformOrigin: 'center' }}>
+              {body}
+            </div>
+          </div>
+        </>
+      ) : (
+        children
+      )}
+    </SlideLayoutContext.Provider>
+  )
+
   return (
     <motion.div
-      ref={slideRef}
-      className={`slide theme-${theme} accent-${accent} ${className}`.trim()}
-      data-theme={theme}
-      data-chrome={chrome}
+      className={`slide scheme-${scheme} accent-${accent} ${className}`.trim()}
+      data-scheme={scheme}
+      data-theme={theme.id}
+      data-frame={frame ? frameName : undefined}
       {...variantProps}
       style={{
         position: 'absolute',
@@ -200,6 +243,7 @@ function SlideComponent({
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        ...themeCssVars(theme),
         ...backgroundStyle,
       }}
     >
@@ -218,10 +262,15 @@ function SlideComponent({
           overflow: 'hidden',
         }}
       >
-        {corporate && <CorporateFrame variant={chrome as Exclude<SlideChrome, 'none'>} />}
-        {showBadge && (
+        {/* Frame art is drawn in design space behind the content and never scales with the body. */}
+        {frame?.svg && <img className="slide__frame" src={frame.svg} alt="" aria-hidden />}
+        {(fitBadge || (_devMode && unknownFrame)) && (
           <div className="slide__dev-badge" role="status">
-            {actualMode ? 'Content overflows slide bounds' : `Content scaled to fit (${Math.round(fit.scale * 100)}%)`}
+            {_devMode && unknownFrame
+              ? `Unknown frame "${frameName}" in theme ${theme.spec.name}`
+              : actualMode
+                ? 'Content overflows slide bounds'
+                : `Content scaled to fit (${Math.round(fit.scale * 100)}%)`}
           </div>
         )}
         <div
@@ -231,9 +280,9 @@ function SlideComponent({
             height: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: alignStart ? 'flex-start' : 'center',
-            padding: contentPadding,
-            textAlign: corporate ? 'left' : undefined,
+            justifyContent: isDocument || alignLeft ? 'flex-start' : 'center',
+            padding,
+            textAlign: alignLeft ? 'left' : undefined,
           }}
         >
           <div
@@ -241,70 +290,27 @@ function SlideComponent({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: isDocument ? 'stretch' : corporate ? 'flex-start' : 'center',
+              alignItems: isDocument ? 'stretch' : alignLeft ? 'flex-start' : 'center',
               justifyContent: isDocument ? 'flex-start' : 'center',
-              gap: isDocument ? 0 : chrome === 'title' ? 40 : 48,
+              gap: isDocument ? 0 : (frame?.gap ?? 48),
               // A definite width so percentage max-widths (Title 90%/94%) resolve against the content area.
               width: '100%',
               height: isDocument ? '100%' : undefined,
-              maxWidth: chrome === 'section' ? SECTION_TEXT_MAX_WIDTH : undefined,
+              maxWidth: frame?.maxWidth,
               transform: isDocument ? undefined : fitTransform,
               transformOrigin: 'center',
             }}
           >
-            <SlideLayoutContext.Provider value={{ layout, devMode: _devMode, chrome, accent }}>
-              {isDocument ? (
-                <>
-                  {hasHeader && (
-                    <div
-                      ref={headerRef}
-                      className="slide__header"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        gap: 18,
-                        paddingBottom: 24,
-                        borderBottom: corporate ? undefined : '4px solid var(--accent)',
-                      }}
-                    >
-                      {header}
-                      {corporate && <div className="slide__sheared-rule" aria-hidden />}
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      minHeight: 0,
-                      paddingTop: hasHeader ? DOCUMENT_BODY_GAP : 0,
-                    }}
-                  >
-                    <div
-                      ref={bodyRef}
-                      style={{ display: 'flex', flexDirection: 'column', gap: 40, transform: fitTransform, transformOrigin: 'center' }}
-                    >
-                      {body}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                children
-              )}
-            </SlideLayoutContext.Provider>
+            {themeProp ? <ThemeContext.Provider value={theme}>{content}</ThemeContext.Provider> : content}
           </div>
         </div>
-        {isDocument && !corporate && <div className="slide__footer-rule" aria-hidden />}
-        {!corporate && (
-          <img
-            className="slide__logo"
-            src={theme === 'dark' ? appPath('/logo-on-dark.svg') : appPath('/logo-on-light.svg')}
-            alt=""
-            aria-hidden
-          />
+        {footerRule && <div className="slide__footer-rule" aria-hidden />}
+        {footerText && footerPlacement && (
+          <span className="slide__footer-text" style={{ ...placementStyle(footerPlacement), height: undefined, fontSize: frame?.footerText?.size ?? 22, color: frame?.footerText?.color ?? 'var(--muted)' }}>
+            {footerText}
+          </span>
         )}
+        {logoPlacement && logoSrc && <img className="slide__logo" src={logoSrc} alt="" aria-hidden style={placementStyle(logoPlacement)} />}
       </motion.div>
     </motion.div>
   )
@@ -316,26 +322,27 @@ export const Slide = defineComponent<SlideProps>({
     id: 'slide',
     name: 'Slide',
     category: 'component',
-    description: 'One 1920×1080 slide with a theme, an accent, a layout and a transition.',
+    description: 'One 1920×1080 slide with a colour scheme, an accent, a layout and a transition, styled by the deck theme.',
     props: [
-      { name: 'theme', type: '"dark" | "light"', default: '"dark"', description: 'Colour theme; forced to light by chrome' },
+      { name: 'scheme', type: '"dark" | "light"', default: '"dark"', description: 'Colour scheme; some themes and frames fix it' },
       { name: 'accent', type: '"yellow" | "red" | "teal" | "navy"', default: '"yellow"', description: 'The single slide colour; children inherit it' },
       { name: 'gradient', type: '"none" | "radial" | "radial-accent" | "diagonal" | "spotlight"', default: '"none"', description: 'Background gradient' },
       { name: 'background', type: 'string', description: 'Any CSS background; wins over gradient' },
       { name: 'layout', type: '"centered" | "document"', default: '"centered"', description: 'Hero stack, or header band + body + footer' },
-      { name: 'chrome', type: '"none" | "title" | "section" | "content"', default: '"none"', description: 'Corporate frame; forces the light theme' },
+      { name: 'frame', type: 'string', description: 'A frame (slide master) from the theme, e.g. "title"; "none" for no frame' },
+      { name: 'theme', type: 'string', description: "Use another theme than the deck's for this slide" },
       { name: 'transition', type: '"slide" | "fade" | "morph" | "slide-up" | "zoom" | "push" | "flip" | "cube"', default: '"slide"', description: 'How this slide enters' },
       { name: 'canvas', type: 'string', description: 'Slides sharing a canvas name lie on one plane' },
       { name: 'camera', type: '{ x?: number; y?: number; scale?: number; rotate?: number }', description: 'Placement on the canvas' },
       { name: 'hidden', type: 'boolean', default: 'false', description: 'Skipped when presenting' },
     ],
-    snippet: '<Slide theme="dark" accent="yellow">\n  <Title>Slide title</Title>\n</Slide>',
-    previewCode: '<Slide theme="dark" accent="yellow" gradient="radial-accent">\n  <Title>Slide title</Title>\n</Slide>',
-    keywords: ['slide', 'page', 'frame', 'theme', 'background'],
-    useCases: ['Every slide in a deck', 'Switching theme or accent per slide'],
+    snippet: '<Slide scheme="dark" accent="yellow">\n  <Title>Slide title</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark" accent="yellow" gradient="radial-accent">\n  <Title>Slide title</Title>\n</Slide>',
+    keywords: ['slide', 'page', 'frame', 'scheme', 'background'],
+    useCases: ['Every slide in a deck', 'Switching scheme or accent per slide'],
   },
   toolbar: [
-    { prop: 'theme', type: 'select', options: ['dark', 'light'] },
+    { prop: 'scheme', type: 'select', options: ['dark', 'light'] },
     { prop: 'accent', type: 'select', options: ['yellow', 'red', 'teal', 'navy'] },
     { prop: 'gradient', type: 'select', options: ['none', 'radial', 'radial-accent', 'diagonal', 'spotlight'] },
     { prop: 'layout', type: 'select', options: ['centered', 'document'] },

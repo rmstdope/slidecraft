@@ -164,7 +164,7 @@ export const DataModel = defineComponent<DataModelProps>({
     ],
     snippet:
       '<DataModel\n  entities={[\n    { id: "deck", name: "Deck", fields: [{ name: "id", type: "string", primary: true }, { name: "title", type: "string", required: true }] },\n    { id: "slide", name: "Slide", color: "navy", fields: [{ name: "id", type: "string", primary: true }, { name: "deckId", type: "string", required: true }] },\n  ]}\n  relations={[{ from: "deck", to: "slide", type: "one-to-many", label: "has" }]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <DataModel entities={[{ id: "deck", name: "Deck", fields: [{ name: "id", type: "string", primary: true }] }, { id: "slide", name: "Slide", color: "navy", fields: [{ name: "deckId", type: "string", required: true }] }]} relations={[{ from: "deck", to: "slide", type: "one-to-many" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <DataModel entities={[{ id: "deck", name: "Deck", fields: [{ name: "id", type: "string", primary: true }] }, { id: "slide", name: "Slide", color: "navy", fields: [{ name: "deckId", type: "string", required: true }] }]} relations={[{ from: "deck", to: "slide", type: "one-to-many" }]} />\n</Slide>',
     keywords: ['data', 'model', 'entity', 'relationship', 'erd', 'diagram', 'schema', 'database'],
     useCases: ['A data model', 'Types and how they relate'],
   },

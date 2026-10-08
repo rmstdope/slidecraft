@@ -28,7 +28,7 @@ export const Section = defineComponent<SectionProps>({
       { name: 'gap', type: 'number', default: '10', description: 'Space below the label in px' },
     ],
     snippet: '<Section title="Section Title">\n  <Text align="left">Content</Text>\n</Section>',
-    previewCode: '<Slide theme="light">\n  <Section title="Section Title">\n    <List compact>\n      <ListItem>First point</ListItem>\n      <ListItem>Second point</ListItem>\n    </List>\n  </Section>\n</Slide>',
+    previewCode: '<Slide scheme="light">\n  <Section title="Section Title">\n    <List compact>\n      <ListItem>First point</ListItem>\n      <ListItem>Second point</ListItem>\n    </List>\n  </Section>\n</Slide>',
     keywords: ['section', 'group', 'label', 'heading', 'block'],
     useCases: ['Several labelled blocks on one slide'],
   },

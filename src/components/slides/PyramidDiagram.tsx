@@ -79,7 +79,7 @@ export const PyramidDiagram = defineComponent<PyramidDiagramProps>({
       { name: 'width', type: 'number', default: '1180', description: 'Widest band in px' },
     ],
     snippet: '<PyramidDiagram\n  layers={[\n    { title: "End to end", meta: "Few" },\n    { title: "Integration", meta: "Some" },\n    { title: "Unit", meta: "Many" },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <PyramidDiagram width={900} layers={[{ title: "End to end", meta: "Few" }, { title: "Integration", meta: "Some" }, { title: "Unit", meta: "Many" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <PyramidDiagram width={900} layers={[{ title: "End to end", meta: "Few" }, { title: "Integration", meta: "Some" }, { title: "Unit", meta: "Many" }]} />\n</Slide>',
     keywords: ['pyramid', 'tiers', 'hierarchy', 'funnel', 'maturity', 'layers', 'test pyramid'],
     useCases: ['A test pyramid', 'A sales funnel', 'A maturity model'],
   },

@@ -72,7 +72,7 @@ export const Stat = defineComponent<StatProps>({
       { name: 'morph', type: 'string', description: 'Shared-element id' },
     ],
     snippet: '<Stat value="42%" label="improvement" />',
-    previewCode: '<Slide theme="dark">\n  <Stat value="42%" label="improvement" />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Stat value="42%" label="improvement" />\n</Slide>',
     keywords: ['number', 'metric', 'statistic', 'data', 'value', 'kpi'],
     useCases: ['One number that carries the slide', 'A pair or row of metrics'],
   },

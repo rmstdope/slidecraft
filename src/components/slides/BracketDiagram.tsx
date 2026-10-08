@@ -92,7 +92,7 @@ export const BracketDiagram = defineComponent<BracketDiagramProps>({
       { name: 'items', type: 'Array<{ content: string; color: "green" | "yellow" | "teal" | "red" | "navy" }>', description: 'One or two boxes' },
     ],
     snippet: '<BracketDiagram\n  title="Two kinds"\n  items={[\n    { content: "The first kind", color: "green" },\n    { content: "The second kind", color: "navy" },\n  ]}\n/>',
-    previewCode: '<Slide theme="light">\n  <BracketDiagram title="Two kinds" items={[{ content: "The first kind", color: "green" }, { content: "The second kind", color: "navy" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="light">\n  <BracketDiagram title="Two kinds" items={[{ content: "The first kind", color: "green" }, { content: "The second kind", color: "navy" }]} />\n</Slide>',
     keywords: ['bracket', 'diagram', 'connector', 'tree', 'hierarchy'],
     useCases: ['A concept splitting into two kinds'],
   },

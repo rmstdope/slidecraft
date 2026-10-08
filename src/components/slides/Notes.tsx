@@ -15,7 +15,7 @@ export const Notes = defineComponent<NotesProps>({
     description: 'Speaker notes for the presenter view and the reader handout; not shown on the slide.',
     props: [],
     snippet: '<Notes>0:00-0:40. What to say on this slide.</Notes>',
-    previewCode: '<Slide theme="dark">\n  <Title>Slide with notes</Title>\n  <Notes>Only the presenter sees this.</Notes>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Slide with notes</Title>\n  <Notes>Only the presenter sees this.</Notes>\n</Slide>',
     keywords: ['notes', 'speaker', 'presenter', 'script'],
     useCases: ['What to say on the slide', 'Time budget and sources'],
   },

@@ -42,7 +42,7 @@ export const ProConList = defineComponent<ProConListProps>({
     description: 'Tagged argument rows: pro, con, and nuance.',
     props: [{ name: 'items', type: 'Array<{ kind: "pro" | "con" | "nuance"; text: string }>', description: 'Rows in order' }],
     snippet: '<ProConList\n  items={[\n    { kind: "pro", text: "Faster to start" },\n    { kind: "con", text: "Harder to change later" },\n    { kind: "nuance", text: "Depends on team size" },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <ProConList items={[{ kind: "pro", text: "Faster to start" }, { kind: "con", text: "Harder to change later" }, { kind: "nuance", text: "Depends on team size" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <ProConList items={[{ kind: "pro", text: "Faster to start" }, { kind: "con", text: "Harder to change later" }, { kind: "nuance", text: "Depends on team size" }]} />\n</Slide>',
     keywords: ['pros', 'cons', 'tradeoffs', 'decision', 'nuance', 'arguments'],
     useCases: ['Weighing a decision'],
   },

@@ -31,6 +31,7 @@ export const RESERVED_DECK_NAMES = new Set([
   'edit',
   'gallery',
   'images',
+  'themes',
 ])
 
 export const deckKey = (ref: DeckRef): string => `${ref.source}:${ref.path}`

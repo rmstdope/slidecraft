@@ -82,7 +82,7 @@ export const Card = defineComponent<CardProps>({
       { name: 'morph', type: 'string', description: 'Shared-element id' },
     ],
     snippet: '<Card title="Card Title">\n  Card content\n</Card>',
-    previewCode: '<Slide theme="dark">\n  <Card title="Card Title" subtitle="A secondary line">Card content goes here.</Card>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Card title="Card Title" subtitle="A secondary line">Card content goes here.</Card>\n</Slide>',
     keywords: ['box', 'container', 'panel', 'info'],
     useCases: ['Feature highlights', 'Team profiles', 'Service descriptions', 'Grouped content'],
   },

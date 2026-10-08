@@ -12,20 +12,21 @@ export interface SubtitleProps {
 }
 
 function SubtitleComponent({ children, accent = false, className }: SubtitleProps) {
-  const { layout, chrome } = useSlideLayout()
-  const alignLeft = layout === 'document' || chrome !== 'none'
-  const corporateTitle = chrome === 'title'
+  const { layout, frame, align } = useSlideLayout()
+  const alignLeft = layout === 'document' || align === 'left'
+  // A frame can turn the eyebrow into a sentence-case sub-headline (e.g. on a title master).
+  const subheadline = frame?.subtitle?.variant === 'subheadline'
   return (
     <motion.h2
       className={className}
       variants={itemVariants}
       style={{
         fontFamily: 'var(--font-body)',
-        fontSize: corporateTitle ? 34 : 36,
-        fontWeight: corporateTitle ? 700 : 600,
-        letterSpacing: corporateTitle ? 'normal' : '0.2em',
-        textTransform: corporateTitle ? 'none' : 'uppercase',
-        color: corporateTitle ? 'var(--chrome-taupe, #8c7b6b)' : accent ? 'var(--accent)' : 'var(--muted)',
+        fontSize: subheadline ? 34 : 36,
+        fontWeight: subheadline ? 700 : 600,
+        letterSpacing: subheadline ? 'normal' : '0.2em',
+        textTransform: subheadline ? 'none' : 'uppercase',
+        color: accent ? 'var(--accent)' : (frame?.subtitle?.color ?? 'var(--muted)'),
         textAlign: alignLeft ? 'left' : 'center',
         lineHeight: 1.3,
       }}
@@ -44,7 +45,7 @@ export const Subtitle = defineComponent<SubtitleProps>({
     description: 'All-caps secondary heading.',
     props: [{ name: 'accent', type: 'boolean', default: 'false', description: 'Use the slide accent colour' }],
     snippet: '<Subtitle>Section Name</Subtitle>',
-    previewCode: '<Slide theme="dark">\n  <Subtitle>Section Name</Subtitle>\n  <Title>Heading</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Subtitle>Section Name</Subtitle>\n  <Title>Heading</Title>\n</Slide>',
     keywords: ['heading', 'h2', 'subheading', 'section', 'eyebrow'],
     useCases: ['Section name above a title', 'Supporting context', 'Date, event or category label'],
   },

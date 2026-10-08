@@ -40,7 +40,7 @@ export const SplitBackground = defineComponent<SplitBackgroundProps>({
       { name: 'topHeight', type: 'number', default: '400', description: 'Height of the top band in px' },
     ],
     snippet: '<SplitBackground topHeight={400} />',
-    previewCode: '<Slide theme="light" background="transparent">\n  <SplitBackground />\n  <Title>Two zones</Title>\n</Slide>',
+    previewCode: '<Slide scheme="light" background="transparent">\n  <SplitBackground />\n  <Title>Two zones</Title>\n</Slide>',
     keywords: ['background', 'split', 'two-tone', 'zones'],
     useCases: ['A header zone above a content zone'],
   },

@@ -11,5 +11,9 @@ export function useDom(): void {
     const { cleanup } = await import('@testing-library/react')
     cleanup()
   })
-  afterAll(() => GlobalRegistrator.unregister())
+  afterAll(async () => {
+    // Let React's scheduler flush pending work before the DOM globals disappear.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    await GlobalRegistrator.unregister()
+  })
 }

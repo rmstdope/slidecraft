@@ -2,8 +2,11 @@ import { cloneElement, useCallback, useEffect, useMemo, useRef, useState, type R
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react'
 import { ALL_STEPS_STATE, StepContext } from '../../animations/stepContext'
 import { springs } from '../../animations/springs'
-import { resolveTransition, slideVariants } from '../../animations/variants'
+import { slideVariants } from '../../animations/variants'
 import { chatUrl, editorUrl, homeUrl } from '../../router'
+import { resolveTheme } from '../../themes/registry'
+import { resolveSlideLook } from '../../themes/resolveSlideLook'
+import { ThemeScope, useTheme, useThemesVersion } from '../../themes/ThemeContext'
 import { isExported, isTypingTarget, navigateTo } from '../../utils/environment'
 import type { AppMode } from '../../utils/keyboardShortcuts'
 import { GlobalCommandPalette, type CommandItem } from '../editor/GlobalCommandPalette'
@@ -31,6 +34,8 @@ import { useInThumbnail } from './thumbnailContext'
 
 export interface PresentationProps {
   children?: ReactNode
+  /** The deck's look and feel: a built-in theme or one from the content folder's themes/. */
+  theme?: string
 }
 
 function readPdfParams(): { only?: number } | null {
@@ -42,13 +47,15 @@ function readPdfParams(): { only?: number } | null {
 }
 
 /** The deck root (Part 1 §3). Decides between a still, the PDF render and the live player. */
-function PresentationComponent({ children }: PresentationProps) {
+function PresentationComponent({ children, theme }: PresentationProps) {
   const inThumbnail = useInThumbnail()
   const analysis = useMemo(() => analyzeDeck(children), [children])
   const [pdf] = useState(readPdfParams)
-  if (inThumbnail) return analysis.slides[0] ?? null // a deck card shows its first slide
-  if (pdf) return <PdfView slides={analysis.slides} only={pdf.only} />
-  return <LivePresentation analysis={analysis} />
+  return (
+    <ThemeScope theme={theme}>
+      {inThumbnail ? (analysis.slides[0] ?? null) /* a deck card shows its first slide */ : pdf ? <PdfView slides={analysis.slides} only={pdf.only} /> : <LivePresentation analysis={analysis} />}
+    </ThemeScope>
+  )
 }
 
 const SWIPE_DISTANCE = 60
@@ -57,6 +64,8 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
   const { slides, stepCounts } = analysis
   const total = slides.length
   const { deck } = useDeck()
+  const deckTheme = useTheme()
+  useThemesVersion()
   const exported = useMemo(isExported, [])
   const presenterView = useMemo(() => new URLSearchParams(window.location.search).has('presenter'), [])
 
@@ -326,10 +335,12 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
   const onCanvas = !!run?.canvas
   const runFirst = run?.indices[0] ?? current
   const stageKey = onCanvas ? `canvas-${run.canvas}-${runFirst}` : `slide-${current}`
+  const lookOf = (s: typeof slide) => resolveSlideLook(s.props, s.props.theme ? resolveTheme(s.props.theme, deck?.source) : deckTheme)
   const transitionSource = onCanvas ? slides[runFirst] : slide
-  const variants = slideVariants[resolveTransition(transitionSource.props.transition, onCanvas ? 'fade' : 'slide')]
+  // A canvas run enters with a fade unless its first slide names a transition.
+  const variants = slideVariants[onCanvas && !transitionSource.props.transition ? 'fade' : lookOf(transitionSource).transition]
   const liveSteps = { step: nav.step, total: stepsOnSlide }
-  const light = slide.props.theme === 'light' || (!!slide.props.chrome && slide.props.chrome !== 'none')
+  const light = lookOf(slide).scheme === 'light'
 
   return (
     <MotionConfig reducedMotion="user" transition={springs.smooth}>
@@ -442,10 +453,10 @@ export const Presentation = defineComponent<PresentationProps>({
     id: 'presentation',
     name: 'Presentation',
     category: 'component',
-    description: 'The deck root; every child Slide is one slide.',
-    props: [],
+    description: 'The deck root; every child Slide is one slide, styled by the deck theme.',
+    props: [{ name: 'theme', type: 'string', default: '"slidecraft"', description: 'Look and feel: a built-in theme or one from the content folder' }],
     snippet: '<Presentation>\n\n<Slide>\n  <Title>First slide</Title>\n</Slide>\n\n</Presentation>',
-    previewCode: '<Slide theme="dark">\n  <Title>Presentation</Title>\n  <Subtitle>Wraps every slide</Subtitle>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Presentation</Title>\n  <Subtitle>Wraps every slide</Subtitle>\n</Slide>',
     keywords: ['deck', 'root', 'presentation'],
     useCases: ['The outermost element of every deck'],
   },

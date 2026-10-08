@@ -166,7 +166,7 @@ export const CycleDiagram = defineComponent<CycleDiagramProps>({
       { name: 'size', type: 'number', default: '860', description: 'Rendered width and height in px' },
     ],
     snippet: '<CycleDiagram\n  centerTitle="Loop"\n  steps={[\n    { title: "Build", meta: "Day 1" },\n    { title: "Measure" },\n    { title: "Learn" },\n  ]}\n/>',
-    previewCode: '<Slide theme="dark">\n  <CycleDiagram size={760} centerTitle="Loop" steps={[{ title: "Build" }, { title: "Measure" }, { title: "Learn" }]} />\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <CycleDiagram size={760} centerTitle="Loop" steps={[{ title: "Build" }, { title: "Measure" }, { title: "Learn" }]} />\n</Slide>',
     keywords: ['cycle', 'loop', 'circular', 'hub', 'spoke', 'iteration', 'process', 'diagram'],
     useCases: ['A feedback loop', 'Parts feeding one centre'],
   },

@@ -64,7 +64,7 @@ export const ContentBox = defineComponent<ContentBoxProps>({
       { name: 'morph', type: 'string', description: 'Shared-element id' },
     ],
     snippet: '<ContentBox color="green" title="Title">Content</ContentBox>',
-    previewCode: '<Slide theme="light">\n  <ContentBox color="green" title="Observation">Flat, pastel, no shadow.</ContentBox>\n</Slide>',
+    previewCode: '<Slide scheme="light">\n  <ContentBox color="green" title="Observation">Flat, pastel, no shadow.</ContentBox>\n</Slide>',
     keywords: ['box', 'pastel', 'diagram', 'callout', 'container'],
     useCases: ['Boxes on a light diagram slide'],
   },

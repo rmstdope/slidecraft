@@ -28,7 +28,7 @@ export const TwoColumn = defineComponent<TwoColumnProps>({
     description: 'Side-by-side layout container.',
     props: [{ name: 'gap', type: 'string', default: '"80px"', description: 'Gap between the columns' }],
     snippet: '<TwoColumn>\n  <Card title="Left">Left column</Card>\n  <Card title="Right">Right column</Card>\n</TwoColumn>',
-    previewCode: '<Slide theme="dark">\n  <TwoColumn>\n    <Card title="Before">How it was</Card>\n    <Card title="After">How it is</Card>\n  </TwoColumn>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <TwoColumn>\n    <Card title="Before">How it was</Card>\n    <Card title="After">How it is</Card>\n  </TwoColumn>\n</Slide>',
     keywords: ['layout', 'columns', 'split', 'grid', 'side'],
     useCases: ['Two options side by side', 'Before and after'],
   },

@@ -22,7 +22,7 @@ export const Stack = defineComponent<StackProps>({
     description: 'Vertical grouping container with configurable gap.',
     props: [{ name: 'gap', type: 'number', default: '32', description: 'Gap between children in px' }],
     snippet: '<Stack gap={32}>\n  <Text>First</Text>\n  <Text>Second</Text>\n</Stack>',
-    previewCode: '<Slide theme="dark">\n  <Stack gap={24}>\n    <Text>First</Text>\n    <Text muted>Second</Text>\n  </Stack>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Stack gap={24}>\n    <Text>First</Text>\n    <Text muted>Second</Text>\n  </Stack>\n</Slide>',
     keywords: ['vertical', 'group', 'spacing', 'gap', 'column'],
     useCases: ['Group blocks with a fixed gap'],
   },

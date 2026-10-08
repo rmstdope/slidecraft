@@ -66,7 +66,7 @@ export const BackgroundImage = defineComponent<BackgroundImageProps>({
       { name: 'overlay', type: 'boolean', default: 'true', description: 'Blend into the theme background' },
     ],
     snippet: '<BackgroundImage src="images/photo.jpg" blur={4} />',
-    previewCode: '<Slide theme="dark">\n  <Title>Text over a photo</Title>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Text over a photo</Title>\n</Slide>',
     keywords: ['background', 'image', 'photo', 'cover'],
     useCases: ['A mood photo behind a title'],
   },

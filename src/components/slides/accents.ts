@@ -1,6 +1,6 @@
 /**
- * Accent roles (Part 2 §1.7). Components reference the CSS variables so a re-theme lands
- * everywhere at once; the hex table is only for tinting and blending.
+ * Accent roles (Part 2 §1.7). Components reference only the CSS variables, which the deck's
+ * theme sets, so every colour here follows the theme.
  */
 export const ACCENTS = ['yellow', 'red', 'teal', 'navy', 'gray'] as const
 export type AccentColor = (typeof ACCENTS)[number]
@@ -9,40 +9,24 @@ export type AccentColor = (typeof ACCENTS)[number]
 export const SLIDE_ACCENTS = ['yellow', 'red', 'teal', 'navy'] as const
 export type SlideAccent = (typeof SLIDE_ACCENTS)[number]
 
-export const GRAY = '#8a8f98'
-
 export const accentColors: Record<AccentColor, string> = {
   yellow: 'var(--brand-yellow)',
   red: 'var(--brand-red)',
   teal: 'var(--accent-teal)',
-  navy: 'var(--accent-navy)', // swapped for a lighter blue on dark slides by the theme
-  gray: GRAY,
-}
-
-/** Literal values, kept in step with global.css. Navy is the light-theme value. */
-export const accentHex: Record<AccentColor, string> = {
-  yellow: '#f5b400',
-  red: '#e0452b',
-  teal: '#1f9e89',
-  navy: '#1f3a5f',
-  gray: GRAY,
+  navy: 'var(--accent-navy)', // swapped for a lighter blue on dark slides by the scheme
+  gray: 'var(--accent-gray)',
 }
 
 export const isAccent = (value: unknown): value is AccentColor =>
   typeof value === 'string' && (ACCENTS as readonly string[]).includes(value)
 
-export function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h
-  const n = Number.parseInt(full, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
+const percent = (alpha: number) => `${Math.round(Math.min(1, Math.max(0, alpha)) * 1000) / 10}%`
 
-/** "r, g, b" of an accent, for rgba() composition. */
-export const accentRgb = (accent: AccentColor): string => hexToRgb(accentHex[accent]).join(', ')
-
-/** rgba() of the accent at the given alpha: panel fills, hairlines, photo rings. */
-export const tint = (accent: AccentColor, alpha: number): string => `rgba(${accentRgb(accent)}, ${alpha})`
+/**
+ * The accent at the given opacity, for panel fills, hairlines and photo rings. Built with
+ * color-mix on the theme variable, so it follows whatever theme the slide uses.
+ */
+export const tint = (accent: AccentColor, alpha: number): string => `color-mix(in srgb, ${accentColors[accent]} ${percent(alpha)}, transparent)`
 
 /** Ink that reads on a solid fill of the accent. */
 export function onAccent(accent: AccentColor): string {
@@ -57,11 +41,6 @@ export const resolveAccent = (value: unknown): AccentColor | undefined => (isAcc
 /** An accent role or any raw CSS colour, as a CSS value. */
 export const colorValue = (value: AccentColor | string): string => (isAccent(value) ? accentColors[value] : value)
 
-function mixHex(hex: string, target: number, amount: number): string {
-  const [r, g, b] = hexToRgb(hex).map((c) => Math.round(c + (target - c) * amount))
-  return `rgb(${r}, ${g}, ${b})`
-}
-
 export interface AccentShades {
   light: string
   base: string
@@ -72,7 +51,11 @@ export interface AccentShades {
 export const accentShades: Record<AccentColor, AccentShades> = Object.fromEntries(
   ACCENTS.map((accent) => [
     accent,
-    { light: mixHex(accentHex[accent], 255, 0.3), base: accentColors[accent], dark: mixHex(accentHex[accent], 0, 0.25) },
+    {
+      light: `color-mix(in srgb, ${accentColors[accent]} 70%, white)`,
+      base: accentColors[accent],
+      dark: `color-mix(in srgb, ${accentColors[accent]} 75%, black)`,
+    },
   ]),
 ) as Record<AccentColor, AccentShades>
 

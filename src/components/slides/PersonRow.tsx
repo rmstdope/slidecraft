@@ -34,7 +34,7 @@ export const PersonRow = defineComponent<PersonRowProps>({
     snippet:
       '<PersonRow>\n  <PersonCard name="Jane Doe" role="Software Engineer" email="jane.doe@example.com" />\n  <PersonCard name="John Roe" role="Designer" email="john.roe@example.com" />\n  <PersonCard name="Alex Poe" role="Product Lead" email="alex.poe@example.com" />\n</PersonRow>',
     previewCode:
-      '<Slide theme="dark">\n  <PersonRow>\n    <PersonCard name="Jane Doe" role="Engineer" />\n    <PersonCard name="John Roe" role="Designer" />\n  </PersonRow>\n</Slide>',
+      '<Slide scheme="dark">\n  <PersonRow>\n    <PersonCard name="Jane Doe" role="Engineer" />\n    <PersonCard name="John Roe" role="Designer" />\n  </PersonRow>\n</Slide>',
     keywords: ['people', 'team', 'contacts', 'row', 'layout'],
     useCases: ['A team slide', 'Contacts at the end of a talk'],
   },

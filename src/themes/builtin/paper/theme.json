@@ -1,0 +1,21 @@
+{
+  "name": "Paper",
+  "description": "Warm light pages with muted ink accents; only the palette differs from Slidecraft.",
+  "extends": "slidecraft",
+  "tokens": {
+    "accents": {
+      "yellow": "#c98a00",
+      "red": "#b93c1d",
+      "teal": "#0f766e",
+      "navy": "#23407a",
+      "navyOnDark": "#9db8e8",
+      "gray": "#857f74"
+    },
+    "light": { "bg": "#f6f1e7", "text": "#2b2925", "muted": "rgba(43, 41, 37, 0.62)" },
+    "dark": { "bg": "#1d1b18", "text": "#f6f1e7", "muted": "rgba(246, 241, 231, 0.62)" },
+    "ink": "#2b2925",
+    "bar": "#c98a00"
+  },
+  "logos": { "onDark": "/logo-on-dark.svg", "onLight": "/logo-on-light.svg" },
+  "defaults": { "scheme": "light" }
+}

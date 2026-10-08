@@ -86,7 +86,7 @@ export const Step = defineComponent<StepProps>({
       { name: 'gap', type: 'number', default: '32', description: 'Gap between children in px' },
     ],
     snippet: '<Step at={1}>\n  <Text>Arrives on the first beat</Text>\n</Step>',
-    previewCode: '<Slide theme="dark">\n  <Title>Build in speech order</Title>\n  <Step at={1}>\n    <Text>Arrives on the first beat</Text>\n  </Step>\n</Slide>',
+    previewCode: '<Slide scheme="dark">\n  <Title>Build in speech order</Title>\n  <Step at={1}>\n    <Text>Arrives on the first beat</Text>\n  </Step>\n</Slide>',
     keywords: ['step', 'build', 'reveal', 'animation', 'beat', 'fragment', 'appear'],
     useCases: ['Reveal points in the order you say them', 'Land a row of items one by one'],
   },

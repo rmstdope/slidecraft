@@ -278,7 +278,7 @@ export const BlockDiagram = defineComponent<BlockDiagramProps>({
     snippet:
       '<BlockDiagram\n  nodes={[\n    { id: "client", row: 0, column: 0, title: "Client" },\n    { id: "api", row: 0, column: 1, title: "API", emphasis: true, accent: "teal" },\n    { id: "db", row: 0, column: 2, title: "Database" },\n  ]}\n  edges={[\n    { from: "client", to: "api", label: "HTTPS" },\n    { from: "api", to: "db" },\n  ]}\n/>',
     previewCode:
-      '<Slide theme="dark">\n  <BlockDiagram nodes={[{ id: "client", row: 0, column: 0, title: "Client" }, { id: "api", row: 0, column: 1, title: "API", emphasis: true, accent: "teal" }, { id: "db", row: 0, column: 2, title: "Database" }]} edges={[{ from: "client", to: "api", label: "HTTPS" }, { from: "api", to: "db" }]} />\n</Slide>',
+      '<Slide scheme="dark">\n  <BlockDiagram nodes={[{ id: "client", row: 0, column: 0, title: "Client" }, { id: "api", row: 0, column: 1, title: "API", emphasis: true, accent: "teal" }, { id: "db", row: 0, column: 2, title: "Database" }]} edges={[{ from: "client", to: "api", label: "HTTPS" }, { from: "api", to: "db" }]} />\n</Slide>',
     keywords: ['block', 'architecture', 'boxes', 'arrows', 'dataflow', 'pipeline', 'topology', 'c4', 'system'],
     useCases: ['System architecture', 'Data flow between parts'],
   },
