@@ -46,6 +46,9 @@ export default defineConfig(({ command }) => {
       ],
     },
     server: {
+      // Some macOS setups deliver no events to directory watchers when an existing file changes,
+      // which leaves Vite serving stale modules. SLIDECRAFT_WATCH_POLLING=1 switches to polling.
+      watch: process.env.SLIDECRAFT_WATCH_POLLING === '1' ? { usePolling: true, interval: 200 } : undefined,
       port: CLIENT_PORT,
       strictPort: true, // never move to another port: a running server is reused instead (Part 4 §10.2)
       proxy: {

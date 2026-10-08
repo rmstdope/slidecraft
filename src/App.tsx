@@ -115,6 +115,14 @@ export function App() {
         </Placeholder>
       )
     case 'presentation':
+      return (
+        <>
+          <DeckView deck={view.deck} content={view.content} />
+          <button type="button" className="presentation-view-button deck-home-button" onClick={goHome}>
+            Home
+          </button>
+        </>
+      )
     case 'presenter':
       return <DeckView deck={view.deck} content={view.content} />
   }

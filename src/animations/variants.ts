@@ -10,6 +10,10 @@ const sign = (direction: number) => (direction >= 0 ? 1 : -1)
 export const TRANSITIONS = ['slide', 'fade', 'morph', 'slide-up', 'zoom', 'push', 'flip', 'cube'] as const
 export type SlideTransition = (typeof TRANSITIONS)[number]
 
+/** Unknown names fall back to the default, like every other slide enum. */
+export const resolveTransition = (value: unknown, fallback: SlideTransition = 'slide'): SlideTransition =>
+  typeof value === 'string' && (TRANSITIONS as readonly string[]).includes(value) ? (value as SlideTransition) : fallback
+
 /**
  * Direction-aware slide transitions (Part 1 §2.2). initial and exit are functions of the
  * `custom` direction: >= 0 is forward.

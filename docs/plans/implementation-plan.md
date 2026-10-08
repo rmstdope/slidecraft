@@ -200,6 +200,14 @@ pulled forward). `step` and `morph` props on `Text` arrive with the motion syste
 **Done when:** arrow keys, click, overview, fullscreen, hash deep links and browser back/forward
 behave per spec on a multi-slide deck; thumbnails render frozen and complete.
 
+**Status (2026-10-08): done.** `analyzeDeck`, the pure navigation model, the full player (keys,
+click/right-click/swipe, hash sync, fullscreen, progress pills, dev mode as state, overview with
+measured columns and preview, `?pdf` static render, thumbnail mode that renders the first slide),
+`SlideThumbnail` (fixed or measured `fit` scale, provided through a context instead of a DOM
+lookup), `GlobalCommandPalette`, `KeyboardShortcutsModal` and the shortcut registry. Also pulled
+forward from Phase 3: `steps.ts` and `StepContext`. Not yet: `A` (drawing, Phase 8), the Read
+button (Phase 9), live reload (Phase 5), canvas runs on one stage (Phase 3).
+
 ### Phase 3 — Motion system
 
 **Goal:** steps, morphs, canvas camera, connector drawing.
@@ -414,6 +422,13 @@ no knowledge-MCP or skills modules under `server/lib/`.
   `import.meta.glob('/content/*/index.mdx')` after a deck folder was added; a restart fixed it.
   Phase 5's runtime loader must be the fallback whenever a deck is not in the bundled map, so a
   stale glob never hides a deck.
+- **File watching on macOS**: on the development machine, directory watchers (`fs.watch` on a
+  folder, recursive or not, in Node and in Bun) receive no event when an existing file changes;
+  only a watcher on the file itself does. Vite then serves stale modules until restarted (this
+  was the cause of the "stale glob" above). `SLIDECRAFT_WATCH_POLLING=1` makes Vite poll.
+  Phase 5's server watcher must not rely on recursive directory events alone: watch each
+  discovered `index.mdx` file directly and keep directory watching only for new decks, with a
+  polling fallback behind the same switch.
 - **Export size**: fontsource CSS lists `woff2` and `woff`, so the viewer CSS inlines both
   (about 260 KB). Phase 9 should inline only `woff2`.
 - The spec's `@tanstack/charts` dependency is intentionally absent; ScatterChart behaviour is

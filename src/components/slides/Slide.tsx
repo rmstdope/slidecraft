@@ -7,6 +7,7 @@ import { CHROME_PADDING, SECTION_TEXT_MAX_WIDTH } from './chrome/geometry'
 import { defineComponent } from './defineComponent'
 import { gradientFor, GRADIENTS, type SlideGradient } from './gradients'
 import { SlideLayoutContext, type SlideChrome, type SlideLayout } from './slideLayoutContext'
+import { useInThumbnail } from './thumbnailContext'
 
 export const DESIGN_WIDTH = 1920
 export const DESIGN_HEIGHT = 1080
@@ -124,10 +125,7 @@ function SlideComponent({
   const headerRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  const [inThumbnail, setInThumbnail] = useState(false)
-  useLayoutEffect(() => {
-    setInThumbnail(!!slideRef.current?.parentElement?.closest('[data-slide-thumbnail]'))
-  }, [])
+  const inThumbnail = useInThumbnail()
   const scale = useStageScale(_fixedScale, inThumbnail)
 
   const { header, body } = isDocument ? splitHeaderBody(children) : { header: [], body: [] }

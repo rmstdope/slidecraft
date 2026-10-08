@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 1 (stage and typography) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 2 (presentation engine) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -35,6 +35,8 @@ Component Developer. Otherwise Framework Developer.
 - Open http://localhost:6100. Ports 6100 and 6110 are fixed constants in `shared/ports.ts`.
 - **Reuse a running server; never restart or kill it**, and never start one on another port.
   Run `bun run dev:status` first. `bun run dev` is safe to run again: it only starts what is missing.
+- If edits do not show up until Vite restarts, file-system events are not reaching it (seen on
+  some macOS setups). Start the dev server with `SLIDECRAFT_WATCH_POLLING=1` (or set it in `.env`).
 
 ## Tech stack
 

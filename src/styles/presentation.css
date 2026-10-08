@@ -1,0 +1,440 @@
+/* Presentation player, overview, palette and modals (Part 1 §3, Part 3 §1.8–1.9). */
+
+.presentation {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--dark-bg);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.presentation__slide {
+  position: absolute;
+  inset: 0;
+}
+
+.presentation__controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+}
+
+/* Progress pills: yellow on dark slides, ink on light ones (yellow on white is ~1.7:1). */
+.progress {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.progress__pill {
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: width var(--transition-normal), background var(--transition-normal);
+}
+
+.progress__pill.is-current {
+  width: 2rem;
+  background: var(--brand-yellow);
+}
+
+.progress--light .progress__pill {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.progress--light .progress__pill.is-current {
+  background: rgba(26, 26, 26, 0.65);
+}
+
+.progress__counter {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 100;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.progress__counter.progress--light {
+  color: rgba(26, 26, 26, 0.55);
+}
+
+/* Dev mode. */
+.dev-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px dashed var(--brand-yellow);
+  pointer-events: none;
+  z-index: 90;
+}
+
+.dev-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dev-toolbar .presentation-view-button {
+  opacity: 1;
+}
+
+.dev-toolbar__badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: var(--brand-yellow);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* Overview. */
+.overview {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.95);
+  cursor: default;
+}
+
+.overview__header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 2rem;
+}
+
+.overview__header h2 {
+  font: 600 1.25rem var(--font-display);
+  color: var(--brand-yellow);
+}
+
+.overview__hints {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+
+.overview__header .presentation-view-button {
+  opacity: 1;
+}
+
+.overview__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 1.5rem;
+  padding: 0 2rem 2rem;
+}
+
+.overview__grid {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  align-content: start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 0.5rem;
+}
+
+.overview__body.is-preview .overview__grid {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.overview__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dark-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overview__frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 3px solid transparent;
+  background: var(--dark-bg);
+}
+
+.overview__cell.is-current .overview__frame {
+  border-color: rgba(245, 180, 0, 0.5);
+}
+
+.overview__cell.is-focused .overview__frame {
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 24px rgba(245, 180, 0, 0.35);
+}
+
+.overview__cell.is-focused {
+  color: var(--dark-text);
+}
+
+.overview__preview {
+  flex: 0 0 55%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--dark-muted);
+  font-size: 0.875rem;
+}
+
+.overview__preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--dark-bg);
+}
+
+/* Command palette and shortcuts modal (tool UI). */
+.palette-scrim,
+.shortcuts-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  cursor: default;
+}
+
+.palette {
+  position: absolute;
+  top: 10vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 200px);
+  max-width: 1500px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a1a1a;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.palette__search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.palette__icon {
+  color: var(--dark-muted);
+  font-size: 1.25rem;
+}
+
+.palette__search input {
+  flex: 1;
+  background: none;
+  border: 0;
+  outline: 0;
+  color: var(--dark-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.palette__list {
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.palette__group {
+  padding: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.palette__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.palette__row.is-selected {
+  background: rgba(245, 180, 0, 0.12);
+}
+
+.palette__row.is-selected .palette__row-name {
+  color: var(--brand-yellow);
+}
+
+.palette__row-name {
+  white-space: nowrap;
+}
+
+.palette__row-description {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dark-muted);
+  font-size: 0.8125rem;
+}
+
+.palette__row-keys {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.palette__empty {
+  padding: 1rem;
+  color: var(--dark-muted);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  font: 0.75rem var(--font-mono);
+  text-align: center;
+  color: var(--dark-text);
+}
+
+.shortcuts {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 500px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.shortcuts__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shortcuts__header h2 {
+  font: 600 1.25rem var(--font-display);
+  color: var(--brand-yellow);
+}
+
+.shortcuts__header span {
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+
+.shortcuts__body {
+  overflow-y: auto;
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.shortcuts__body h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.shortcuts__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+}
+
+.shortcuts__keys {
+  display: flex;
+  gap: 4px;
+}
+
+/* Preview error box used by thumbnails and previews. */
+.preview-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px;
+  background: rgba(224, 69, 43, 0.1);
+  border: 2px solid rgba(224, 69, 43, 0.3);
+  color: var(--brand-red);
+  font: 32px/1.4 var(--font-body);
+}
+
+.preview-error pre {
+  white-space: pre-wrap;
+  font-size: 28px;
+  color: var(--dark-text);
+}
+
+/* App chrome around a deck. */
+.deck-home-button {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 150;
+  opacity: 0.6;
+}
+
+.deck-home-button:hover {
+  opacity: 1;
+}
