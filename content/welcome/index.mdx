@@ -1,7 +1,11 @@
 ---
 title: Welcome to Slidecraft
 ---
-import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
+import { Presentation, Slide, Title, Subtitle, Text, Step, Notes } from '@components'
+
+{/*
+  COLOUR LEGEND: each slide uses its own single accent; no colour carries a deck-wide meaning.
+*/}
 
 <Presentation>
 
@@ -12,23 +16,38 @@ import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
   <Notes>0:00-0:30. Open with the idea: a deck is a text file you can diff, review and generate.</Notes>
 </Slide>
 
-<Slide theme="dark" accent="teal" gradient="radial" layout="document">
-  <Subtitle>How it works</Subtitle>
-  <Title>A slide is a fixed 1920 by 1080 stage</Title>
-  <Text align="left">Every size is in pixels on that stage. The stage is scaled to the screen as a whole, so nothing reflows between a laptop and a projector.</Text>
-  <Notes>0:30-1:10. Resize the window to show letterboxing.</Notes>
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Presenting</Subtitle>
+  <Title>Keys, clicks and a map of the deck</Title>
+  <Step at={1}>
+    <Text align="left">→, Space or a click: the next beat, then the next slide. ← walks back.</Text>
+  </Step>
+  <Step at={2}>
+    <Text align="left">↓ skips the remaining beats. Home and End jump to the ends.</Text>
+  </Step>
+  <Step at={3}>
+    <Text align="left">M opens the overview, D the dev view, ? the shortcuts, Cmd+K every command.</Text>
+  </Step>
+  <Notes>0:30-1:10. This slide builds in three beats. Press M to show the overview, then Esc.</Notes>
 </Slide>
 
-<Slide theme="light" accent="navy" gradient="spotlight">
-  <Subtitle>Light theme</Subtitle>
-  <Title size="standard">Standard titles shrink until they fit on two lines, however long the wording gets</Title>
-  <Text muted>Spotlight gradient, navy accent.</Text>
+<Slide theme="dark" accent="teal" gradient="radial" layout="document">
+  <Subtitle>The stage</Subtitle>
+  <Title>A slide is a fixed 1920 by 1080 stage</Title>
+  <Text align="left">Every size is in pixels on that stage. The stage is scaled to the screen as a whole, so nothing reflows between a laptop and a projector.</Text>
+  <Notes>1:10-1:40. Resize the window to show letterboxing.</Notes>
 </Slide>
 
 <Slide theme="light" accent="red" gradient="diagonal" layout="document">
   <Subtitle>Document layout</Subtitle>
   <Title>Header band, body and footer</Title>
   <Text align="left">The leading Subtitle and Title form the header band. Everything after them is the body, centred vertically in the space that remains.</Text>
+</Slide>
+
+<Slide theme="light" accent="navy" gradient="spotlight">
+  <Subtitle>Light theme</Subtitle>
+  <Title size="standard">Standard titles shrink until they fit on two lines, however long the wording gets</Title>
+  <Text muted>Spotlight gradient, navy accent.</Text>
 </Slide>
 
 <Slide theme="dark" accent="navy" gradient="spotlight">
@@ -40,14 +59,83 @@ import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
   <Title size="compact" accent>Compact title, teal accent, radial vignette</Title>
 </Slide>
 
+<Slide theme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Motion</Subtitle>
+  <Title>Motion that means something</Title>
+  <Text muted>Each kind of movement says one thing. Nothing moves for decoration.</Text>
+  <Notes>2:00-2:20. Section opener for the motion features.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Steps</Subtitle>
+  <Title>Direction can carry the argument</Title>
+  <Step at={1} enter="left">
+    <Text align="left">Before: slides drawn by hand, box by box.</Text>
+  </Step>
+  <Step at={2} enter="right">
+    <Text align="left">After: one MDX file, composed from components.</Text>
+  </Step>
+  <Step at={3} enter="fall">
+    <Text align="left">So: decks you can diff, review and generate.</Text>
+  </Step>
+  <Notes>2:20-3:00. Left is what came before, right replaces it, falling is the consequence. Hidden beats keep their space, so nothing reflows.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Stagger</Subtitle>
+  <Title>A row can land one item at a time</Title>
+  <Step at={1} stagger row gap={120}>
+    <Text size="lg">Write.</Text>
+    <Text size="lg">Present.</Text>
+    <Text size="lg">Export.</Text>
+  </Step>
+  <Text align="left" muted step={2}>Components also take a step prop directly, so a grid keeps its shape.</Text>
+  <Notes>3:00-3:30. One beat lands the whole row, item by item. The second beat uses step on the Text itself.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="red">
+  <Subtitle>Morph</Subtitle>
+  <Title>Same thing, new place</Title>
+  <Text size="lg" morph="claim">One file per deck</Text>
+  <Notes>3:30-3:50. Watch the line move on the next slide: it is the same element, not a new one.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="red" layout="document" transition="morph">
+  <Subtitle>Morph</Subtitle>
+  <Title>The claim moves; the frame only fades</Title>
+  <Text align="left" size="lg" morph="claim">One file per deck</Text>
+  <Text align="left" muted step={1}>Pair morph ids on two slides and set transition="morph" on the second. Two different things that happen to sit in the same spot are not a morph.</Text>
+  <Notes>3:50-4:20. Going back plays the morph in reverse.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="navy" canvas="map" transition="fade">
+  <Subtitle>Canvas</Subtitle>
+  <Title>Slides can share one plane</Title>
+  <Text muted>The camera moves between them. The neighbours stay visible, dimmed: they are the map.</Text>
+  <Notes>4:20-4:50. Three slides on one canvas. Moving between them pans and zooms instead of changing slides.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="navy" canvas="map" camera={{ x: 2240, y: 0, scale: 0.6 }}>
+  <Subtitle>Detail</Subtitle>
+  <Title>Drawn small, seen up close</Title>
+  <Text muted>This slide sits at 60% on the plane, so the camera zooms in to read it.</Text>
+</Slide>
+
+<Slide theme="dark" accent="navy" canvas="map" camera={{ x: 4480, y: 700, rotate: -4 }}>
+  <Subtitle>Off the line</Subtitle>
+  <Title>Placed anywhere, tilted on purpose</Title>
+  <Text muted step={1}>Only the focused slide builds; the rest of the map is always complete.</Text>
+  <Notes>5:00-5:30. Keep scale near 1 and rotation for background slides in real decks: fractional scale and rotation soften text.</Notes>
+</Slide>
+
 <Slide hidden>
   <Title>This slide is hidden when presenting</Title>
 </Slide>
 
 <Slide theme="dark" accent="yellow" layout="document">
-  <Subtitle>Dev mode grading</Subtitle>
+  <Subtitle>Dev mode</Subtitle>
   <Title>A document title that runs on far too long becomes a signal to rewrite it shorter, because the eyebrow already names the subject and the title should only assert</Title>
-  <Text align="left">Open this slide with ?mode=dev to see the outline.</Text>
+  <Text align="left">Press D to see the outline: amber for two lines, red for three or more.</Text>
 </Slide>
 
 <Slide theme="dark" accent="red" layout="document">
@@ -55,8 +143,8 @@ import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
   <Title>Crowded bodies shrink to fit</Title>
   <Text align="left" size="lg">First paragraph of a deliberately crowded slide that holds more text than the body can show at full size.</Text>
   <Text align="left" size="lg">Second paragraph. The header band never scales; only the body below it does.</Text>
-  <Text align="left" size="lg">Third paragraph. In dev mode a badge reports the scale that was applied.</Text>
-  <Text align="left" size="lg">Fourth paragraph. Fit mode scales, actual mode shows the overflow instead.</Text>
+  <Text align="left" size="lg">Third paragraph. Press D and a badge reports the scale that was applied.</Text>
+  <Text align="left" size="lg">Fourth paragraph. F switches between fit and actual size, which shows the overflow instead.</Text>
   <Text align="left" size="lg">Fifth paragraph. Split a slide like this one in two.</Text>
 </Slide>
 

@@ -137,8 +137,9 @@ function SlideComponent({
     const target = isDocument ? bodyRef.current : innerRef.current
     const content = contentRef.current
     if (!target || !content) return
-    const previous = target.style.transform
-    target.style.transform = 'none'
+    // Measure the untransformed layout: a hidden build step offset sideways, or an item mid-entry,
+    // must not count as overflow. The class turns off every transform in the subtree (see global.css).
+    target.classList.add('is-measuring')
     void target.offsetWidth // force reflow
     const cs = getComputedStyle(content)
     const availableWidth = DESIGN_WIDTH - px(cs.paddingLeft) - px(cs.paddingRight)
@@ -150,7 +151,7 @@ function SlideComponent({
     const scale = overflow
       ? Math.min(overflowX ? availableWidth / target.scrollWidth : 1, overflowY ? availableHeight / target.scrollHeight : 1)
       : 1
-    target.style.transform = previous
+    target.classList.remove('is-measuring')
     setFit((current) => (Math.abs(current.scale - scale) < 0.001 && current.overflow === overflow ? current : { scale, overflow }))
   }, [isDocument, hasHeader])
 

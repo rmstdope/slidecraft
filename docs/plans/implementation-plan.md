@@ -116,7 +116,13 @@ repair (*Part 4 §7.4*, void list adapted to our component names: `ContentImage`
 `validateMdx` (compile check) → write → SSE broadcast (*Part 0 §0.5 item 8*). Full tag balancing is
 not implemented.
 
-### 2.5 Testing
+### 2.5 Welcome deck
+
+`content/welcome/index.mdx` is the living showcase. Every phase updates it with finished-looking
+slides that demonstrate that phase's features, and verifies them in the browser as part of the
+phase's "done when". No test fixtures and no slides for features whose visuals have not landed.
+
+### 2.6 Testing
 
 `bun test` throughout. Unit tests live in `tests/` and next to pure modules. The registry test
 (*Part 2 §1.6*), content tests, content-source tests, ports test, parser round-trip tests, reader
@@ -218,8 +224,16 @@ button (Phase 9), live reload (Phase 5), canvas runs on one stage (Phase 3).
   canvas-run keying in `Presentation`, `drawProps` (*§10*).
 - `Stat` count-up (*§5.5*) implemented with the component in Phase 4; the hook lives here.
 
-**Done when:** the "motion" example deck (*Part 6 §8.3*) plays correctly: beats, stagger row,
-left/right/fall enters, a morphing Stat, canvas with scale and rotate, reduced-motion fallback.
+**Done when:** the welcome deck's motion section plays correctly: beats, stagger row,
+left/right/fall enters, a morph pair, canvas with scale and rotate, reduced-motion fallback.
+(The spec's separate "motion" deck, with Stat, Card and diagrams, is built in Phase 12.)
+
+**Status (2026-10-08): done.** `StepReveal`, `useStepMotion`, `<Step>` (plain and staggered),
+`morphProps`, `camera.ts` + `CanvasStage` with canvas runs keyed as one stage in the player,
+`drawProps`, and the count-up parser and hook for `Stat` (Phase 4). `Text` takes `step` and
+`morph`. Fixed along the way: auto-fit measured hidden step offsets as overflow; measurement now
+turns off every transform in the subtree. The welcome deck gained a presenting slide (Phase 2
+controls, built with steps) and a motion section.
 
 ### Phase 4 — Component catalogue
 

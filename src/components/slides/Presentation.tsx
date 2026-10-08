@@ -1,6 +1,6 @@
 import { cloneElement, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react'
-import { StepContext } from '../../animations/stepContext'
+import { ALL_STEPS_STATE, StepContext } from '../../animations/stepContext'
 import { springs } from '../../animations/springs'
 import { resolveTransition, slideVariants } from '../../animations/variants'
 import { chatUrl, editorUrl, homeUrl } from '../../router'
@@ -13,6 +13,7 @@ import { Overview } from '../presentation/Overview'
 import { PdfView } from '../presentation/PdfView'
 import { ProgressIndicator } from '../presentation/ProgressIndicator'
 import { analyzeDeck, type DeckAnalysis } from './analyzeDeck'
+import { CanvasStage } from './CanvasStage'
 import { useDeck } from './deckContext'
 import { defineComponent } from './defineComponent'
 import {
@@ -318,8 +319,16 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
     )
   }
 
-  const slide = slides[Math.min(nav.current, total - 1)]
-  const variants = slideVariants[resolveTransition(slide.props.transition)]
+  const current = Math.min(nav.current, total - 1)
+  const slide = slides[current]
+  // A canvas run is one stage: moving inside it only moves the camera (Part 1 §9.3).
+  const run = analysis.canvasRuns[analysis.runOfSlide[current]]
+  const onCanvas = !!run?.canvas
+  const runFirst = run?.indices[0] ?? current
+  const stageKey = onCanvas ? `canvas-${run.canvas}-${runFirst}` : `slide-${current}`
+  const transitionSource = onCanvas ? slides[runFirst] : slide
+  const variants = slideVariants[resolveTransition(transitionSource.props.transition, onCanvas ? 'fade' : 'slide')]
+  const liveSteps = { step: nav.step, total: stepsOnSlide }
   const light = slide.props.theme === 'light' || (!!slide.props.chrome && slide.props.chrome !== 'none')
 
   return (
@@ -353,7 +362,7 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
         <LayoutGroup>
           <AnimatePresence mode="sync" custom={nav.direction}>
             <motion.div
-              key={`slide-${nav.current}`}
+              key={stageKey}
               className="presentation__slide"
               custom={nav.direction}
               variants={variants}
@@ -361,9 +370,22 @@ function LivePresentation({ analysis }: { analysis: DeckAnalysis }) {
               animate="animate"
               exit="exit"
             >
-              <StepContext.Provider value={{ step: nav.step, total: stepsOnSlide }}>
-                {cloneElement(slide, { direction: nav.direction, _skipAnimation: true, _devMode: devMode, _devFitMode: devFitMode })}
-              </StepContext.Provider>
+              {onCanvas ? (
+                <CanvasStage
+                  slides={run.indices.map((i) => slides[i])}
+                  activeIndex={current - runFirst}
+                  renderSlide={(runSlide, _i, active) => (
+                    // The rest of the canvas is the map around the focused slide: always fully built.
+                    <StepContext.Provider value={active ? liveSteps : ALL_STEPS_STATE}>
+                      {cloneElement(runSlide, { direction: nav.direction, _skipAnimation: true, _fixedScale: 1, _devMode: devMode, _devFitMode: devFitMode })}
+                    </StepContext.Provider>
+                  )}
+                />
+              ) : (
+                <StepContext.Provider value={liveSteps}>
+                  {cloneElement(slide, { direction: nav.direction, _skipAnimation: true, _devMode: devMode, _devFitMode: devFitMode })}
+                </StepContext.Provider>
+              )}
             </motion.div>
           </AnimatePresence>
         </LayoutGroup>

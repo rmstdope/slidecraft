@@ -117,6 +117,12 @@ pre {
   font-family: var(--font-mono);
 }
 
+/* Overflow measurement (Slide auto-fit): lay the subtree out without transforms. */
+.is-measuring,
+.is-measuring * {
+  transform: none !important;
+}
+
 /* Slide stage furniture (Part 1 §6). */
 .slide__logo {
   position: absolute;

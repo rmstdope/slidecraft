@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
+import { useStepMotion } from '../../animations/stepMotion'
 import { itemVariants } from '../../animations/variants'
 import { defineComponent } from './defineComponent'
 
@@ -13,16 +14,22 @@ export interface TextProps {
   tight?: boolean
   /** Exact px size; overrides size. */
   fontSize?: number
+  /** Reveal on this build step. */
+  step?: number
+  /** Shared-element id: the same id on two slides is one element moving between them. */
+  morph?: string
   className?: string
 }
 
 export const TEXT_SIZES = { xs: 18, sm: 32, md: 40, lg: 48 } as const
 
-function TextComponent({ children, muted = false, size = 'md', align = 'center', tight = false, fontSize, className }: TextProps) {
+function TextComponent({ children, muted = false, size = 'md', align = 'center', tight = false, fontSize, step, morph, className }: TextProps) {
+  const stepMotion = useStepMotion(step, morph)
   return (
     <motion.span
       className={className}
       variants={itemVariants}
+      {...stepMotion}
       style={{
         display: 'block',
         fontFamily: 'var(--font-body)',
@@ -52,6 +59,8 @@ export const Text = defineComponent<TextProps>({
       { name: 'align', type: '"left" | "center" | "right"', default: '"center"', description: 'Text alignment' },
       { name: 'tight', type: 'boolean', default: 'false', description: 'Line-height 1.25 instead of 1.6' },
       { name: 'fontSize', type: 'number', description: 'Exact px size; overrides size' },
+      { name: 'step', type: 'number', description: 'Reveal on this build step' },
+      { name: 'morph', type: 'string', description: 'Shared-element id; pair with transition="morph" on the next slide' },
     ],
     snippet: '<Text>Your body text here</Text>',
     previewCode: '<Slide theme="dark">\n  <Text>Your body text here</Text>\n</Slide>',

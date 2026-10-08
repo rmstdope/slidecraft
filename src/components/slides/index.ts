@@ -5,6 +5,7 @@
 export { Presentation } from './Presentation'
 export { Slide } from './Slide'
 export { Notes } from './Notes'
+export { Step } from './Step'
 export { Title } from './Title'
 export { Subtitle } from './Subtitle'
 export { Text } from './Text'

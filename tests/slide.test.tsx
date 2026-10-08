@@ -118,3 +118,17 @@ describe('fitTitleSize', () => {
     expect(fitTitleSize(fakeTitle(400), 48, 88, 2)).toBe(48)
   })
 })
+
+describe('auto-fit measurement', () => {
+  test('removes the measuring class again and leaves no transform when nothing overflows', () => {
+    const { container } = render(
+      <Slide layout="document">
+        <Title>T</Title>
+        <Text>Body</Text>
+      </Slide>,
+    )
+    expect(container.querySelector('.is-measuring')).toBeNull()
+    const body = container.querySelector('.slide__header')!.nextElementSibling!.firstElementChild as HTMLElement
+    expect(body.style.transform).toBe('')
+  })
+})

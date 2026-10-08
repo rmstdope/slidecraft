@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 2 (presentation engine) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 3 (motion system) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -68,6 +68,11 @@ Path aliases: `@/*` → `src/*`, `@components` → `src/components/index.ts`, `@
   every component list, toolbar, completion, gallery and prompt.
 - Colour and motion are semantic: one accent per slide; motion only when it carries meaning.
 - YAML frontmatter in a deck is opaque: preserved byte for byte, stripped before compile.
+
+## Welcome deck
+
+`content/welcome/index.mdx` showcases every feature built so far. Each phase adds finished-looking
+slides for what it delivered; it is not a place for test fixtures.
 
 ## Adding a slide component
 
