@@ -43,7 +43,7 @@ async function status(): Promise<number> {
   return api && client ? 0 : 1
 }
 
-async function start(): Promise<number> {
+async function start(serverArgs: string[]): Promise<number> {
   const [api, client] = await Promise.all([apiHealth(), clientRunning()])
   if (api && client) {
     console.log(`Slidecraft is already running at ${CLIENT_URL}`)
@@ -60,10 +60,11 @@ async function start(): Promise<number> {
 
   const env = { ...process.env, PORT: String(API_PORT), SLIDECRAFT_API_PORT: String(API_PORT), SLIDECRAFT_CLIENT_PORT: String(CLIENT_PORT) }
   const children = [
-    ...(api ? [] : [Bun.spawn(['bun', '--watch', 'server/index.ts'], { env, stdio: ['inherit', 'inherit', 'inherit'] })]),
+    // Flags such as --content are passed through to the API server.
+    ...(api ? [] : [Bun.spawn(['bun', '--watch', 'server/index.ts', ...serverArgs], { env, stdio: ['inherit', 'inherit', 'inherit'] })]),
     ...(client ? [] : [Bun.spawn(['bunx', 'vite'], { env, stdio: ['inherit', 'inherit', 'inherit'] })]),
   ]
-  if (api) console.log(`Reusing API server on ${API_URL}`)
+  if (api) console.log(`Reusing API server on ${API_URL}${serverArgs.length ? ` (ignoring ${serverArgs.join(' ')}: it keeps its own content directory)` : ''}`)
   if (client) console.log(`Reusing Vite dev server on ${CLIENT_URL}`)
 
   const stopAll = () => children.forEach((child) => child.kill())
@@ -76,4 +77,4 @@ async function start(): Promise<number> {
   return code
 }
 
-process.exit(process.argv[2] === 'status' ? await status() : await start())
+process.exit(process.argv[2] === 'status' ? await status() : await start(process.argv.slice(2)))

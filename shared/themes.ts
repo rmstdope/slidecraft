@@ -57,11 +57,11 @@ export interface FrameSpec {
   gap?: number
   /** The line under a document header: the accent border, the theme's bar, or none. */
   headerRule?: 'accent' | 'bar' | 'none'
-  /** Logo placement on this frame; null hides it. */
+  /** Logo placement on this frame; null hides it; omitted keeps the theme's placement. */
   logo?: Placement | null
-  /** Footer text placement (the theme's footer.text); null hides it. */
+  /** Footer text placement (the theme's footer.text); null hides it; omitted keeps the default. */
   footerText?: (Placement & { color?: string; size?: number }) | null
-  /** Draw the document footer rule. */
+  /** Draw the document footer rule; omitted follows the theme. */
   footerRule?: boolean
   title?: { size?: number; color?: string }
   subtitle?: { variant?: 'eyebrow' | 'subheadline'; color?: string }

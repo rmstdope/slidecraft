@@ -186,10 +186,11 @@ function SlideComponent({
   const backgroundStyle: CSSProperties = background ? { background } : { backgroundImage: gradientFor(scheme, gradient) }
   const padding = frame?.padding ? frame.padding.map((v) => `${v}px`).join(' ') : isDocument ? '72px 90px 132px' : 80
   const headerRule = isDocument ? (frame?.headerRule ?? 'accent') : 'none'
-  const footerRule = isDocument && (frame ? frame.footerRule === true : theme.spec.footer?.rule !== false)
+  // A frame overrides furniture only for what it names; unnamed settings come from the theme.
+  const footerRule = isDocument && (frame?.footerRule !== undefined ? frame.footerRule : theme.spec.footer?.rule !== false)
   const footerText = theme.spec.footer?.text
-  const footerPlacement = frame ? frame.footerText : isDocument ? DEFAULT_FOOTER_TEXT : null
-  const logoPlacement = frame ? frame.logo : theme.spec.logo
+  const footerPlacement = frame?.footerText !== undefined ? frame.footerText : isDocument ? DEFAULT_FOOTER_TEXT : null
+  const logoPlacement = frame?.logo !== undefined ? frame.logo : theme.spec.logo
   const logoSrc = scheme === 'dark' ? theme.spec.logos?.onDark : theme.spec.logos?.onLight
 
   const variantProps = _skipAnimation

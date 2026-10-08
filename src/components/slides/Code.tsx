@@ -16,6 +16,8 @@ export interface CodeProps {
   title?: string
   /** Accent-coloured border. */
   accent?: boolean
+  /** Width in px; 1300 by default, narrower to fit a column. */
+  width?: number
 }
 
 const BG = '#14161a'
@@ -24,7 +26,7 @@ const BG = '#14161a'
 export const scrollAt = (elapsed: number, maxScroll: number, speed: number): number =>
   maxScroll <= 0 ? 0 : Math.min(1, elapsed / (maxScroll / speed)) * maxScroll
 
-function CodeComponent({ children, scroll = false, scrollSpeed = 30, fontSize = 28, title, accent = false }: CodeProps) {
+function CodeComponent({ children, scroll = false, scrollSpeed = 30, fontSize = 28, title, accent = false, width = 1300 }: CodeProps) {
   const areaRef = useRef<HTMLDivElement>(null)
   const hovered = useRef(false)
   const inThumbnail = useInThumbnail()
@@ -55,7 +57,7 @@ function CodeComponent({ children, scroll = false, scrollSpeed = 30, fontSize = 
       variants={itemVariants}
       onMouseEnter={() => (hovered.current = true)}
       onMouseLeave={() => (hovered.current = false)}
-      style={{ width: 1300, borderRadius: 16, overflow: 'hidden', background: BG, border: `2px solid ${accent ? 'var(--accent)' : 'rgba(255,255,255,0.15)'}`, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', textAlign: 'left' }}
+      style={{ width, maxWidth: '100%', borderRadius: 16, overflow: 'hidden', background: BG, border: `2px solid ${accent ? 'var(--accent)' : 'rgba(255,255,255,0.15)'}`, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', textAlign: 'left' }}
     >
       {title && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-body)', fontSize: 20, color: 'rgba(255,255,255,0.5)' }}>
@@ -88,6 +90,7 @@ export const Code = defineComponent<CodeProps>({
       { name: 'fontSize', type: 'number', default: '28', description: 'Font size in px' },
       { name: 'title', type: 'string', description: 'Window title bar text' },
       { name: 'accent', type: 'boolean', default: 'false', description: 'Accent-coloured border' },
+      { name: 'width', type: 'number', default: '1300', description: 'Width in px' },
     ],
     snippet: '<Code title="deck.mdx">{`<Slide>\n  <Title>Hello</Title>\n</Slide>`}</Code>',
     previewCode: '<Slide scheme="dark">\n  <Code title="hello.ts">{`export const hello = (name: string) => \\`Hello, \\${name}\\``}</Code>\n</Slide>',

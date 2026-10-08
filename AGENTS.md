@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 4b (themes) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 5 (server, content sources, MCP) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -28,7 +28,9 @@ Component Developer. Otherwise Framework Developer.
 | `bun run typecheck` | `tsc` type check |
 | `bun run build` | type check, app build to `dist/`, export viewer to `dist/viewer/` |
 | `bun test` | run all tests |
-| `bun start` | serve `dist/` and the API from one process |
+| `bun start` | serve `dist/` and the API from one process (folder mode) |
+| `bun run mcp` | MCP server over stdio with the deck tools (`--content <dir>` to pick a folder) |
+| `bun run content-dir` | print the content directory the server would use |
 
 ## Dev-server etiquette
 
@@ -49,8 +51,8 @@ TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · V
 src/            client: App router (src/router.ts), views, styles
 src/components/slides/   slide components, defineComponent registry, accents, contexts
 src/animations/ springs and variant tables
-shared/         code used by client and server: ports, deck refs, frontmatter
-server/         Bun API server (server/index.ts)
+shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, themes, mdxImports
+server/         Bun server: router (index.ts), routes/, lib/ (content sources, decks, tools, watcher, SSE), mcp.ts
 scripts/        dev orchestrator and build scripts
 tests/          bun test suites
 content/        example decks (<name>/index.mdx)

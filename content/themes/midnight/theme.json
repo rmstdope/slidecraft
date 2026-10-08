@@ -1,0 +1,31 @@
+{
+  "name": "Midnight",
+  "description": "A content-folder theme: deep blue slides, brighter accents and a blueprint grid frame.",
+  "extends": "slidecraft",
+  "tokens": {
+    "accents": {
+      "yellow": "#ffd166",
+      "red": "#ef476f",
+      "teal": "#06d6a0",
+      "navy": "#3a86ff",
+      "navyOnDark": "#8ab4ff",
+      "gray": "#8d99ae"
+    },
+    "dark": { "bg": "#0b1020", "text": "#e8ecf8", "muted": "rgba(232, 236, 248, 0.62)" },
+    "bar": "#ffd166"
+  },
+  "frames": {
+    "grid": {
+      "name": "Blueprint grid",
+      "description": "A faint grid with corner marks behind a left-aligned document slide.",
+      "svg": "frames/grid.svg",
+      "scheme": "dark",
+      "layout": "document",
+      "align": "left",
+      "padding": [96, 120, 132, 120],
+      "headerRule": "bar"
+    }
+  },
+  "defaults": { "scheme": "dark", "accent": "teal" },
+  "constraints": { "schemes": ["dark"] }
+}

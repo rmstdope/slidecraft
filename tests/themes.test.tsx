@@ -115,6 +115,23 @@ describe('slide look', () => {
   })
 })
 
+describe('frame furniture', () => {
+  test('a frame that does not mention the logo keeps the theme placement; null hides it', () => {
+    registerTheme({ id: 'furn', source: 'fx', baseUrl: '/t/furn', raw: { name: 'F', frames: { plain: { layout: 'document' }, bare: { logo: null } } } })
+    const deck = { source: 'fx', path: 'd' }
+    const view = (frame: string) =>
+      render(
+        <DeckContext.Provider value={{ deck, resolveAsset: assetResolverFor(deck) }}>
+          <Slide theme="furn" frame={frame}><Title>T</Title></Slide>
+        </DeckContext.Provider>,
+      ).container
+    expect(view('plain').querySelector('.slide__logo')).not.toBeNull()
+    expect(view('plain').querySelector('.slide__footer-rule')).not.toBeNull()
+    expect(view('bare').querySelector('.slide__logo')).toBeNull()
+    unregisterSource('fx')
+  })
+})
+
 describe('theme styling', () => {
   test('tokens become scoped CSS variables', () => {
     const vars = themeCssVars(resolveTheme('paper')) as Record<string, string>

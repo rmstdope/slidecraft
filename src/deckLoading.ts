@@ -11,14 +11,21 @@ export class DeckNotFoundError extends Error {
 
 const bundledKey = (deck: DeckRef) => `/content/${deck.path}/index.mdx`
 
+export const isBundled = (deck: DeckRef, builtInSourceId = BUILT_IN_SOURCE_ID): boolean =>
+  deck.source === builtInSourceId && !deck.path.includes('/') && !!presentationModules[bundledKey(deck)]
+
 /**
- * Pick a loader for a deck (Part 3 §1.2): the Vite-bundled module when the deck is a top-level
- * built-in deck that was bundled, else the runtime in-browser compiler (Phase 5).
+ * Pick a loader for a deck (Part 3 §1.2): the Vite-bundled module for a top-level built-in deck
+ * that was bundled (dev server, static site), else the runtime compiler. A stale or missing
+ * bundle never hides a deck: the runtime compiler is always the fallback.
  */
-export function deckModuleLoader(deck: DeckRef): DeckModuleLoader {
-  const bundled = presentationModules[bundledKey(deck)]
-  if (deck.source === BUILT_IN_SOURCE_ID && !deck.path.includes('/') && bundled) return bundled
-  return () => Promise.reject(new DeckNotFoundError(deck))
+export function deckModuleLoader(deck: DeckRef, options: { builtInSourceId?: string; defaultSource?: string; runtime?: boolean } = {}): DeckModuleLoader {
+  const runtime = () => import('./deckLoader').then(({ loadDeck }) => loadDeck(deck, options.defaultSource))
+  if (!options.runtime && isBundled(deck, options.builtInSourceId)) {
+    const bundled = presentationModules[bundledKey(deck)]
+    return () => bundled().catch(runtime)
+  }
+  return runtime
 }
 
 /** Names of the decks bundled into this build (dev server and static site only). */

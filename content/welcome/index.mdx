@@ -464,6 +464,67 @@ import stage from './images/stage.svg'
   </List>
 </Slide>
 
+<Slide scheme="dark" accent="teal" gradient="radial-accent">
+  <Subtitle>Folders and agents</Subtitle>
+  <Title>Decks live in plain folders</Title>
+  <Text muted>Point Slidecraft at any folder of decks. Edit with anything; every open view reloads.</Text>
+  <Notes>9:00-9:20. Section opener for the server: content folders, live reload and agents.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Content folders</Subtitle>
+  <Title>One folder per deck, themes alongside</Title>
+  <TwoColumn>
+    <Code title="~/decks" fontSize={24} width={760}>{`
+    quarterly/
+      index.mdx
+      images/chart.png
+    themes/
+      acme/theme.json
+    AGENTS.md`}</Code>
+    <List compact>
+      <ListItem>Start with --content ~/decks, or set SLIDECRAFT_CONTENT_DIR.</ListItem>
+      <ListItem>Mount several folders in the config file; mark shared ones read-only.</ListItem>
+      <ListItem>Every write is compile-checked before it reaches the disk.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>The config file is ~/.config/slidecraft/config.json. Decks keep their identity as source plus path, so two folders can both have a "quarterly".</Notes>
+</Slide>
+
+<Slide theme="midnight" frame="grid">
+  <Subtitle>A content-folder theme</Subtitle>
+  <Title>This look lives in content/themes/midnight</Title>
+  <Text>The server finds theme folders next to the decks and the browser registers them. Change the theme.json and open slides restyle themselves.</Text>
+  <Notes>The grid frame is an SVG served from the content folder, not part of the app.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Live reload</Subtitle>
+  <Title>Save anywhere, see it everywhere</Title>
+  <BlockDiagram
+    rowHeight={150}
+    gap={110}
+    nodes={[
+      { id: "author", row: 0, column: 0, kicker: "Any editor", title: "You or an agent" },
+      { id: "file", row: 0, column: 1, kicker: "Disk", title: "index.mdx" },
+      { id: "server", row: 0, column: 2, kicker: "Server", title: "Watcher", sub: "events + 1 s poll" },
+      { id: "views", row: 0, column: 3, kicker: "Browser", title: "Open views", accent: "yellow", emphasis: true },
+    ]}
+    edges={[{ from: "author", to: "file", label: "save" }, { from: "file", to: "server", label: "change" }, { from: "server", to: "views", label: "SSE" }]}
+  />
+  <Notes>The presentation recompiles in place and keeps its slide and step.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" layout="document">
+  <Subtitle>Agents</Subtitle>
+  <Title>Agents get tools and instructions</Title>
+  <TwoColumn>
+    <Card title="MCP tools" subtitle="bun run mcp">Read, create and change decks slide by slide, list and set themes. Invalid MDX is refused with the line that broke.</Card>
+    <Card title="AGENTS.md" subtitle="Generated in the content folder">Components, templates, themes and the authoring rules, rewritten when they change. A hand-written file is left alone.</Card>
+  </TwoColumn>
+  <Notes>Register the MCP server with your agent, e.g. claude mcp add slidecraft -- bun server/mcp.ts --content ~/decks.</Notes>
+</Slide>
+
 <Slide hidden>
   <Title>This slide is hidden when presenting</Title>
 </Slide>

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { compile } from '@mdx-js/mdx'
+import { parseDeck } from '../shared/deckParser.ts'
 import { stripMdxFrontmatter } from '../shared/frontmatter.ts'
 import { resolveDeckRelative, rewriteDeckImports } from '../shared/mdxImports.ts'
 import { mdxComponentScope } from '../src/components/mdxScope'
@@ -38,6 +39,10 @@ describe('example decks', () => {
         ],
       })
       expect(missingAssets).toEqual([])
+      // The shared parser sees every slide, and an untouched parse round-trips.
+      const source = readFileSync(file, 'utf8')
+      const deck = parseDeck(source)
+      expect(deck.slides.length).toBe((source.match(/^<Slide[\s>]/gm) ?? []).length)
     })
   }
 })

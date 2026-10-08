@@ -1,14 +1,15 @@
-import { bundledDeckNames } from '../deckLoading'
+import type { PresentationInfo } from '@shared/decks.ts'
 
 interface HomeStubProps {
-  onPresent: (name: string) => void
+  decks: PresentationInfo[]
+  error?: string
+  onPresent: (deck: PresentationInfo) => void
   onGallery: () => void
   onChat: () => void
 }
 
 /** Minimal home page until Phase 7 builds the real one. */
-export function HomeStub({ onPresent, onGallery, onChat }: HomeStubProps) {
-  const decks = bundledDeckNames()
+export function HomeStub({ decks, error, onPresent, onGallery, onChat }: HomeStubProps) {
   return (
     <main className="placeholder home-stub">
       <h1>Slidecraft</h1>
@@ -21,16 +22,18 @@ export function HomeStub({ onPresent, onGallery, onChat }: HomeStubProps) {
           Chat
         </button>
       </nav>
+      {error && <p className="error-text">{error}</p>}
       {decks.length === 0 ? (
         <p className="muted">
-          No presentations found. Create a folder in <code>content/</code> with an <code>index.mdx</code> file.
+          No presentations found. Create a folder in the content directory with an <code>index.mdx</code> file.
         </p>
       ) : (
         <ul className="home-stub__decks">
-          {decks.map((name) => (
-            <li key={name}>
-              <button type="button" className="pill-button" onClick={() => onPresent(name)}>
-                {name}
+          {decks.map((deck) => (
+            <li key={`${deck.source}:${deck.path}`}>
+              <button type="button" className="pill-button" onClick={() => onPresent(deck)} title={`${deck.source} / ${deck.path}`}>
+                {deck.path}
+                {deck.builtIn ? '' : ` · ${deck.source}`}
               </button>
             </li>
           ))}

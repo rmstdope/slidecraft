@@ -348,6 +348,18 @@ names rejected; `update_slide` has no debug hook.
 serves and live-reloads decks; `bun run mcp` lets Claude Code create and edit a deck; the content
 folder receives a generated `AGENTS.md`.
 
+**Status (2026-10-08): done.** The shared lossless parser (`shared/deckParser.ts`; it unwraps
+paragraphs that hold only JSX, as the MDX compiler does), content sources and safe deck refs,
+discovery, the HTTP API (mdx, presentations, contents, themes, images with optional sharp,
+apply-fix, SSE), static serving with SPA fallback, the file watcher (events plus a 1 s mtime poll,
+own writes recorded so nothing is announced twice), validation with slide attribution, void-tag
+repair, the deck tools (plus `list_themes` and `set_presentation_theme`), the stdio MCP server,
+the generated `AGENTS.md` (components, templates, themes, author guide), a first
+`docs/agents/presentation-author.md`, the runtime deck loader, `useSSE`, content-folder theme
+loading, and in-place live reload that keeps the slide position. Export and chat routes answer 501
+until their phases. The repo's `content/` gained a hand-written `AGENTS.md` (house style) and a
+`midnight` theme used by the welcome deck.
+
 ### Phase 6 — Editor and language service
 
 **Goal:** the three-panel editor with IntelliSense.
