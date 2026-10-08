@@ -159,13 +159,12 @@ pre {
   pointer-events: none;
 }
 
-/* The sheared bar a theme frame can use under a document title instead of the accent border. */
+/* The straight bar a theme frame can use under a document title instead of the accent border. */
 .slide__header-bar {
   align-self: stretch;
-  height: 13px;
+  height: 8px;
   margin-top: 6px;
   background: var(--theme-bar);
-  clip-path: polygon(13px 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
 }
 
 .slide__dev-badge {

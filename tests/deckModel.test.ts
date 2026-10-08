@@ -99,7 +99,7 @@ describe('deck model', () => {
     expect(isSlideTextHidden(hidden)).toBe(true)
     expect(isSlideTextHidden(setSlideTextAttr(hidden, 'hidden', null))).toBe(false)
     expect(presentationAttrs(model)).toEqual({ theme: 'paper' })
-    expect(presentationAttrs(setPresentationTextAttr(model, 'theme', 'corporate'))).toEqual({ theme: 'corporate' })
+    expect(presentationAttrs(setPresentationTextAttr(model, 'theme', 'folio'))).toEqual({ theme: 'folio' })
     expect(importBlock(model).trim()).toBe("import { Slide, Title } from '@components'\nimport pic from './images/pic.png'")
   })
 })

@@ -80,12 +80,12 @@ describe('ScatterChart', () => {
   })
 })
 
-describe('corporate theme frames', () => {
+describe('folio theme frames', () => {
   for (const frame of ['title', 'section', 'content'] as const) {
-    test(`the ${frame} frame draws its art and the light logo`, () => {
-      const { container } = render(<Slide theme="corporate" frame={frame}><Title>T</Title></Slide>)
+    test(`the ${frame} frame draws its art and the light logo unless it hides it`, () => {
+      const { container } = render(<Slide theme="folio" frame={frame}><Title>T</Title></Slide>)
       expect(container.querySelector('.slide__frame')?.getAttribute('src')).toContain(`${frame}.svg`)
-      expect(container.querySelector('img.slide__logo')?.getAttribute('src')).toBe('/logo-on-light.svg')
+      expect(container.querySelector('img.slide__logo')?.getAttribute('src')).toBe(frame === 'section' ? undefined : '/logo-on-light.svg')
     })
   }
 })

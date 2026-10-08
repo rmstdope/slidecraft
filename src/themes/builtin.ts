@@ -1,4 +1,4 @@
-import corporate from './builtin/corporate/theme.json'
+import folio from './builtin/folio/theme.json'
 import paper from './builtin/paper/theme.json'
 import slidecraft from './builtin/slidecraft/theme.json'
 
@@ -12,14 +12,14 @@ export interface BuiltinTheme {
 /** Themes that ship with the app. They use the same folder format as content-directory themes. */
 export const BUILTIN_THEMES: BuiltinTheme[] = [
   { id: 'slidecraft', raw: slidecraft, assets: {} },
+  { id: 'paper', raw: paper, assets: {} },
   {
-    id: 'corporate',
-    raw: corporate,
+    id: 'folio',
+    raw: folio,
     assets: {
-      'frames/title.svg': new URL('./builtin/corporate/frames/title.svg', import.meta.url).href,
-      'frames/section.svg': new URL('./builtin/corporate/frames/section.svg', import.meta.url).href,
-      'frames/content.svg': new URL('./builtin/corporate/frames/content.svg', import.meta.url).href,
+      'frames/title.svg': new URL('./builtin/folio/frames/title.svg', import.meta.url).href,
+      'frames/section.svg': new URL('./builtin/folio/frames/section.svg', import.meta.url).href,
+      'frames/content.svg': new URL('./builtin/folio/frames/content.svg', import.meta.url).href,
     },
   },
-  { id: 'paper', raw: paper, assets: {} },
 ]

@@ -26,7 +26,7 @@ export const TEXT_SIZES = { xs: 18, sm: 32, md: 40, lg: 48 } as const
 
 function TextComponent({ children, muted = false, size = 'md', align, tight = false, fontSize, step, morph, className }: TextProps) {
   const stepMotion = useStepMotion(step, morph)
-  // Centred by default; inside a left-aligned frame (e.g. a corporate content master), left.
+  // Centred by default; inside a left-aligned frame (e.g. a theme's content frame), left.
   const { align: frameAlign } = useSlideLayout()
   return (
     <motion.span

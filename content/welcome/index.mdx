@@ -426,13 +426,13 @@ import editorShot from './images/editor.png'
   <Title>A theme is a folder of data</Title>
   <Code title="themes/acme/theme.json" fontSize={22}>{`{
     "name": "Acme",
-    "extends": "corporate",
+    "extends": "folio",
     "tokens": { "accents": { "yellow": "#ffb000" } },
     "logos": { "onLight": "logo.svg" },
     "frames": { "title": { "svg": "frames/title.svg" } }
   }`}</Code>
   <Text align="left" muted>Put it under themes/ in the content folder, then write theme="acme" on the Presentation.</Text>
-  <Notes>Themes extend each other: this one keeps everything from the corporate theme and changes one colour, the logo and the title master.</Notes>
+  <Notes>Themes extend each other: this one keeps everything from the folio theme and changes one colour, the logo and the title master.</Notes>
 </Slide>
 
 <Slide theme="paper" accent="teal" layout="document">
@@ -445,18 +445,18 @@ import editorShot from './images/editor.png'
   <Notes>A slide can borrow another theme with theme="…" on the Slide; normally the whole deck uses one.</Notes>
 </Slide>
 
-<Slide theme="corporate" frame="title">
-  <Title>The corporate theme</Title>
+<Slide theme="folio" frame="title">
+  <Title>The folio theme</Title>
   <Subtitle>Frames are the theme's slide masters</Subtitle>
-  <Notes>8:40-9:00. In a corporate deck, theme="corporate" goes on the Presentation and every slide gets the content frame unless it names another.</Notes>
+  <Notes>8:40-9:00. In a folio deck, theme="folio" goes on the Presentation and every slide gets the content frame unless it names another.</Notes>
 </Slide>
 
-<Slide theme="corporate" frame="section">
+<Slide theme="folio" frame="section">
   <Title>A section divider</Title>
 </Slide>
 
-<Slide theme="corporate">
-  <Subtitle>Corporate content</Subtitle>
+<Slide theme="folio">
+  <Subtitle>Folio content</Subtitle>
   <Title>The frame never scales; the body does</Title>
   <List>
     <ListItem>Title, section and content frames map onto the slide master.</ListItem>

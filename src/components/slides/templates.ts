@@ -16,18 +16,18 @@ t('title', 'Title Slide', 'Opening slide with context subtitle, main title, and 
   <Text muted>A one-line tagline</Text>
 </Slide>`, ['title', 'opening', 'cover', 'start'], ['The first slide'])
 
-const corporateTitle = `<Slide frame="title">
+const folioTitle = `<Slide frame="title">
   <Title>Presentation title</Title>
   <Subtitle>Team, date</Subtitle>
 </Slide>`
-t('corporate-title', 'Corporate Title Slide', 'Title frame of the corporate theme.', corporateTitle, ['corporate', 'official', 'brand', 'frame', 'master', 'title'], ['Opening or closing a deck that uses the corporate theme'], inTheme('corporate', corporateTitle))
+t('folio-title', 'Folio Title Slide', 'Title frame of the folio theme: the headline beside an ink panel.', folioTitle, ['folio', 'frame', 'master', 'title', 'opening'], ['Opening or closing a deck that uses the folio theme'], inTheme('folio', folioTitle))
 
-const corporateSection = `<Slide frame="section">
+const folioSection = `<Slide frame="section">
   <Title>Section title</Title>
 </Slide>`
-t('corporate-section', 'Corporate Section Slide', 'Section frame of the corporate theme.', corporateSection, ['corporate', 'official', 'brand', 'frame', 'master', 'section', 'divider'], ['Between parts of a deck that uses the corporate theme'], inTheme('corporate', corporateSection))
+t('folio-section', 'Folio Section Slide', 'Section frame of the folio theme: a short title beside a large ring.', folioSection, ['folio', 'frame', 'master', 'section', 'divider'], ['Between parts of a deck that uses the folio theme'], inTheme('folio', folioSection))
 
-const corporateContent = `<Slide>
+const folioContent = `<Slide>
   <Subtitle>Eyebrow</Subtitle>
   <Title>A single-line assertion</Title>
   <List>
@@ -35,7 +35,7 @@ const corporateContent = `<Slide>
     <ListItem>Second point</ListItem>
   </List>
 </Slide>`
-t('corporate-content', 'Corporate Content Slide', 'Content frame of the corporate theme.', corporateContent, ['corporate', 'official', 'brand', 'frame', 'master', 'content'], ['Content in a deck that uses the corporate theme'], inTheme('corporate', corporateContent))
+t('folio-content', 'Folio Content Slide', 'Content frame of the folio theme, which every slide gets unless it names another frame.', folioContent, ['folio', 'frame', 'master', 'content'], ['Content in a deck that uses the folio theme'], inTheme('folio', folioContent))
 
 t('content', 'Content Slide', 'Title and explanatory paragraph.', `<Slide scheme="dark" accent="yellow">
   <Title>Slide title</Title>

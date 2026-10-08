@@ -78,7 +78,7 @@ export interface ThemeSpec {
     light?: SchemeTokens
     /** Dark ink for text on light fills (e.g. on yellow). */
     ink?: string
-    /** Colour of the sheared header bar used by `headerRule: "bar"`. */
+    /** Colour of the header bar used by `headerRule: "bar"`. */
     bar?: string
   }
   fonts?: { display?: ThemeFont; body?: ThemeFont }

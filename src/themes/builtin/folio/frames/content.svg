@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="none">
+  <!-- A teal margin strip down the left edge and a footer hairline. -->
+  <rect x="0" y="0" width="24" height="1080" fill="#1f9e89"/>
+  <rect x="150" y="984" width="1650" height="1.5" fill="#1d2b2a" fill-opacity="0.3"/>
+</svg>

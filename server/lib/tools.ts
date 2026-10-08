@@ -58,7 +58,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {
         name: str('Folder name: lower-case words joined by dashes'),
         slides: { type: 'array', items: { type: 'string' }, description: 'Complete <Slide> elements' },
-        theme: str('Optional theme id, e.g. "corporate"'),
+        theme: str('Optional theme id, e.g. "folio"'),
       },
       required: ['name'],
     },

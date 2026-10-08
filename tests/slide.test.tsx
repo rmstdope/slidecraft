@@ -29,7 +29,7 @@ describe('Slide', () => {
 
   test('a theme frame forces its scheme and layout, drops gradients and draws its own logo', () => {
     const { container } = render(
-      <Slide theme="corporate" scheme="dark" gradient="radial">
+      <Slide theme="folio" scheme="dark" gradient="radial">
         <Subtitle>Eyebrow</Subtitle>
         <Title>Assertion</Title>
         <Text>Body</Text>
@@ -41,7 +41,7 @@ describe('Slide', () => {
     expect(container.querySelector('.slide__header')).not.toBeNull()
     expect(container.querySelector('.slide__header-bar')).not.toBeNull()
     expect(container.querySelector('.slide__frame')?.getAttribute('src')).toContain('content.svg')
-    expect((container.querySelector('.slide__logo') as HTMLElement).style.right).toBe('110px')
+    expect((container.querySelector('.slide__logo') as HTMLElement).style.right).toBe('120px')
   })
 
   test('document layout splits the leading Subtitle and Title into the header band', () => {

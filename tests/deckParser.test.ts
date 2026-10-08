@@ -21,7 +21,7 @@ import { Presentation, Slide, Title, Text, Notes } from '@components'
 
 {/* COLOUR LEGEND: teal = fine */}
 
-<Presentation theme="corporate">
+<Presentation theme="folio">
 
 <Slide scheme="dark" accent="teal">
   <Title>One</Title>
@@ -52,7 +52,7 @@ describe('parseDeck', () => {
     expect(DECK.slice(deck.slides[1].start, deck.slides[1].end)).toBe(deck.slides[1].text)
     expect(deck.slides[0].line).toBe(10)
     expect(deck.slides[1].attrs).toEqual({ frame: 'title', hidden: true })
-    expect(deck.presentation.attrs).toEqual({ theme: 'corporate' })
+    expect(deck.presentation.attrs).toEqual({ theme: 'folio' })
     expect(deck.frontmatter).toBe('---\ntitle: Demo\n---\n')
   })
 
@@ -87,7 +87,7 @@ describe('edits are lossless splices', () => {
   const keeps = (source: string) => {
     expect(source.startsWith('---\ntitle: Demo\n---\n')).toBe(true)
     expect(source).toContain('{/* COLOUR LEGEND: teal = fine */}')
-    expect(source).toContain('<Presentation theme="corporate">')
+    expect(source).toContain('<Presentation theme="folio">')
   }
 
   test('replace changes only that slide', () => {
@@ -111,7 +111,7 @@ describe('edits are lossless splices', () => {
     const first = deleteSlide(deck, 0)
     keeps(first)
     expect(parseDeck(first).slides).toHaveLength(2)
-    expect(first).toContain('<Presentation theme="corporate">\n\n{/* a comment between slides */}')
+    expect(first).toContain('<Presentation theme="folio">\n\n{/* a comment between slides */}')
     const last = deleteSlide(deck, 2)
     expect(last).toContain('</Slide>\n\n</Presentation>')
     expect(parseDeck(last).slides).toHaveLength(2)

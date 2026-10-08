@@ -29,15 +29,15 @@ import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
 ## Themes, schemes and frames
 
 - **Theme** (`<Presentation theme="…">`): the deck's look — palette, fonts, logos and slide masters.
-  Built-in: `slidecraft` (default), `corporate`, `paper`. Content folders can add themes under
+  Built-in: `slidecraft` (default), `paper`, `folio`. Content folders can add themes under
   `themes/<id>/`. Use `list_themes` (or the generated folder instructions) to see what exists.
 - **Scheme** (`<Slide scheme="dark|light">`): the colour scheme of one slide. Some themes allow
   only one scheme; do not fight it.
-- **Frame** (`<Slide frame="…">`): a slide master from the theme, e.g. the corporate theme's
-  `title`, `section` and `content`. A theme can give every slide a default frame (corporate gives
+- **Frame** (`<Slide frame="…">`): a slide master from the theme, e.g. the folio theme's
+  `title`, `section` and `content`. A theme can give every slide a default frame (folio gives
   `content`), so most slides name no frame. Frames fix the scheme and layout and turn gradients off.
-- When a deck is asked for as "corporate", "official" or "brand-compliant", or goes outside the
-  team, use `theme="corporate"` (or the organisation's own theme) on the `<Presentation>`.
+- When a deck is asked for as "official" or "brand-compliant", or goes outside the team, use the
+  organisation's own theme from the content folder (see `list_themes`) on the `<Presentation>`.
   Typical shape: title → section → content… → section → content… → title.
 
 ## Critical rules

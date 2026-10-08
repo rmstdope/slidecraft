@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="none">
+  <!-- A large teal ring cut by the right edge, and a hairline under the title column. -->
+  <circle cx="1560" cy="540" r="380" fill="none" stroke="#1f9e89" stroke-width="56"/>
+  <circle cx="1560" cy="540" r="250" fill="none" stroke="#1d2b2a" stroke-opacity="0.08" stroke-width="2"/>
+  <rect x="160" y="630" width="560" height="2" fill="#1d2b2a" fill-opacity="0.25"/>
+</svg>

@@ -6,7 +6,7 @@ import { maskNonMarkup } from '../src/language-service/text'
 import type { Position } from '../src/language-service/types'
 
 const ls = registryLanguageService((component, prop) => {
-  if (prop === 'theme' && (component === 'Presentation' || component === 'Slide')) return ['slidecraft', 'corporate', 'paper']
+  if (prop === 'theme' && (component === 'Presentation' || component === 'Slide')) return ['slidecraft', 'folio', 'paper']
   if (component === 'Slide' && prop === 'frame') return ['none', 'title', 'section', 'content']
   return undefined
 })
@@ -71,7 +71,7 @@ describe('completion', () => {
     const frame = at('<Slide frame="s|')
     expect(ls.completions(frame.text, frame.pos).map((i) => i.label)).toEqual(['section'])
     const theme = at('<Presentation theme="|')
-    expect(ls.completions(theme.text, theme.pos).map((i) => i.label)).toEqual(['slidecraft', 'corporate', 'paper'])
+    expect(ls.completions(theme.text, theme.pos).map((i) => i.label)).toEqual(['slidecraft', 'folio', 'paper'])
   })
   test('closing tags complete the innermost open component', () => {
     const { text, pos } = at('<Slide>\n  <Card>\n  </|>')

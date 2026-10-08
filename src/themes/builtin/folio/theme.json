@@ -1,0 +1,51 @@
+{
+  "name": "Folio",
+  "description": "An editorial light theme with title, section and content frames: an ink panel, a ring and a margin strip.",
+  "extends": "slidecraft",
+  "tokens": {
+    "light": { "bg": "#fbfaf7", "text": "#1d2b2a", "muted": "rgba(29, 43, 42, 0.62)" },
+    "bar": "#1f9e89"
+  },
+  "frames": {
+    "title": {
+      "name": "Title",
+      "description": "Opener and closer: an ink panel on the left, the headline beside it.",
+      "svg": "frames/title.svg",
+      "scheme": "light",
+      "layout": "centered",
+      "padding": [120, 140, 120, 780],
+      "align": "left",
+      "gap": 36,
+      "logo": { "right": 140, "top": 96, "height": 56 },
+      "title": { "size": 104 },
+      "subtitle": { "variant": "subheadline", "color": "var(--accent-teal)" }
+    },
+    "section": {
+      "name": "Section",
+      "description": "Divider: a short title beside a large ring.",
+      "svg": "frames/section.svg",
+      "scheme": "light",
+      "layout": "centered",
+      "padding": [120, 820, 120, 160],
+      "align": "left",
+      "maxWidth": 900,
+      "logo": null,
+      "title": { "size": 72 }
+    },
+    "content": {
+      "name": "Content",
+      "description": "Everything else: a margin strip, a straight bar under the title and a footer hairline.",
+      "svg": "frames/content.svg",
+      "scheme": "light",
+      "layout": "document",
+      "padding": [100, 120, 150, 150],
+      "align": "left",
+      "headerRule": "bar",
+      "footerRule": false,
+      "logo": { "right": 120, "bottom": 30, "height": 36 },
+      "title": { "size": 60 }
+    }
+  },
+  "defaults": { "scheme": "light", "accent": "teal", "frame": "content" },
+  "constraints": { "schemes": ["light"], "gradients": false }
+}

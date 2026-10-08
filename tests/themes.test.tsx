@@ -47,11 +47,11 @@ describe('theme.json validation', () => {
 
 describe('theme registry', () => {
   test('built-in themes resolve, and every theme sits on top of the default', () => {
-    const corporate = resolveTheme('corporate')
-    expect(corporate.spec.frames).toHaveProperty('content')
-    expect(corporate.spec.tokens?.accents?.teal).toBe('#1f9e89') // inherited from slidecraft
+    const folio = resolveTheme('folio')
+    expect(folio.spec.frames).toHaveProperty('content')
+    expect(folio.spec.tokens?.accents?.teal).toBe('#1f9e89') // inherited from slidecraft
     expect(resolveTheme('paper').spec.tokens?.light?.bg).toBe('#f6f1e7')
-    expect(listThemes().map((t) => t.id)).toEqual(expect.arrayContaining(['slidecraft', 'corporate', 'paper']))
+    expect(listThemes().map((t) => t.id)).toEqual(expect.arrayContaining(['slidecraft', 'folio', 'paper']))
   })
 
   test('an unknown theme falls back to the default and says so', () => {
@@ -65,14 +65,14 @@ describe('theme registry', () => {
       id: 'acme',
       source: 'team',
       baseUrl: '/content-source/team/themes/acme',
-      raw: { name: 'Acme', extends: 'corporate', logos: { onLight: 'logo.svg' }, frames: { title: { svg: 'frames/acme-title.svg' } } },
+      raw: { name: 'Acme', extends: 'folio', logos: { onLight: 'logo.svg' }, frames: { title: { svg: 'frames/acme-title.svg' } } },
     })
     registerTheme({ id: 'paper', source: 'team', baseUrl: '/content-source/team/themes/paper', raw: { name: 'Team paper' } })
     const acme = resolveTheme('acme', 'team')
     expect(acme.spec.logos?.onLight).toBe('/content-source/team/themes/acme/logo.svg')
     expect(acme.spec.frames?.title.svg).toBe('/content-source/team/themes/acme/frames/acme-title.svg')
-    expect(acme.spec.frames?.section.svg).toContain('section.svg') // still the corporate theme's own file
-    expect(acme.spec.frames?.title.padding).toEqual([120, 120, 120, 120]) // merged frame keeps the base's fields
+    expect(acme.spec.frames?.section.svg).toContain('section.svg') // still the folio theme's own file
+    expect(acme.spec.frames?.title.padding).toEqual([120, 140, 120, 780]) // merged frame keeps the base's fields
     expect(resolveTheme('paper', 'team').spec.name).toBe('Team paper')
     expect(resolveTheme('paper', 'other').spec.name).toBe('Paper')
     expect(resolveTheme('acme').id).toBe('slidecraft') // not visible outside its source
@@ -98,20 +98,20 @@ describe('theme registry', () => {
 })
 
 describe('slide look', () => {
-  const corporate = resolveTheme('corporate')
+  const folio = resolveTheme('folio')
   const slidecraft = resolveTheme('slidecraft')
 
   test('the theme default frame applies unless a slide names another or "none"', () => {
-    expect(resolveSlideLook({}, corporate).frameName).toBe('content')
-    expect(resolveSlideLook({ frame: 'title' }, corporate)).toMatchObject({ frameName: 'title', layout: 'centered' })
-    expect(resolveSlideLook({ frame: 'none', scheme: 'dark' }, corporate)).toMatchObject({ frame: undefined, scheme: 'light' }) // constraint
+    expect(resolveSlideLook({}, folio).frameName).toBe('content')
+    expect(resolveSlideLook({ frame: 'title' }, folio)).toMatchObject({ frameName: 'title', layout: 'centered' })
+    expect(resolveSlideLook({ frame: 'none', scheme: 'dark' }, folio)).toMatchObject({ frame: undefined, scheme: 'light' }) // constraint
     expect(resolveSlideLook({}, slidecraft).frame).toBeUndefined()
   })
 
   test('constraints and frames win over slide props; theme defaults fill the gaps', () => {
-    expect(resolveSlideLook({ scheme: 'dark', gradient: 'radial' }, corporate)).toMatchObject({ scheme: 'light', gradient: 'none', layout: 'document' })
+    expect(resolveSlideLook({ scheme: 'dark', gradient: 'radial' }, folio)).toMatchObject({ scheme: 'light', gradient: 'none', layout: 'document' })
     expect(resolveSlideLook({}, resolveTheme('paper'))).toMatchObject({ scheme: 'light', accent: 'yellow', transition: 'slide' })
-    expect(resolveSlideLook({ frame: 'missing' }, corporate)).toMatchObject({ frameName: 'missing', frame: undefined })
+    expect(resolveSlideLook({ frame: 'missing' }, folio)).toMatchObject({ frameName: 'missing', frame: undefined })
   })
 })
 
@@ -155,7 +155,7 @@ describe('themes in decks', () => {
   test('a deck theme reaches every slide; a slide can borrow another theme', () => {
     window.history.replaceState(null, '', '/demo?pdf=1')
     const { container } = render(
-      <Presentation theme="corporate">
+      <Presentation theme="folio">
         <Slide frame="title"><Title>Opener</Title><Subtitle>Sub</Subtitle></Slide>
         <Slide><Subtitle>Eyebrow</Subtitle><Title>Content</Title><Text>Body</Text></Slide>
         <Slide theme="slidecraft" scheme="dark"><Title>Guest</Title></Slide>
@@ -164,7 +164,7 @@ describe('themes in decks', () => {
     const slides = Array.from(container.querySelectorAll('.slide')) as HTMLElement[]
     expect(slides.map((s) => s.getAttribute('data-frame'))).toEqual(['title', 'content', null])
     expect(slides.map((s) => s.getAttribute('data-scheme'))).toEqual(['light', 'light', 'dark'])
-    expect((slides[0].querySelector('h1') as HTMLElement).style.fontSize).toBe('116px')
+    expect((slides[0].querySelector('h1') as HTMLElement).style.fontSize).toBe('104px')
     expect((slides[0].querySelector('h2') as HTMLElement).style.textTransform).toBe('none') // sub-headline
     expect((slides[1].querySelector('span') as HTMLElement).style.textAlign).toBe('left') // left-aligned frame
     window.history.replaceState(null, '', '/demo')

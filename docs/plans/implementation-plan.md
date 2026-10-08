@@ -22,6 +22,7 @@ Date of decisions: 2026-10-08.
 | ScatterChart | **Own SVG implementation** with motion springs; no chart library. | No `resolve.dedupe` workaround; the threshold handle, axis tabs and legend are implemented directly. See Phase 4. |
 | Themes (Phase 4b) | **Deck-level themes replace the corporate special case** (decided after Phase 4). A theme is a data folder (`theme.json`, frame SVGs, logos, fonts); built-in themes ship in `src/themes/builtin/`, more are discovered in `<content-dir>/themes/<id>/`. `theme` now names the look on `<Presentation>` (and optionally on one `<Slide>`); the dark/light prop is renamed `scheme`; `chrome` is replaced by `frame`, whose masters come from the theme. | Supersedes the chrome row below. |
 | Corporate chrome | **Keep the mechanism**, ship a **neutral default frame**. `chrome="title|section|content"` works exactly as specified (forces light theme, `content` implies `document` layout, frame never scales, geometry from a module), but the geometry module ships a simple generic design instead of an extracted slide master. | `src/components/slides/chrome/geometry.ts` is the single file to replace with an extracted table later. |
+| No corporate theme (2026-10-08) | **The `corporate` built-in theme is removed** at the user's request: its look came from their employer. Its role as the built-in theme with frames goes to **`folio`**, an original editorial theme (ink-panel title, ring section, margin-strip content frames). The `bar` header rule is a plain straight bar. Organisations put their own theme in their content folder. | Supersedes every mention of the corporate theme, corporate templates and corporate example decks below. |
 | Brand assets | **Open defaults chosen by the implementer**: self-hosted OFL fonts and an own palette; accent role names stay `yellow`, `red`, `teal`, `navy` (+ `gray`). | See §2.1. Everything is a token swap as the spec requires (*Part 0 §0.5 item 6*). |
 | Packaging | Bun `--compile` binaries for four targets, static docs site with generated catalogue, GitHub workflows (CI, Pages, release). **No Swift/WebKit macOS launcher.** | *Part 4 §14* is not implemented. |
 | Known quirks (*Part 0 §0.9*) | Fixed, except step counting stays "highest index" (the number means "beat number"). | Listed per phase under "Deviations". |
@@ -258,7 +259,7 @@ Order by family, each with props, rendering, motion, registry and toolbar metada
    AppShellDiagram.
 6. Media: ContentImage, Svg, BackgroundImage, YouTube, Code (auto-scroll with hover pause).
 7. People: PersonCard.
-8. Templates via `defineTemplate()` (*Part 2 §9*), including the three corporate ones.
+8. Templates via `defineTemplate()` (*Part 2 §9*), including three frame templates (now the folio ones).
 9. **Chrome** (*Part 1 §7*): `CorporateFrame` reading `chrome/geometry.ts`; a neutral default
    frame with our palette and logo.
 10. `tests/registry.test.ts` (*Part 2 §1.6*) plus snapshot-free render tests for the algorithmic
@@ -291,8 +292,8 @@ ScatterChart in plain SVG. Further deviations from the spec, all deliberate:
 
 - `shared/themes.ts`: the theme format (tokens, fonts, logos, logo placement, footer, frames,
   defaults, constraints), validation that keeps valid fields and reports the rest, `extends` merging.
-- Built-in themes as folders in `src/themes/builtin/`: `slidecraft` (the default look), `corporate`
-  (the neutral master as three SVG frames, extends slidecraft), `paper` (palette only).
+- Built-in themes as folders in `src/themes/builtin/`: `slidecraft` (the default look), `paper`
+  (palette only) and `folio` (three SVG frames, extends slidecraft; replaced `corporate`).
 - `src/themes/registry.ts`: register theme folders per content source; resolve by id with the
   deck's source first, then built-ins; `extends` chains with cycle detection; every theme sits on
   top of the default; asset paths become URLs before merging so each asset keeps its own folder.
@@ -304,9 +305,9 @@ ScatterChart in plain SVG. Further deviations from the spec, all deliberate:
 - Renames: slide `theme` → `scheme`, `chrome` → `frame`; `Slide` accepts `theme` to borrow another
   look. Frames carry title size and colour, sub-headline styling, alignment (text defaults left in
   a left-aligned frame), header rule (`accent` / `bar` / `none`), logo and footer placement.
-- Frame templates preview inside `<Presentation theme="corporate">`. `themes` is a reserved deck name.
+- Frame templates preview inside `<Presentation theme="folio">`. `themes` is a reserved deck name.
 
-**Done when:** a deck with `theme="corporate"` gets frames on every slide without per-slide props;
+**Done when:** a deck with `theme="folio"` gets frames on every slide without per-slide props;
 a content-folder theme can extend a built-in; mixed-theme thumbnails render correctly.
 
 **Status (2026-10-08): done.** Content-folder discovery and asset serving land in Phase 5 (the
@@ -481,7 +482,7 @@ no install; `bun run build:site` produces a browsable site; a `v*` tag publishes
 - Root `AGENTS.md` complete (*Part 6 §4.1*), three persona docs (*§4.3*), `docs/guide.md`,
   `docs/creating-presentations.md`, `docs/component-registry.md`, `docs/slidecraft-styleguide.md`,
   `docs/getting-started-with-agents.md`, `docs/ROADMAP.md`, sample `content/AGENTS.md`, README.
-- Example decks (*§8*): corporate demo (13 slides), minimal corporate (4), motion tour (16, with
+- Example decks (*§8*): a framed-theme demo (13 slides, folio), a minimal framed deck (4), motion tour (16, with
   colour legend and time-budgeted notes), research-style talk (15 with full notes).
 
 **Done when:** `tests/content.test.ts` passes on all four decks; the docs site renders every page.
