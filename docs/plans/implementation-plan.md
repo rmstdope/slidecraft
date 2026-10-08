@@ -461,6 +461,18 @@ else. Verified with two browser tabs: navigation both ways, pointer, live stroke
 **Done when:** an exported HTML file opens from `file://` offline with fonts and images, reader
 mode prints as a handout; the PDF has one page per visible slide in final state.
 
+**Status (2026-10-08): done.** The viewer (`src/exportViewer.tsx`, IIFE with every font and image
+inlined) reads a JSON payload (`shared/exportPayload.ts`): compiled deck code, a map of deck
+assets used by string props, and the content-folder themes the deck names (plus what they
+extend) with their files as data URLs. `server/lib/exportDeck.ts` compiles with the shared import
+rewriter, inlines imported files, and writes one HTML file (payload JSON with `<` escaped, viewer
+base64). Reader mode (`ReaderView`, `readerNotes.ts`, print CSS) behind the Read button in
+exported decks. PDF (`server/lib/exportPdf.ts`) drives headless Chrome over the DevTools protocol
+(`server/lib/chrome.ts`, no Puppeteer) and prints the whole `?pdf=1` view in one load, so there is
+no merge step; 65 slides take about 4 s. Route, `bun run export` CLI, MCP `export_html` /
+`export_pdf` (relative output folders resolve inside the content folder), and HTML/PDF buttons on
+home cards. Verified from `file://` with the server stopped.
+
 ### Phase 10 — AI chat assistant
 
 - `ChatPage` UI (*Part 5 §A.2*): provider segmented control (`http`, `claude-code`, `copilot`),

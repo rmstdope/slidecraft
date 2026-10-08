@@ -18,6 +18,7 @@ import galleryDetailShot from './images/gallery-detail.png'
 import errorShot from './images/error.png'
 import presenterShot from './images/presenter.png'
 import drawingShot from './images/drawing.png'
+import readerShot from './images/reader.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -663,6 +664,32 @@ import drawingShot from './images/drawing.png'
   <Title>Press A and circle something</Title>
   <Text muted>Esc puts the pen away. Your marks stay on this slide until you clear them.</Text>
   <Notes>An empty canvas on purpose: draw on it live.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Exports</Subtitle>
+  <Title>Take the deck anywhere</Title>
+  <Text muted>One HTML file that works offline, a PDF with a page per slide, and a handout to print.</Text>
+  <Notes>11:00-11:20. Section opener for exports. The buttons are on every deck card on the home page.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Exports</Subtitle>
+  <Title>Three formats, one command away</Title>
+  <FourColumn>
+    <Card compact title="HTML file" step={1}>Fonts, images and themes inside. Opens from a USB stick with no network.</Card>
+    <Card compact title="PDF" step={2}>One page per slide, every step shown, rendered by Chrome.</Card>
+    <Card compact title="Handout" step={3}>Read mode in an exported file prints each slide with its notes.</Card>
+    <Card compact title="Scripts and agents" step={4}>bun run export, or the export_html and export_pdf tools.</Card>
+  </FourColumn>
+  <Notes>The HTML export plays like the app: keys, overview, drawing. Only editing and the presenter window need the server.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Reader mode</Subtitle>
+  <Title>A handout that is also the deck</Title>
+  <ContentImage src={readerShot} alt="Reader mode: a slide on the left and its speaker notes on the right" width={1150} />
+  <Notes>0:00-0:20. Timing ranges like this one are dropped from the notes in reader mode.</Notes>
 </Slide>
 
 <Slide hidden>

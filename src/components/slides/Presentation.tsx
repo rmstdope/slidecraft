@@ -20,6 +20,7 @@ import { KeyboardShortcutsModal } from '../editor/KeyboardShortcutsModal'
 import { DevOverlay } from '../presentation/DevOverlay'
 import { Overview } from '../presentation/Overview'
 import { PdfView } from '../presentation/PdfView'
+import { ReaderView } from '../presentation/ReaderView'
 import { ProgressIndicator } from '../presentation/ProgressIndicator'
 import { analyzeDeck, type DeckAnalysis } from './analyzeDeck'
 import { CanvasStage } from './CanvasStage'
@@ -96,6 +97,15 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const drawing = useDrawing()
   const remote = useRemoteOverlay(channel, true)
   const [devMode, setDevMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'dev')
+  // Reader mode is a handout for exported decks (Part 4 §8.3): every slide with its notes.
+  const [readMode, setReadMode] = useState(() => exported && new URLSearchParams(window.location.search).get('mode') === 'read')
+  const setViewerMode = useCallback((mode: 'read' | null) => {
+    const url = new URL(window.location.href)
+    if (mode) url.searchParams.set('mode', mode)
+    else url.searchParams.delete('mode')
+    window.history.replaceState(window.history.state, '', url)
+    setReadMode(mode === 'read')
+  }, [])
   const [devFitMode, setDevFitMode] = useState(true)
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [focused, setFocused] = useState(0)
@@ -108,10 +118,11 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   // Dev mode is state; the URL follows so links and reloads keep it.
   useEffect(() => {
     const url = new URL(window.location.href)
+    if (readMode) return
     if (devMode) url.searchParams.set('mode', 'dev')
     else if (url.searchParams.get('mode') === 'dev') url.searchParams.delete('mode')
     if (url.href !== window.location.href) window.history.replaceState(window.history.state, '', url)
-  }, [devMode])
+  }, [devMode, readMode])
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -145,7 +156,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   // Keyboard map (Part 1 §3.7). The handler is rebuilt every render and read through a ref.
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => {})
   keyHandler.current = (event: KeyboardEvent) => {
-    if (isTypingTarget(event.target) || paletteOpen || shortcutsOpen) return
+    if (isTypingTarget(event.target) || paletteOpen || shortcutsOpen || readMode) return
     const mod = event.metaKey || event.ctrlKey
     if (mod && event.key.toLowerCase() === 'k') {
       event.preventDefault()
@@ -160,7 +171,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
     switch (key) {
       case 'd':
-        setDevMode((d) => !d)
+        if (!exported) setDevMode((d) => !d)
         return
       case 'f':
         if (devMode) setDevFitMode((f) => !f)
@@ -284,7 +295,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
       ...(stepsOnSlide > 0
         ? [{ id: 'skip', name: 'Skip to Next Slide', description: 'Skip the remaining steps', category: 'action' as const, shortcut: ['↓'], action: actions.nextSlide }]
         : []),
-      { id: 'dev', name: devMode ? 'Exit Dev Mode' : 'Enter Dev Mode', description: 'Overflow warnings and frame outline', category: 'view', shortcut: ['D'], action: () => setDevMode((d) => !d) },
+      ...(exported ? [] : [{ id: 'dev', name: devMode ? 'Exit Dev Mode' : 'Enter Dev Mode', description: 'Overflow warnings and frame outline', category: 'view' as const, shortcut: ['D'], action: () => setDevMode((d) => !d) }]),
       ...(devMode
         ? [{ id: 'fit', name: devFitMode ? 'Switch to Actual Size' : 'Switch to Fit', category: 'view' as const, shortcut: ['F'], action: () => setDevFitMode((f) => !f) }]
         : [{ id: 'fullscreen', name: isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen', category: 'view' as const, shortcut: ['F'], action: toggleFullscreen }]),
@@ -294,6 +305,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
       { id: 'draw', name: drawing?.isDrawMode ? 'Leave Draw Mode' : 'Draw on Slides', description: 'Pen, highlighter, arrows, boxes, text and a laser pointer', category: 'action', shortcut: ['A'], action: () => drawing?.toggleDrawMode() },
       { id: 'shortcuts', name: 'Keyboard Shortcuts', category: 'action', shortcut: ['?'], action: () => setShortcutsOpen(true) },
     ]
+    if (exported) list.push({ id: 'read', name: 'Read Mode', description: 'Every slide with its notes; prints as a handout', category: 'view', action: () => setViewerMode('read') })
     if (!exported) {
       list.push({ id: 'home', name: 'Go to Home', category: 'navigation', action: () => navigateTo(homeUrl()) })
       if (deck) {
@@ -303,9 +315,11 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     }
     slides.forEach((_, i) => list.push({ id: `slide-${i}`, name: `Go to Slide ${i + 1}`, category: 'navigation', action: () => actions.goTo(i) }))
     return list
-  }, [drawing, overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, devMode, devFitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
+  }, [setViewerMode, drawing, overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, devMode, devFitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
 
   const mode: AppMode = overviewOpen ? 'miniature' : devMode ? 'dev' : 'presentation'
+
+  if (readMode) return <ReaderView slides={slides} notes={analysis.notes} onPresent={() => setViewerMode(null)} />
 
   if (total === 0) {
     return (
@@ -397,6 +411,11 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
           <DevOverlay fitMode={devFitMode} onToggleFit={() => setDevFitMode((f) => !f)} onExit={() => setDevMode(false)} />
         ) : (
           <div className="presentation__controls" data-no-advance>
+            {exported && (
+              <button type="button" className="presentation-view-button" onClick={() => setViewerMode('read')}>
+                Read
+              </button>
+            )}
             <button type="button" className="presentation-view-button" onClick={toggleFullscreen}>
               {isFullscreen ? 'Exit' : 'Fullscreen'}
             </button>

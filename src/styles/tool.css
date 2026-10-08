@@ -57,6 +57,20 @@
   color: var(--brand-yellow);
   border-color: rgba(255, 255, 255, 0.12);
 }
+.icon-button.is-busy {
+  cursor: wait;
+}
+.icon-button.is-error {
+  color: var(--brand-red);
+}
+.icon-button__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--brand-yellow);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
 
 .tool-field {
   display: flex;

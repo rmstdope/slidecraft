@@ -8,7 +8,8 @@ import { mdxComponentScope } from '../components/mdxScope'
 import { assetResolverFor, DeckContext } from '../components/slides/deckContext'
 import { useInView } from '../hooks/useInView'
 import { displayName } from './filterDecks'
-import { AlertIcon, ChatIcon, EditIcon } from './icons'
+import { downloadHtmlExport, downloadPdfExport } from '../api'
+import { AlertIcon, ChatIcon, DownloadIcon, EditIcon, FileIcon } from './icons'
 
 const scope = mdxComponentScope as MDXComponents
 
@@ -24,12 +25,39 @@ export interface PresentationCardProps {
   onDev(): void
   onEdit?: () => void
   onChat?: () => void
+  /** Export buttons need the server (hidden in static builds). */
+  canExport?: boolean
 }
 
 type Thumb = { state: 'loading' } | { state: 'ready'; Content: ComponentType } | { state: 'error'; message: string }
 
 /** One deck on the home grid: its first slide, launch buttons and actions (Part 3 §1.6). */
-export function PresentationCard({ deck, index, defaultSource, load, onPresent, onDev, onEdit, onChat }: PresentationCardProps) {
+function ExportButton({ kind, deck }: { kind: 'html' | 'pdf'; deck: PresentationInfo }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const label = kind === 'html' ? 'Export HTML' : 'Export PDF'
+  const run = async () => {
+    setBusy(true)
+    setError(null)
+    const result = await (kind === 'html' ? downloadHtmlExport(deck) : downloadPdfExport(deck))
+    setBusy(false)
+    if (result.error) setError(result.error)
+  }
+  return (
+    <button
+      type="button"
+      className={`icon-button${busy ? ' is-busy' : ''}${error ? ' is-error' : ''}`}
+      onClick={() => void run()}
+      disabled={busy}
+      title={error ? `${label} failed: ${error}` : kind === 'html' ? 'Export HTML: one file that works offline' : 'Export PDF: one page per slide'}
+      aria-label={label}
+    >
+      {busy ? <span className="icon-button__spinner" /> : kind === 'html' ? <FileIcon /> : <DownloadIcon />}
+    </button>
+  )
+}
+
+export function PresentationCard({ deck, index, defaultSource, load, onPresent, onDev, onEdit, onChat, canExport = false }: PresentationCardProps) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const [thumb, setThumb] = useState<Thumb>({ state: 'loading' })
   const key = `${deck.source}:${deck.path}:${deck.updatedAt}`
@@ -97,6 +125,8 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
           </span>
         </div>
         <div className="deck-card__actions">
+          {canExport && <ExportButton kind="html" deck={deck} />}
+          {canExport && <ExportButton kind="pdf" deck={deck} />}
           {onChat && (
             <button type="button" className="icon-button" onClick={onChat} title="Chat about this deck" aria-label="Chat">
               <ChatIcon />

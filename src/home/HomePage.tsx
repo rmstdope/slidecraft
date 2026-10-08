@@ -205,6 +205,7 @@ export function HomePage(props: HomePageProps) {
                 onDev={() => onPresent(deck, true)}
                 onEdit={deck.readOnly || isStatic ? undefined : () => onEdit(deck)}
                 onChat={deck.readOnly || isStatic ? undefined : () => onChat(deck)}
+                canExport={!isStatic}
               />
             ))}
           </div>

@@ -17,6 +17,7 @@
     "start": "bun server/index.ts",
     "test": "bun test",
     "mcp": "bun server/mcp.ts",
+    "export": "bun scripts/export.ts",
     "content-dir": "bun scripts/contentDir.ts"
   },
   "dependencies": {

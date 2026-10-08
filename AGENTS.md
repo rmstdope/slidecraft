@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 8 (presenter view and drawing) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 9 (HTML and PDF export, reader mode) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -30,6 +30,7 @@ Component Developer. Otherwise Framework Developer.
 | `bun test` | run all tests |
 | `bun start` | serve `dist/` and the API from one process (folder mode) |
 | `bun run mcp` | MCP server over stdio with the deck tools (`--content <dir>` to pick a folder) |
+| `bun run export --name <deck> [--pdf]` | write `<content>/exports/<deck>.html` (or `.pdf`; PDF needs the server and Chrome) |
 | `bun run content-dir` | print the content directory the server would use |
 
 ## Dev-server etiquette

@@ -10,6 +10,7 @@ import { errorJson, json, preflight } from './lib/http.ts'
 import { APP_ID, DIST_DIR, hasFlag, IS_BUNDLED, PORT, VERSION } from './lib/paths.ts'
 import { serveAppFile, serveFileFrom } from './lib/static.ts'
 import { handleApplyFix } from './routes/applyFix.ts'
+import { handleExport } from './routes/export.ts'
 import { handleContents, handlePresentations, handleThemes } from './routes/content.ts'
 import { handleDeleteImage, handleListImages, handleUpload } from './routes/images.ts'
 import { handleMdx } from './routes/mdx.ts'
@@ -26,8 +27,7 @@ export async function router(request: Request): Promise<Response> {
 
   if (method === 'OPTIONS') return preflight()
   if (pathname.startsWith('/api/mdx/')) return handleMdx(request, url)
-  if (method === 'POST' && /^\/api\/export\/[^/]+\/pdf$/.test(pathname)) return notYet(9)
-  if (method === 'POST' && pathname.startsWith('/api/export/')) return notYet(9)
+  if (method === 'POST' && pathname.startsWith('/api/export/')) return handleExport(url)
   if (method === 'GET' && pathname === '/api/events') return eventsResponse()
   if (method === 'GET' && pathname === '/api/health') {
     const source = getDefaultContentSource()
