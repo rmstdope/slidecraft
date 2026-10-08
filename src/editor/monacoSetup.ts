@@ -4,7 +4,7 @@
  */
 import { loader } from '@monaco-editor/react'
 import * as monaco from './monacoCore'
-import EditorWorker from 'monaco-editor-esm/editor/editor.worker.js?worker'
+import EditorWorker from './monacoWorker.ts?worker'
 
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() }
 loader.config({ monaco: monaco as unknown as Parameters<typeof loader.config>[0]['monaco'] })
