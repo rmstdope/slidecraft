@@ -23,12 +23,13 @@ import {
   type ViewState,
 } from './router'
 import { startContentThemes } from './themes/contentThemes'
-import { Placeholder } from './views/Placeholder'
 
 /** Monaco is large: the editor loads only when someone opens it. */
 const EditorPage = lazy(() => import('./editor/EditorPage'))
 /** The gallery compiles previews in the browser, so it also loads on demand. */
 const GalleryPage = lazy(() => import('./gallery/GalleryPage'))
+/** The chat page carries Monaco (for the repair editor), so it loads on demand too. */
+const ChatPage = lazy(() => import('./chat/ChatPage'))
 
 const currentRoute = (): Route => parseRoute(routePath(), window.location.search)
 
@@ -188,9 +189,9 @@ export function App() {
       )
     case 'chat':
       return (
-        <Placeholder title={view.deck ? `Chat: ${deckName(view.deck)}` : 'Chat'} onHome={goHome}>
-          Arrives in Phase 10.
-        </Placeholder>
+        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading chat" />}>
+          <ChatPage key={view.deck ? `${view.deck.source}:${view.deck.path}` : 'new'} deck={view.deck} onExit={goHome} />
+        </Suspense>
       )
     case 'editor':
       return (

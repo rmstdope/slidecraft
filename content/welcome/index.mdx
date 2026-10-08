@@ -19,6 +19,7 @@ import errorShot from './images/error.png'
 import presenterShot from './images/presenter.png'
 import drawingShot from './images/drawing.png'
 import readerShot from './images/reader.png'
+import chatShot from './images/chat.png'
 
 {/*
   COLOUR LEGEND — deck-wide, both directions binding.
@@ -690,6 +691,35 @@ import readerShot from './images/reader.png'
   <Title>A handout that is also the deck</Title>
   <ContentImage src={readerShot} alt="Reader mode: a slide on the left and its speaker notes on the right" width={1150} />
   <Notes>0:00-0:20. Timing ranges like this one are dropped from the notes in reader mode.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" gradient="radial-accent">
+  <Subtitle>Chat</Subtitle>
+  <Title>Describe the deck, an assistant writes it</Title>
+  <Text muted>Connect any OpenAI-compatible API, Claude Code or the Copilot CLI.</Text>
+  <Notes>11:20-11:40. Section opener for the chat assistant. Open it from the home page or with Chat in the editor.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" layout="document">
+  <Subtitle>Chat</Subtitle>
+  <Title>Every change is checked before it lands</Title>
+  <ContentImage src={chatShot} alt="The chat page: a conversation with a validation error and its repair editor, next to the live preview" width={1150} />
+  <Notes>A slide that does not compile is refused. The assistant sees the error and retries; if it gives up, the slide opens in an editor with Apply Fix.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" layout="document">
+  <Subtitle>Providers</Subtitle>
+  <Title>Three ways to connect a model</Title>
+  <ComparisonTable
+    headers={["Provider", "Who edits the file", "Setup"]}
+    align={["left", "left", "left"]}
+    rows={[
+      ["AI API", "Slidecraft, through its deck tools", "AI_API_KEY, optional SLIDECRAFT_AI_URL and _MODEL"],
+      ["Claude Code", "The claude CLI, in the content folder", "claude on PATH, signed in"],
+      ["Copilot CLI", "The copilot CLI, in the content folder", "copilot on PATH, signed in"],
+    ]}
+  />
+  <Notes>All three get the same context: the components, the templates, the themes, the author guide and the folder's own AGENTS.md.</Notes>
 </Slide>
 
 <Slide hidden>

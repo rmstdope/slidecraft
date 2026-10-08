@@ -10,6 +10,7 @@ import { errorJson, json, preflight } from './lib/http.ts'
 import { APP_ID, DIST_DIR, hasFlag, IS_BUNDLED, PORT, VERSION } from './lib/paths.ts'
 import { serveAppFile, serveFileFrom } from './lib/static.ts'
 import { handleApplyFix } from './routes/applyFix.ts'
+import { handleChat } from './routes/chat.ts'
 import { handleExport } from './routes/export.ts'
 import { handleContents, handlePresentations, handleThemes } from './routes/content.ts'
 import { handleDeleteImage, handleListImages, handleUpload } from './routes/images.ts'
@@ -18,7 +19,6 @@ import { existsSync } from 'node:fs'
 
 export { APP_ID, VERSION }
 
-const notYet = (phase: number) => errorJson(501, `Not implemented yet (plan Phase ${phase})`)
 
 export async function router(request: Request): Promise<Response> {
   const url = new URL(request.url)
@@ -36,7 +36,7 @@ export async function router(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/presentations') return handlePresentations(url)
   if (pathname === '/api/contents') return handleContents(request)
   if (method === 'GET' && pathname === '/api/themes') return handleThemes(url)
-  if (method === 'POST' && pathname === '/api/chat') return notYet(10)
+  if (method === 'POST' && pathname === '/api/chat') return handleChat(request)
   if (method === 'POST' && pathname === '/api/apply-fix') return handleApplyFix(request)
   if (method === 'POST' && (pathname === '/api/images/upload' || pathname === '/api/images')) return handleUpload(request)
   if (method === 'DELETE' && pathname === '/api/images') return handleDeleteImage(request)

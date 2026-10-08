@@ -497,6 +497,19 @@ home cards. Verified from `file://` with the server stopped.
 **Done when:** each of the three providers can create a deck from a prompt and edit a slide; a
 deliberately invalid slide surfaces in the Apply Fix editor and can be fixed manually.
 
+**Status (2026-10-08): done.** `shared/chat.ts` holds the contract; the server side is
+`server/lib/chat/` (prompts, HTTP tool loop, CLI providers) and `server/routes/chat.ts`; the page is
+`src/chat/` (lazy route). The HTTP provider calls any OpenAI-compatible endpoint (`AI_API_KEY` or
+`OPENAI_API_KEY`; `SLIDECRAFT_AI_URL` / `SLIDECRAFT_AI_MODEL` or an `ai` block in `config.json`),
+runs up to 30 tool iterations and reports refused slides keyed by slide (a later success on the
+same slide clears the error). Claude Code resumes the session it returns; the Copilot CLI is given
+the conversation id as `--session-id` (verified to resume), gets the context in front of its first
+message, and its `filesModified` names a deck it created. Flags checked against Claude Code 2.1.294
+and Copilot CLI 1.0.93: Copilot's effort flag is `--reasoning-effort`. Verified in the browser:
+create and edit with Claude Code and Copilot CLI for real, the HTTP provider against a local
+scripted OpenAI-compatible server (no API key was available), and the Apply Fix editor with a
+hand-repaired slide. The repair editor reuses the editor's Monaco with the language service.
+
 ### Phase 11 — Packaging, docs site, CI
 
 - `scripts/dev.ts` orchestrator with reuse detection (*Part 4 §10.3*), `scripts/contentDir.ts`.

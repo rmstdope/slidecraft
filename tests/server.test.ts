@@ -49,10 +49,9 @@ describe('basics', () => {
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:6100')
     expect(await body(res)).toMatchObject({ app: 'slidecraft', contentDir: local, pid: process.pid })
   })
-  test('unknown API routes are JSON 404s; OPTIONS is a preflight; chat is not built yet', async () => {
+  test('unknown API routes are JSON 404s; OPTIONS is a preflight', async () => {
     expect((await call('/api/nope')).status).toBe(404)
     expect((await call('/api/mdx/x', { method: 'OPTIONS' })).headers.get('Access-Control-Max-Age')).toBe('86400')
-    expect((await call('/api/chat', { method: 'POST' })).status).toBe(501)
   })
 })
 

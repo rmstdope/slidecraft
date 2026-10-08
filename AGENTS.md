@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 9 (HTML and PDF export, reader mode) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 10 (AI chat assistant) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -56,11 +56,12 @@ src/presenter/  presenter window, cross-window sync, navigation hook
 src/drawing/    annotations: canvas, toolbar, history, persistence
 src/home/       home page: deck cards, filters, home commands
 src/gallery/    component gallery: search, lazy preview scheduler
+src/chat/       chat page: providers, tool calls, repair editor
 src/editor/     deck editor: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
 src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
 src/language-service-monaco/ Monaco adapter for the language service
 shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, deckModel, tagAttrs, themes, mdxImports
-server/         Bun server: router (index.ts), routes/, lib/ (content sources, decks, tools, watcher, SSE), mcp.ts
+server/         Bun server: router (index.ts), routes/, lib/ (content sources, decks, tools, watcher, SSE, chat/, exports), mcp.ts
 scripts/        dev orchestrator and build scripts
 tests/          bun test suites
 content/        example decks (<name>/index.mdx)

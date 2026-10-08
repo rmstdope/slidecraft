@@ -11,6 +11,7 @@
 @import './presentation.css';
 @import './editor.css';
 @import './tool.css';
+@import './chat.css';
 
 :root {
   --brand-yellow: #f5b400;

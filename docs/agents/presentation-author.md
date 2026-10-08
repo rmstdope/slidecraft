@@ -97,6 +97,33 @@ import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
 | Verdicts | `ProConList`, `TagPill` |
 | Numeric evidence | `ScatterChart` (with `threshold` only if you will drag it) |
 
+## Speaker notes
+
+Every content slide gets `<Notes>`. The first line is a time budget (`4:00-4:50.`) followed by
+what to say; then the facts the speaker needs but the slide does not show (sources, numbers,
+names). Notes may use Markdown: paragraphs, lists, **bold**. Reader mode and the presenter window
+show them; the time budget is dropped in reader mode.
+
+## Images
+
+- Put image files next to the deck (`images/` is conventional) and import them:
+  `import chart from './images/chart.png'`, then `<ContentImage src={chart} alt="…" width={900} />`.
+- A plain path also works for string props: `<ContentImage src="images/chart.png" />`.
+- Shared images uploaded in the editor live in the library and are referenced as
+  `/images/library/<file>`.
+- Always write `alt` text. Size images in pixels; a full-width image in document layout is
+  about 1150 px wide so it fits under the header band.
+
+## Before you finish
+
+- Every component you used is in the import line, and nothing is raw HTML.
+- Each document title fits on one line (two at most) and states the point.
+- One accent per slide, or colours that follow the deck's legend.
+- Each step reveals something the speaker talks about; the slide still reads fully built.
+- Every slide has notes with a time budget.
+- The deck compiles: the tools refuse a write that does not, and the app shows the error on the
+  deck's card and in the presentation.
+
 ## Workflow
 
 1. Find the content folder (`get_content_dir`, or the folder holding this file).
