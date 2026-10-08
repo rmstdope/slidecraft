@@ -1,0 +1,78 @@
+---
+title: Welcome to Slidecraft
+---
+import { Presentation, Slide, Title, Subtitle, Text, Notes } from '@components'
+
+<Presentation>
+
+<Slide theme="dark" accent="yellow" gradient="radial-accent">
+  <Subtitle>Slidecraft</Subtitle>
+  <Title>Decks as MDX</Title>
+  <Text muted>One file per deck. Components instead of boxes. Motion that means something.</Text>
+  <Notes>0:00-0:30. Open with the idea: a deck is a text file you can diff, review and generate.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="teal" gradient="radial" layout="document">
+  <Subtitle>How it works</Subtitle>
+  <Title>A slide is a fixed 1920 by 1080 stage</Title>
+  <Text align="left">Every size is in pixels on that stage. The stage is scaled to the screen as a whole, so nothing reflows between a laptop and a projector.</Text>
+  <Notes>0:30-1:10. Resize the window to show letterboxing.</Notes>
+</Slide>
+
+<Slide theme="light" accent="navy" gradient="spotlight">
+  <Subtitle>Light theme</Subtitle>
+  <Title size="standard">Standard titles shrink until they fit on two lines, however long the wording gets</Title>
+  <Text muted>Spotlight gradient, navy accent.</Text>
+</Slide>
+
+<Slide theme="light" accent="red" gradient="diagonal" layout="document">
+  <Subtitle>Document layout</Subtitle>
+  <Title>Header band, body and footer</Title>
+  <Text align="left">The leading Subtitle and Title form the header band. Everything after them is the body, centred vertically in the space that remains.</Text>
+</Slide>
+
+<Slide theme="dark" accent="navy" gradient="spotlight">
+  <Title accent>Navy turns light on dark slides</Title>
+  <Text muted>Dark spotlight gradient.</Text>
+</Slide>
+
+<Slide theme="light" accent="teal" gradient="radial">
+  <Title size="compact" accent>Compact title, teal accent, radial vignette</Title>
+</Slide>
+
+<Slide hidden>
+  <Title>This slide is hidden when presenting</Title>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Dev mode grading</Subtitle>
+  <Title>A document title that runs on far too long becomes a signal to rewrite it shorter, because the eyebrow already names the subject and the title should only assert</Title>
+  <Text align="left">Open this slide with ?mode=dev to see the outline.</Text>
+</Slide>
+
+<Slide theme="dark" accent="red" layout="document">
+  <Subtitle>Auto-fit</Subtitle>
+  <Title>Crowded bodies shrink to fit</Title>
+  <Text align="left" size="lg">First paragraph of a deliberately crowded slide that holds more text than the body can show at full size.</Text>
+  <Text align="left" size="lg">Second paragraph. The header band never scales; only the body below it does.</Text>
+  <Text align="left" size="lg">Third paragraph. In dev mode a badge reports the scale that was applied.</Text>
+  <Text align="left" size="lg">Fourth paragraph. Fit mode scales, actual mode shows the overflow instead.</Text>
+  <Text align="left" size="lg">Fifth paragraph. Split a slide like this one in two.</Text>
+</Slide>
+
+<Slide chrome="title">
+  <Title>Corporate title slide</Title>
+  <Subtitle>Chrome forces the light theme</Subtitle>
+</Slide>
+
+<Slide chrome="section">
+  <Title>A short section title</Title>
+</Slide>
+
+<Slide chrome="content">
+  <Subtitle>Corporate content</Subtitle>
+  <Title>Content chrome implies document layout</Title>
+  <Text align="left">The frame itself arrives in Phase 4; padding and alignment already follow the geometry module.</Text>
+</Slide>
+
+</Presentation>

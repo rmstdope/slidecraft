@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 0 (bootstrap). This file grows into the full agent guide in Phase 12.
+> Status: Phase 1 (stage and typography) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 
@@ -44,7 +44,9 @@ TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · V
 ## Project layout
 
 ```
-src/            client: App router (src/router.ts), views, components, styles
+src/            client: App router (src/router.ts), views, styles
+src/components/slides/   slide components, defineComponent registry, accents, contexts
+src/animations/ springs and variant tables
 shared/         code used by client and server: ports, deck refs, frontmatter
 server/         Bun API server (server/index.ts)
 scripts/        dev orchestrator and build scripts
@@ -60,10 +62,16 @@ Path aliases: `@/*` → `src/*`, `@components` → `src/components/index.ts`, `@
 
 - No raw HTML in decks (`div`, `p`, `ul`, `h1`, `br`, `img`); use registered components only.
 - Fixed pixel sizes only on slides; never `%`, `vw`, `vh`, `clamp()`.
-- The component registry (`defineComponent()`, Phase 1) is the single source of truth for
+- The component registry (`src/components/slides/defineComponent.ts`) is the single source of truth for
   every component list, toolbar, completion, gallery and prompt.
 - Colour and motion are semantic: one accent per slide; motion only when it carries meaning.
 - YAML frontmatter in a deck is opaque: preserved byte for byte, stripped before compile.
+
+## Adding a slide component
+
+Create it with `defineComponent({ Component, registry, toolbar })` in `src/components/slides/`,
+export it from `src/components/slides/index.ts`, and run `bun test`: the registry test checks the
+display name, the MDX scope, the metadata and that `snippet` and `previewCode` compile.
 
 ## Commits
 

@@ -1,12 +1,91 @@
-/* Bootstrap styles. Phase 1 replaces this with the full token set, theme and accent classes. */
+/*
+ * Slidecraft global styles (Part 1 §12). Components reference only --accent, --text, --muted,
+ * --bg, --font-display and --font-body, so a re-brand is a token swap in this file plus the
+ * hex table in src/components/slides/accents.ts.
+ */
+@import '@fontsource/zilla-slab/latin-600.css';
+@import '@fontsource/source-sans-3/latin-400.css';
+@import '@fontsource/source-sans-3/latin-400-italic.css';
+@import '@fontsource/source-sans-3/latin-600.css';
+@import '@fontsource/source-sans-3/latin-700.css';
+
 :root {
+  --brand-yellow: #f5b400;
+  --brand-red: #e0452b;
+  --accent-teal: #1f9e89;
+  --accent-navy: #1f3a5f;
+  --accent-navy-light: #7fa7d9;
+  --ink: #1a1a1a;
+
   --dark-bg: #111111;
   --dark-text: #ffffff;
   --dark-muted: rgba(255, 255, 255, 0.6);
-  --brand-yellow: #f5b400;
-  --brand-red: #e0452b;
-  --font-body: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: ui-monospace, Menlo, monospace;
+  --light-bg: #ffffff;
+  --light-text: #1a1a1a;
+  --light-muted: rgba(26, 26, 26, 0.6);
+
+  --font-display: 'Zilla Slab', Georgia, serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 6rem;
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+
+  --accent: var(--brand-yellow);
+  --bg: var(--dark-bg);
+  --text: var(--dark-text);
+  --muted: var(--dark-muted);
+  --on-navy: var(--ink);
+}
+
+/* Theme classes sit on the slide root and set the role tokens. */
+.theme-dark {
+  --bg: var(--dark-bg);
+  --text: var(--dark-text);
+  --muted: var(--dark-muted);
+  --accent-navy: var(--accent-navy-light);
+  --on-navy: var(--ink);
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.theme-light {
+  --bg: var(--light-bg);
+  --text: var(--light-text);
+  --muted: var(--light-muted);
+  --accent-navy: #1f3a5f;
+  --on-navy: #ffffff;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.accent-yellow {
+  --accent: var(--brand-yellow);
+}
+.accent-red {
+  --accent: var(--brand-red);
+}
+.accent-teal {
+  --accent: var(--accent-teal);
+}
+.accent-navy {
+  --accent: var(--accent-navy);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+.bg-accent {
+  background-color: var(--accent);
+}
+.text-muted {
+  color: var(--muted);
 }
 
 * {
@@ -15,6 +94,7 @@
   padding: 0;
 }
 
+/* The stage never scrolls. Reader view and print override this (Phase 9). */
 html,
 body,
 #root {
@@ -28,11 +108,80 @@ body {
   color: var(--dark-text);
   font: 16px/1.6 var(--font-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 code,
 pre {
   font-family: var(--font-mono);
+}
+
+/* Slide stage furniture (Part 1 §6). */
+.slide__logo {
+  position: absolute;
+  right: 32px;
+  bottom: 32px;
+  height: 40px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.slide__footer-rule {
+  position: absolute;
+  left: 90px;
+  right: 90px;
+  bottom: 84px;
+  height: 1px;
+  background: rgba(138, 143, 152, 0.35);
+  pointer-events: none;
+}
+
+.slide__sheared-rule {
+  align-self: stretch;
+  height: 13px;
+  margin-top: 6px;
+  background: var(--brand-yellow);
+  clip-path: polygon(13px 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
+}
+
+.slide__dev-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 50;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--brand-red);
+  color: #ffffff;
+  font: 600 20px/1.2 var(--font-body);
+  pointer-events: none;
+}
+
+.presentation__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dark-muted);
+  font-size: 1.5rem;
+}
+
+/* Presentation chrome buttons. */
+.presentation-view-button {
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast);
+}
+.presentation-view-button:hover {
+  opacity: 1;
 }
 
 .muted {

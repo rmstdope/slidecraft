@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { MDXProvider } from '@mdx-js/react'
+import type { MDXComponents } from 'mdx/types'
 import { BUILT_IN_SOURCE_ID, deckName, type DeckRef } from '@shared/decks.ts'
 import { routePath } from './basePath'
+import { mdxComponentScope } from './components/mdxScope'
+import { assetResolverFor, DeckContext } from './components/slides/deckContext'
 import { DeckNotFoundError, deckModuleLoader } from './deckLoading'
 import {
   chatUrl,
@@ -111,9 +115,21 @@ export function App() {
         </Placeholder>
       )
     case 'presentation':
-    case 'presenter': {
-      const Content = view.content
-      return <Content />
-    }
+    case 'presenter':
+      return <DeckView deck={view.deck} content={view.content} />
   }
+}
+
+const scope = mdxComponentScope as MDXComponents
+
+/** A compiled deck with its component scope and asset resolver. */
+function DeckView({ deck, content: Content }: { deck: DeckRef; content: ComponentType }) {
+  const deckContext = useMemo(() => ({ deck, resolveAsset: assetResolverFor(deck, DEFAULT_SOURCE) }), [deck])
+  return (
+    <DeckContext.Provider value={deckContext}>
+      <MDXProvider components={scope}>
+        <Content />
+      </MDXProvider>
+    </DeckContext.Provider>
+  )
 }

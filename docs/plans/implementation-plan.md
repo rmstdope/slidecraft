@@ -171,6 +171,14 @@ renders raw at `/<deck>`.
 **Done when:** the example deck renders at `/<deck>`, letterboxes on resize, light and dark
 themes and all five gradients look right, a long title grades amber/red in dev mode.
 
+**Status (2026-10-08): done.** Delivered: tokens and self-hosted fonts, `Slide` (layouts, gradients,
+auto-fit, dev badge, logo, chrome padding from `chrome/geometry.ts`), `Title` / `Subtitle` / `Text` /
+`Notes`, a hash-driven `Presentation` stub, `defineComponent()` / `defineTemplate()`, accents,
+`SlideLayoutContext`, `DeckContext` with the asset resolver, `shared/mdxImports.ts`, springs and the
+full variant tables (pulled forward from Phases 2 and 3), the `welcome` example deck, and tests for
+the registry contract, `Slide`, title fitting and deck compilation (the content test from Phase 5,
+pulled forward). `step` and `morph` props on `Text` arrive with the motion system in Phase 3.
+
 ### Phase 2 — Presentation engine
 
 **Goal:** full navigation, transitions, overview, dev mode, thumbnails.
@@ -402,5 +410,11 @@ no knowledge-MCP or skills modules under `server/lib/`.
 - **Fontsource packages**: confirm `@fontsource/zilla-slab` ships weight 600 and
   `@fontsource/source-sans-3` ships 400/600/700 in woff2 at Phase 1; fall back to Roboto Slab /
   Inter if not.
+- **Vite deck glob staleness**: a running Vite server once kept serving an empty
+  `import.meta.glob('/content/*/index.mdx')` after a deck folder was added; a restart fixed it.
+  Phase 5's runtime loader must be the fallback whenever a deck is not in the bundled map, so a
+  stale glob never hides a deck.
+- **Export size**: fontsource CSS lists `woff2` and `woff`, so the viewer CSS inlines both
+  (about 260 KB). Phase 9 should inline only `woff2`.
 - The spec's `@tanstack/charts` dependency is intentionally absent; ScatterChart behaviour is
   reproduced from the spec's description of the chart definition, not from a library API.
