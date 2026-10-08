@@ -756,6 +756,33 @@ import docsShot from './images/docs.png'
   <Notes>The site bundles the example decks and the gallery as a static app; every push to main republishes it to GitHub Pages.</Notes>
 </Slide>
 
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Example decks</Subtitle>
+  <Title>Four more decks, each showing one thing</Title>
+  <FourColumn>
+    <Card compact title="folio-tour">Thirteen slides of the folio frames around lists, tables, diagrams and stats.</Card>
+    <Card compact title="folio-minimal">The smallest framed deck: title, section and two content slides.</Card>
+    <Card compact title="motion">Every motion tool, with a colour legend and timed notes.</Card>
+    <Card compact title="safe-retries">A complete engineering talk with full notes and sources.</Card>
+  </FourColumn>
+  <Notes>They sit next to this deck on the home page and on the docs site. Each one passes the content tests, so they stay compiling as the components change.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" layout="document">
+  <Subtitle>Documentation</Subtitle>
+  <Title>Agents read the guide for their role</Title>
+  <ComparisonTable
+    headers={["Persona", "Asked for", "Guide"]}
+    rows={[
+      ["Presentation author", "a slide, a deck, shorter titles", "presentation-author.md"],
+      ["Component developer", "a new component or prop", "component-developer.md"],
+      ["Framework developer", "the editor, server, export, a bug", "framework-developer.md"],
+    ]}
+  />
+  <Callout label="Also:">a user guide, a condensed authoring guide, a walkthrough for agents, the style guide and a roadmap.</Callout>
+  <Notes>AGENTS.md at the root picks the persona: content goes to the author, a new component to the component developer, everything else to the framework developer. Every page is on the docs site.</Notes>
+</Slide>
+
 <Slide hidden>
   <Title>This slide is hidden when presenting</Title>
 </Slide>

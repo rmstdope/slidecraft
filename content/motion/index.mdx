@@ -1,0 +1,262 @@
+import {
+  Presentation, Slide, Notes, Step,
+  Title, Subtitle, Text, Accent,
+  TwoColumn, FourColumn, Card, Callout, Stat,
+  CycleDiagram, BlockDiagram, ScatterChart,
+} from '@components'
+
+{/*
+  COLOUR LEGEND — deck-wide, both directions binding.
+  teal = motion that carries a meaning
+  red  = motion added for decoration
+  Every other slide uses its own single accent with no second colour.
+*/}
+
+<Presentation theme="slidecraft">
+
+<Slide scheme="dark" accent="teal" gradient="radial-accent">
+  <Subtitle>A tour in sixteen slides</Subtitle>
+  <Title>Motion that <Accent>means</Accent> something</Title>
+  <Text muted>Arrival, identity, place and measurement</Text>
+  <Notes>
+    0:00-0:40. Every movement in this deck says one of four things. Name them as we go, and
+    notice that nothing moves just to look busy.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Arrival</Subtitle>
+  <Title>Steps arrive in the order you speak</Title>
+  <Text align="left">A step is a beat of the talk. Right arrow walks the beats, down arrow skips them.</Text>
+  <Step at={1}>
+    <Text align="left">First you state the problem.</Text>
+  </Step>
+  <Step at={2}>
+    <Text align="left">Then the cause, once the room has the problem in mind.</Text>
+  </Step>
+  <Step at={3} enter="scale">
+    <Callout label="Then:">the decision, which lands last because it depends on both.</Callout>
+  </Step>
+  <Notes>
+    0:40-1:30. Three beats. Hidden steps keep their space, so nothing jumps when the next one
+    arrives. The decision scales in because it is the point of the slide.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Arrival, as a row</Subtitle>
+  <Title>A staggered row lands one card at a time</Title>
+  <Step at={1} stagger row>
+    <Card title="Read">The request arrives.</Card>
+    <Card title="Decide">The rule picks a path.</Card>
+    <Card title="Write">The result is stored.</Card>
+  </Step>
+  <Notes>
+    1:30-2:10. One step, three cards, left to right: the order of the cards is the order of the
+    pipeline. Without that order to show, the row would arrive at once.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Arrival, inside a grid</Subtitle>
+  <Title>The step prop keeps a grid intact</Title>
+  <Text align="left">Wrapping a card in a Step breaks the columns; the prop reveals it in place.</Text>
+  <FourColumn>
+    <Card compact title="Plan" step={1}>Week 1</Card>
+    <Card compact title="Build" step={2}>Weeks 2 to 5</Card>
+    <Card compact title="Test" step={3}>Week 6</Card>
+    <Card compact title="Ship" step={4}>Week 7</Card>
+  </FourColumn>
+  <Notes>
+    2:10-2:50. Four beats is the ceiling. A fifth would be a second slide.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Direction</Subtitle>
+  <Title>Where a step comes from can say why</Title>
+  <Step at={1} enter="left">
+    <Text align="left">From the left: what came before.</Text>
+  </Step>
+  <Step at={2} enter="right">
+    <Text align="left">From the right: what replaces it.</Text>
+  </Step>
+  <Step at={3} enter="fall">
+    <Text align="left">Falling in: the consequence of both.</Text>
+  </Step>
+  <Notes>
+    2:50-3:40. Rise is the default and usually right. Pick a direction only when it matches the
+    sentence you are saying.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" transition="morph">
+  <Subtitle>Identity</Subtitle>
+  <Title>The same number, twice</Title>
+  <Stat value="72%" label="cache hit rate" morph="hit-rate" />
+  <Notes>
+    3:40-4:20. Remember where this number sits. On the next slide it moves rather than
+    reappearing, because it is the same measurement.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document" transition="morph">
+  <Subtitle>Identity</Subtitle>
+  <Title>A morph says this is the thing you just saw</Title>
+  <TwoColumn>
+    <Stat value="72%" label="cache hit rate" morph="hit-rate" />
+    <Stat value="9 min" label="median build" />
+  </TwoColumn>
+  <Notes>
+    4:20-5:00. The hit rate glides into the left column; the build time is new, so it simply
+    arrives. Two different numbers that happen to share a position are not a morph.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Measurement</Subtitle>
+  <Title>Numbers count up, years do not</Title>
+  <FourColumn>
+    <Stat value="1,240" label="decks built" step={1} />
+    <Stat value="38" label="components used" step={2} />
+    <Stat value="4.2 s" label="median load" step={3} />
+    <Stat value="2026" label="first release" countUp={false} step={4} />
+  </FourColumn>
+  <Notes>
+    5:00-5:40. Counting up shows a measurement being taken. A year is a label, so it gets
+    countUp off and simply appears.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Connectors</Subtitle>
+  <Title>A loop draws itself in the order it runs</Title>
+  <CycleDiagram
+    size={620}
+    centerTitle="Review"
+    steps={[
+      { title: "Write", meta: "author" },
+      { title: "Check", meta: "tools" },
+      { title: "Read", meta: "peer" },
+      { title: "Merge", meta: "owner" },
+    ]}
+  />
+  <Notes>
+    5:40-6:20. Nothing to configure: connectors draw in source order when the slide arrives.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Connectors</Subtitle>
+  <Title>Solid edges draw, dashed edges fade in</Title>
+  <BlockDiagram
+    gap={120}
+    nodes={[
+      { id: "editor", row: 0, column: 0, title: "Editor" },
+      { id: "server", row: 0, column: 1, title: "Server" },
+      { id: "decks", row: 0, column: 2, title: "Deck files" },
+      { id: "agent", row: 1, column: 1, title: "Coding agent", dashed: true },
+    ]}
+    edges={[
+      { from: "editor", to: "server", label: "save" },
+      { from: "server", to: "decks", label: "write" },
+      { from: "agent", to: "server", label: "optional", dashed: true },
+    ]}
+  />
+  <Notes>
+    6:20-7:00. The dash already says optional; drawing it as well would say it twice.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Measurement, live</Subtitle>
+  <Title>Drag the line to count what passes</Title>
+  <ScatterChart
+    detail
+    threshold
+    height={520}
+    width={1700}
+    pointLabel="deck"
+    series={[
+      { id: "stepped", label: "Built in steps", color: "teal" },
+      { id: "static", label: "All at once", color: "navy" },
+    ]}
+    data={[
+      { series: "stepped", deck: "A", steps: 1, recall: 52 },
+      { series: "stepped", deck: "B", steps: 3, recall: 71 },
+      { series: "stepped", deck: "C", steps: 6, recall: 58 },
+      { series: "static", deck: "D", steps: 1, recall: 49 },
+      { series: "static", deck: "E", steps: 3, recall: 55 },
+      { series: "static", deck: "F", steps: 6, recall: 44 },
+    ]}
+    x={{ key: "steps", label: "Steps per slide", format: "{v}" }}
+    y={{ key: "recall", label: "Recall next day", format: "{v}%" }}
+  />
+  <Notes>
+    7:00-7:50. Illustrative numbers, made up to show the chart. Drag the threshold while
+    talking: the count beside it updates as you go. Add a threshold only if you will use it.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" canvas="story" transition="fade">
+  <Subtitle>Place</Subtitle>
+  <Title>One picture, three views</Title>
+  <Text muted>The next slides lie on the same plane; the camera moves between them.</Text>
+  <Notes>
+    7:50-8:30. A canvas says that these slides are parts of one whole, not three separate ideas.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" canvas="story" camera={{ x: 2240, y: 0, scale: 0.6 }}>
+  <Subtitle>Place</Subtitle>
+  <Title>A detail, drawn small</Title>
+  <Text muted>Scale below 1 sets this part back from the rest.</Text>
+  <Notes>
+    8:30-9:10. Keep scale close to 1 on slides you stay on: fractional scale makes text soft.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="navy" canvas="story" camera={{ x: 4480, y: 700, rotate: -4 }}>
+  <Subtitle>Place</Subtitle>
+  <Title>Off the line, and tilted</Title>
+  <Text muted>Position and angle say where this sits relative to what came before.</Text>
+  <Notes>
+    9:10-9:40. The camera travels down and turns; the audience keeps their bearings.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>For free</Subtitle>
+  <Title>Some motion needs no prop at all</Title>
+  <Step at={1}>
+    <Text align="left">Transitions are springs, so a quick press interrupts them mid-flight.</Text>
+  </Step>
+  <Step at={2}>
+    <Text align="left">Reduced-motion settings are honoured everywhere.</Text>
+  </Step>
+  <Step at={3}>
+    <Text align="left">Thumbnails and handouts show every step at once, frozen.</Text>
+  </Step>
+  <Notes>
+    9:40-10:10. That last point is the test for every moving slide: it must read fully built.
+  </Notes>
+</Slide>
+
+<Slide scheme="dark" accent="red" layout="document">
+  <Subtitle>The rule</Subtitle>
+  <Title>No meaning, no movement</Title>
+  <Step at={1}>
+    <Text align="left">Say in one sentence what the movement tells the audience.</Text>
+  </Step>
+  <Step at={2}>
+    <Text align="left">Check the slide still reads with every step shown.</Text>
+  </Step>
+  <Step at={3}>
+    <Callout label="Decoration:">motion for interest teaches the room to ignore motion.</Callout>
+  </Step>
+  <Notes>
+    10:10-10:50. Red is the legend's colour for decorative motion: this is the one slide about it.
+  </Notes>
+</Slide>
+
+</Presentation>

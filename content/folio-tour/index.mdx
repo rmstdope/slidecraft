@@ -1,0 +1,167 @@
+import {
+  Presentation, Slide, Notes,
+  Title, Subtitle, Text, Quote,
+  List, ListItem, Card, TwoColumn, Callout,
+  Legend, Stat, Timeline, ComparisonTable, CycleDiagram,
+} from '@components'
+
+{/*
+  COLOUR LEGEND — deck-wide, both directions binding.
+  yellow = caution, works but with a catch
+  red    = risk
+  Everything else takes the folio accent (teal): omit the accent prop.
+*/}
+
+<Presentation theme="folio">
+
+<Slide frame="title">
+  <Title>Remote build caching</Title>
+  <Subtitle>Platform team · plan for the next quarter</Subtitle>
+  <Notes>
+    The whole deck uses the folio theme: no slide sets a scheme, a layout or a gradient.
+    The title frame puts the headline beside the ink panel.
+  </Notes>
+</Slide>
+
+<Slide frame="section">
+  <Title>Where the time goes</Title>
+</Slide>
+
+<Slide>
+  <Subtitle>Today</Subtitle>
+  <Title>A clean build takes 38 minutes on every branch</Title>
+  <List>
+    <ListItem>Each CI runner starts with an empty cache</ListItem>
+    <ListItem>Two thirds of the actions rebuild code nobody changed</ListItem>
+    <ListItem>Laptops repeat the same work after every branch switch</ListItem>
+    <ListItem>Queues grow in the afternoon, when most branches merge</ListItem>
+  </List>
+  <Notes>
+    Content slides need no frame prop: folio gives every slide the content frame by default.
+    Eyebrow first, then a one-line assertion.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Two ways to reuse work</Subtitle>
+  <Title>Reuse outputs by content hash, never by timestamp</Title>
+  <TwoColumn>
+    <Card title="By timestamp" accent="yellow">
+      Fast to add, but a touched file rebuilds and a reverted file can serve a stale result.
+    </Card>
+    <Card title="By content hash">
+      An action reruns only when its inputs change. The same key gives the same output on every machine.
+    </Card>
+  </TwoColumn>
+  <Notes>
+    The only two-colour slide body in the deck: yellow is the caution from the legend, the
+    recommended option keeps the folio accent.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Reading the slides</Subtitle>
+  <Title>Two colours carry a meaning in this deck</Title>
+  <Legend
+    title="Colour key"
+    items={[
+      { color: "teal", label: "The folio accent: no special meaning" },
+      { color: "yellow", label: "Caution: works, with a catch" },
+      { color: "red", label: "Risk" },
+    ]}
+  />
+  <Callout label="Rule:">a colour keeps its meaning on every slide, and no other colour takes that meaning.</Callout>
+  <Notes>
+    The Legend component draws the key the deck's COLOUR LEGEND comment declares, so the
+    audience and the next editor read the same contract.
+  </Notes>
+</Slide>
+
+<Slide frame="section">
+  <Title>The plan</Title>
+</Slide>
+
+<Slide>
+  <Subtitle>Options</Subtitle>
+  <Title>A shared cache that CI writes and laptops read</Title>
+  <ComparisonTable
+    headers={["", "Hit rate", "Trust", "Effort"]}
+    rows={[
+      ["Local cache only", "Low", "High", "None"],
+      ["Shared, everyone writes", "High", "Low", "Small"],
+      ["Shared, CI reads and writes", "Medium", "High", "Small"],
+      { cells: ["Shared, CI writes, laptops read", "High", "High", "Medium"], highlight: true },
+    ]}
+  />
+  <Notes>
+    Laptops never write: a result built on one person's machine cannot poison everybody else's build.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>How a lookup works</Subtitle>
+  <Title>Every action is hashed before it runs</Title>
+  <CycleDiagram
+    size={640}
+    centerTitle="Each action"
+    steps={[
+      { title: "Hash inputs", meta: "sources, flags, tools" },
+      { title: "Look up", meta: "shared cache" },
+      { title: "Fetch or run", meta: "hit or miss" },
+      { title: "Upload", meta: "CI only" },
+    ]}
+  />
+</Slide>
+
+<Slide>
+  <Subtitle>What we expect</Subtitle>
+  <Title>Most branches should build in under ten minutes</Title>
+  <TwoColumn>
+    <Stat value="38 min" label="clean build today" />
+    <Stat value="9 min" label="warm build, estimated" sub="from a two-week trial on one repository" />
+  </TwoColumn>
+  <Notes>
+    The nine minutes is an estimate from a trial on one repository, not a promise for all of them.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Timing</Subtitle>
+  <Title>Live on every repository by the end of the quarter</Title>
+  <Timeline
+    color="teal"
+    events={[
+      { date: "Week 1", title: "Cache server", description: "One region, CI only" },
+      { date: "Week 3", title: "Pilot", description: "Two repositories" },
+      { date: "Week 6", title: "Laptops", description: "Read-only access" },
+      { date: "Week 10", title: "All repositories", isDeadline: true },
+    ]}
+  />
+</Slide>
+
+<Slide>
+  <Subtitle>The catch</Subtitle>
+  <Title>A tool that reads the clock breaks the cache</Title>
+  <Text>
+    An action whose output depends on the time, the host name or a random seed produces a new key
+    every run. It never hits, and worse, two machines can upload different outputs for one key.
+  </Text>
+  <Callout label="Risk:" accent="red">We fix non-deterministic actions before the pilot, not after it.</Callout>
+  <Notes>
+    Text is already left-aligned inside the content frame. The red callout is the deck's risk colour.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>From the pilot team</Subtitle>
+  <Title>The first reaction was about the queue, not the speed</Title>
+  <Quote author="Pilot team lead">We stopped waiting for the afternoon. Merges just go through.</Quote>
+</Slide>
+
+<Slide frame="title">
+  <Title>Faster builds, same results</Title>
+  <Subtitle>Questions, and who wants to join the pilot</Subtitle>
+  <Notes>The closer reuses the title frame.</Notes>
+</Slide>
+
+</Presentation>

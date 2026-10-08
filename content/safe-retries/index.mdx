@@ -1,0 +1,259 @@
+---
+title: Retries without double charges
+sources:
+  - RFC 9110, HTTP Semantics, section 9.2.2 (idempotent methods)
+  - IETF HTTPAPI working group draft, The Idempotency-Key HTTP Header Field
+  - Marc Brooker, Exponential Backoff And Jitter, AWS Architecture Blog (2015)
+  - Amazon Builders' Library, Timeouts, retries, and backoff with jitter
+---
+import {
+  Presentation, Slide, Notes,
+  Title, Subtitle, Text,
+  List, ListItem, Card, TwoColumn, Callout, Stat,
+  Timeline, CycleDiagram, BlockDiagram, ComparisonTable,
+} from '@components'
+
+<Presentation theme="folio">
+
+<Slide frame="title">
+  <Title>Retries without double charges</Title>
+  <Subtitle>Payments platform · engineering review</Subtitle>
+  <Notes>
+    0:00-0:40. Open with the incident everyone remembers: a slow network turned one checkout
+    into two charges. This talk is the design that makes a retry safe.
+
+    Source: RFC 9110 section 9.2.2 on idempotent methods; the IETF HTTPAPI draft "The
+    Idempotency-Key HTTP Header Field"; Marc Brooker, "Exponential Backoff And Jitter" (AWS
+    Architecture Blog, 2015) and "Timeouts, retries, and backoff with jitter" (Amazon Builders'
+    Library). The draft is still a draft: check its current text before implementing.
+  </Notes>
+</Slide>
+
+<Slide frame="section">
+  <Title>The failure we keep seeing</Title>
+  <Notes>0:40-0:50. One sentence: the client cannot tell a lost request from a lost answer.</Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>The problem</Subtitle>
+  <Title>A timeout does not mean the request failed</Title>
+  <TwoColumn>
+    <Card title="What the client sees">
+      No answer after ten seconds. It has no way to know whether the charge happened.
+    </Card>
+    <Card title="What the server did">
+      Charged the card, then lost the connection while sending the receipt.
+    </Card>
+  </TwoColumn>
+  <Notes>
+    0:50-1:50. Walk the two columns left to right. The client's only safe options are to give
+    up, which loses sales, or to retry, which today can charge twice.
+
+    POST is not idempotent by definition (RFC 9110, 9.2.2), so a generic HTTP client will not
+    retry it on its own. Our mobile SDK does, which is how the incident happened.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Two approaches</Subtitle>
+  <Title>Make the retry safe instead of making it rare</Title>
+  <TwoColumn>
+    <Card title="Retry less">
+      Longer timeouts and fewer attempts. Fewer duplicates, but slower failures and the same bug.
+    </Card>
+    <Card title="Make retries idempotent">
+      The server recognises a repeat and answers it without charging again.
+    </Card>
+  </TwoColumn>
+  <Callout label="Design rule:">a retry must never change the outcome, only the chance of getting an answer.</Callout>
+  <Notes>
+    1:50-3:00. The first option is what we did after the incident. It reduced duplicates but
+    did not remove them, and it made real outages slower to detect.
+
+    The rest of the talk is the second option, in four steps.
+  </Notes>
+</Slide>
+
+<Slide frame="section">
+  <Title>The design in four steps</Title>
+  <Notes>3:00-3:10. Each step is one slide; the eyebrow counts them.</Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Step 1</Subtitle>
+  <Title>Every write carries an idempotency key</Title>
+  <List>
+    <ListItem>POST /payments with an Idempotency-Key header</ListItem>
+    <ListItem>key = a random UUID, made once per user action</ListItem>
+    <ListItem>retry(request) reuses the same key, never a new one</ListItem>
+    <ListItem>no key on a write: reject with 400</ListItem>
+  </List>
+  <Callout label="Guardrail:">the client makes the key when the user presses Pay, not when it sends.</Callout>
+  <Notes>
+    3:10-4:20. The header name and the 400 for a missing key follow the IETF draft. The key
+    must identify the user's intent, so it is created at the button press and kept across every
+    retry of that press.
+
+    A new key per attempt is the most common mistake: it turns every retry into a new payment.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Step 2</Subtitle>
+  <Title>The server records the key before it acts</Title>
+  <CycleDiagram
+    size={640}
+    centerTitle="Per key"
+    steps={[
+      { title: "Receive", meta: "key + body" },
+      { title: "Look up", meta: "key store" },
+      { title: "Charge once", meta: "first time only" },
+      { title: "Store reply", meta: "status + body" },
+    ]}
+  />
+  <Notes>
+    4:20-5:20. The key is written as "in progress" in the same transaction that starts the
+    work. A second request with the same key while the first is running gets 409 Conflict,
+    as the draft specifies, and the client retries later.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Step 3</Subtitle>
+  <Title>A repeat gets the stored answer back</Title>
+  <TwoColumn>
+    <Card title="Same key, same body">
+      Return the stored status and body. No second charge, and the client cannot tell the difference.
+    </Card>
+    <Card title="Same key, other body">
+      Reject with 422: the client reused a key for a different payment, which is a bug.
+    </Card>
+  </TwoColumn>
+  <Text>We store a hash of the request body next to the key so the comparison is cheap.</Text>
+  <Notes>
+    5:20-6:20. The 422 for a reused key with a different payload is from the draft. Storing the
+    full response, including errors, matters: a retried request that failed validation must
+    fail the same way again.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Step 4</Subtitle>
+  <Title>Clients wait a random time before each retry</Title>
+  <Timeline
+    color="teal"
+    events={[
+      { date: "0 s", title: "First attempt" },
+      { date: "up to 1 s", title: "Retry 1", description: "random wait" },
+      { date: "up to 2 s", title: "Retry 2", description: "random wait" },
+      { date: "up to 4 s", title: "Retry 3, the last", isDeadline: true },
+    ]}
+  />
+  <Notes>
+    6:20-7:30. Exponential backoff with full jitter: before retry n, wait a random time between
+    zero and base times two to the n, capped. Brooker's 2015 post compares the variants and
+    shows that full jitter spreads load best and finishes the work in fewest calls.
+
+    Without jitter, every client that timed out in the same second retries in the same second,
+    and the retry storm looks exactly like the outage that caused it.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Where it lives</Subtitle>
+  <Title>The gateway owns the keys, not each service</Title>
+  <BlockDiagram
+    width={1560}
+    gap={170}
+    rowHeight={170}
+    nodes={[
+      { id: "app", row: 0, column: 0, title: "Mobile and web", sub: "make the key" },
+      { id: "gateway", row: 0, column: 1, title: "API gateway", sub: "checks and stores" },
+      { id: "store", row: 1, column: 1, title: "Key store", sub: "24 hour retention" },
+      { id: "payments", row: 0, column: 2, title: "Payment service", sub: "unchanged" },
+    ]}
+    edges={[
+      { from: "app", to: "gateway", label: "key + body" },
+      { from: "gateway", to: "store" },
+      { from: "gateway", to: "payments", label: "once" },
+    ]}
+  />
+  <Notes>
+    7:30-8:30. Putting this in the gateway means every write endpoint gets it at once, and the
+    payment service does not change. The trade-off is that the gateway now holds state.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Budgets</Subtitle>
+  <Title>Three retries and a one-day key cover a checkout</Title>
+  <TwoColumn>
+    <Stat value="3" label="retries at most" />
+    <Stat value="24 h" label="key retention" />
+  </TwoColumn>
+  <List>
+    <ListItem>Three retries with full jitter finish within about eight seconds</ListItem>
+    <ListItem>A day covers an app that comes back online the next morning</ListItem>
+    <ListItem>Older keys are deleted; a very late retry becomes a new payment</ListItem>
+  </List>
+  <Notes>
+    8:30-9:40. These are recommendations, not measurements: we have not run this design under
+    production load yet. The twenty-four hours matches what large public payment APIs document
+    for their own idempotency keys; check the provider's current documentation before quoting it.
+  </Notes>
+</Slide>
+
+<Slide frame="section">
+  <Title>Rolling it out</Title>
+  <Notes>9:40-9:50. From design to production without a flag day.</Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Rollout</Subtitle>
+  <Title>Accept keys first, require them last</Title>
+  <List>
+    <ListItem>Gateway accepts and stores keys, ignores missing ones</ListItem>
+    <ListItem>Web client sends keys; compare duplicate rates for a week</ListItem>
+    <ListItem>Mobile SDK sends keys in the next release</ListItem>
+    <ListItem>Jittered backoff ships in the same SDK release</ListItem>
+    <ListItem>Dashboards for 409 and 422 rates per client version</ListItem>
+    <ListItem>Gateway rejects writes without a key, after old app versions age out</ListItem>
+  </List>
+  <Notes>
+    9:50-11:00. The order matters: requiring keys before every client sends them would break
+    old app versions. The 422 dashboard finds clients that reuse keys wrongly.
+  </Notes>
+</Slide>
+
+<Slide>
+  <Subtitle>Open question</Subtitle>
+  <Title>Where to keep the keys is not decided yet</Title>
+  <ComparisonTable
+    headers={["", "Survives a restart", "Latency", "Operations"]}
+    rows={[
+      { cells: ["Table in the payments database", "Yes", "Medium", "Nothing new"], highlight: true },
+      ["Replicated cache with persistence", "Mostly", "Low", "New system"],
+      ["Memory in each gateway node", "No", "Lowest", "Nothing new"],
+    ]}
+  />
+  <Notes>
+    11:00-12:00. Our recommendation is the database table: the key and the charge can then be
+    written in one transaction, which is what makes "charge once" true. The cache is faster but
+    adds a system we do not run today. Memory alone is ruled out: a restart forgets every key.
+  </Notes>
+</Slide>
+
+<Slide frame="title">
+  <Title>Same key, same answer. Retry with jitter. Store the reply.</Title>
+  <Subtitle>Questions and review comments welcome</Subtitle>
+  <Notes>
+    12:00-12:30. The whole design in one line: a key per intent, one stored answer per key,
+    and clients that spread their retries out.
+
+    Source: RFC 9110; the IETF Idempotency-Key header draft; Marc Brooker's backoff and jitter
+    articles. Status codes come from the draft, which can still change: verify them before
+    implementing.
+  </Notes>
+</Slide>
+
+</Presentation>

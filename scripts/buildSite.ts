@@ -26,12 +26,14 @@ export const PAGES: Page[] = [
   { file: 'docs/guide.md', slug: 'guide', title: 'User guide', group: 'Start' },
   { file: 'docs/creating-presentations.md', slug: 'creating-presentations', title: 'Creating presentations', group: 'Authoring' },
   { file: 'docs/agents/presentation-author.md', slug: 'presentation-author', title: 'Presentation author guide', group: 'Authoring' },
-  { file: 'docs/slidecraft-styleguide.md', slug: 'styleguide', title: 'Style guide', group: 'Authoring' },
   { file: null, slug: 'components', title: 'Component catalogue', group: 'Components' },
   { file: 'docs/agents/component-developer.md', slug: 'component-developer', title: 'Component developer guide', group: 'Components' },
   { file: 'docs/component-registry.md', slug: 'component-registry', title: 'Component registry', group: 'Components' },
   { file: 'AGENTS.md', slug: 'agents', title: 'Instructions for coding agents', group: 'Framework' },
   { file: 'docs/agents/framework-developer.md', slug: 'framework-developer', title: 'Framework developer guide', group: 'Framework' },
+  { file: 'docs/agent-personas.md', slug: 'agent-personas', title: 'Agent personas', group: 'Framework' },
+  { file: 'docs/slidecraft-styleguide.md', slug: 'styleguide', title: 'Style guide', group: 'Framework' },
+  { file: 'docs/ROADMAP.md', slug: 'roadmap', title: 'Roadmap', group: 'Framework' },
   { file: 'docs/plans/implementation-plan.md', slug: 'implementation-plan', title: 'Implementation plan', group: 'Framework' },
 ]
 

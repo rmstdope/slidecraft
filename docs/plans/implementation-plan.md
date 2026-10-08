@@ -547,6 +547,18 @@ Workflows: `pages.yml` (base = repository name) and `release.yml` (tag must matc
 
 **Done when:** `tests/content.test.ts` passes on all four decks; the docs site renders every page.
 
+**Status (2026-10-08): done.** Root `AGENTS.md` complete (personas with examples, content folder,
+commands, etiquette, quick start, rules, slide props, themes, layout, motion, colours, keys, docs
+index); the three persona guides; `docs/agent-personas.md`, `guide.md`, `creating-presentations.md`,
+`component-registry.md`, `slidecraft-styleguide.md`, `getting-started-with-agents.md`, `ROADMAP.md`;
+the sample `content/AGENTS.md` and README rewritten. Example decks, all with original subject
+matter: `folio-tour` (13, every folio frame, a short legend), `folio-minimal` (4), `motion` (16,
+legend and time-budgeted notes) and `safe-retries` (15, folio, full notes with `Source:` lines
+citing RFC 9110, the IETF Idempotency-Key draft and Brooker's backoff-and-jitter articles).
+`tests/docs.test.ts` checks that every doc is a site page and every relative link resolves; the
+site gains the personas, style guide and roadmap pages. The welcome deck gains slides on the
+example decks and the persona docs.
+
 ---
 
 ## 4. Repository layout
