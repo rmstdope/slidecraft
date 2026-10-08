@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { AccentColor } from './accents'
+import { isAccent, type AccentColor } from './accents'
 
 export type SlideLayout = 'centered' | 'document'
 export type SlideChrome = 'none' | 'title' | 'section' | 'content'
@@ -20,3 +20,9 @@ export const SlideLayoutContext = createContext<SlideLayoutContextValue>({
 })
 
 export const useSlideLayout = (): SlideLayoutContextValue => useContext(SlideLayoutContext)
+
+/** The accent inheritance rule: an explicit valid accent, else the slide's accent. */
+export function useAccent(accent?: unknown): AccentColor {
+  const { accent: slideAccent } = useContext(SlideLayoutContext)
+  return isAccent(accent) ? accent : slideAccent
+}

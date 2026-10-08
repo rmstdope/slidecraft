@@ -50,3 +50,43 @@ export function onAccent(accent: AccentColor): string {
   if (accent === 'navy') return 'var(--on-navy, #ffffff)'
   return '#ffffff'
 }
+
+/** A valid accent role, or undefined (typos fall back to the caller's default). */
+export const resolveAccent = (value: unknown): AccentColor | undefined => (isAccent(value) ? value : undefined)
+
+/** An accent role or any raw CSS colour, as a CSS value. */
+export const colorValue = (value: AccentColor | string): string => (isAccent(value) ? accentColors[value] : value)
+
+function mixHex(hex: string, target: number, amount: number): string {
+  const [r, g, b] = hexToRgb(hex).map((c) => Math.round(c + (target - c) * amount))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+export interface AccentShades {
+  light: string
+  base: string
+  dark: string
+}
+
+/** Lighter tint, base and darker shade of each accent, for gradient-filled bars and nodes. */
+export const accentShades: Record<AccentColor, AccentShades> = Object.fromEntries(
+  ACCENTS.map((accent) => [
+    accent,
+    { light: mixHex(accentHex[accent], 255, 0.3), base: accentColors[accent], dark: mixHex(accentHex[accent], 0, 0.25) },
+  ]),
+) as Record<AccentColor, AccentShades>
+
+/** Flat pastel fills for light "diagram" slides, with a saturated line colour each. */
+export const PASTELS = {
+  green: { bg: '#e3f4ea', line: '#2e9a5e' },
+  yellow: { bg: '#fdf3d6', line: '#d99a00' },
+  teal: { bg: '#ddf1ee', line: '#1f9e89' },
+  red: { bg: '#fbe3e0', line: '#e0452b' },
+  navy: { bg: '#e3e8f6', line: '#4c5fd5' },
+  white: { bg: '#ffffff', line: '#8a8f98' },
+  cream: { bg: '#faf6ee', line: '#b59f7b' },
+} as const
+export type PastelColor = keyof typeof PASTELS
+
+/** Fixed ink for text on pastel fills, which stay light on either theme. */
+export const PASTEL_INK = '#3a3a3a'

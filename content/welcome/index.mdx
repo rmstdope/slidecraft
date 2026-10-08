@@ -1,10 +1,26 @@
 ---
 title: Welcome to Slidecraft
 ---
-import { Presentation, Slide, Title, Subtitle, Text, Step, Notes } from '@components'
+import {
+  Presentation, Slide, Notes, Step,
+  Title, Subtitle, Text, Accent, Highlight, TagPill, Quote, CenteredStatement,
+  TwoColumn, FourColumn, Card, Callout, ContentBox, BracketDiagram, ComparisonLayout,
+  List, ListItem, ProConList, ComparisonTable, Legend, PhaseRow,
+  Stat, ProgressBar, Spectrum, Timeline, Quadrants, ScatterChart,
+  BlockDiagram, StackDiagram, CycleDiagram, PyramidDiagram, SequenceDiagram, DataModel, FeedbackLoops,
+  ContentImage, Code, PersonRow, PersonCard,
+} from '@components'
+import stage from './images/stage.svg'
 
 {/*
-  COLOUR LEGEND: each slide uses its own single accent; no colour carries a deck-wide meaning.
+  COLOUR LEGEND — deck-wide, both directions binding.
+  (Same concept → same colour on every slide; a colour is never reused for another meaning.)
+
+  teal   = fine, works, recommended
+  yellow = caution, needs a decision
+  red    = risk, does not work
+
+  Everything without one of these meanings takes the slide accent: omit the accent prop.
 */}
 
 <Presentation>
@@ -126,6 +142,295 @@ import { Presentation, Slide, Title, Subtitle, Text, Step, Notes } from '@compon
   <Title>Placed anywhere, tilted on purpose</Title>
   <Text muted step={1}>Only the focused slide builds; the rest of the map is always complete.</Text>
   <Notes>5:00-5:30. Keep scale near 1 and rotation for background slides in real decks: fractional scale and rotation soften text.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="teal" gradient="radial-accent">
+  <Subtitle>Components</Subtitle>
+  <Title>Fifty components, one registry</Title>
+  <Text muted>Every component describes itself once: props, snippet, preview. The palette, gallery, docs and AI prompts all read the same registry.</Text>
+  <Notes>5:30-5:50. Section opener for the component tour.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Cards</Subtitle>
+  <Title>Peers share one accent</Title>
+  <TwoColumn>
+    <Card title="Write" subtitle="One MDX file per deck" subtitleVariant="divider">Components instead of boxes; diffs you can review.</Card>
+    <Card title="Present" subtitle="Keys, steps and morphs" subtitleVariant="inset">Motion only where it says something.</Card>
+  </TwoColumn>
+  <Notes>Both cards take the slide accent because they are peers. Colour would suggest a grouping that is not there.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="navy" layout="document">
+  <Subtitle>Grid</Subtitle>
+  <Title>Four parts, one beat each</Title>
+  <FourColumn>
+    <Card compact title="Parse" step={1}>Split the file into slides.</Card>
+    <Card compact title="Compile" step={2}>MDX to React in the browser.</Card>
+    <Card compact title="Render" step={3}>A fixed stage, scaled.</Card>
+    <Card compact title="Export" step={4}>One HTML file or a PDF.</Card>
+  </FourColumn>
+  <Notes>step on each card keeps the grid intact while they arrive in order.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Numbers</Subtitle>
+  <Title>A measurement counts up when it lands</Title>
+  <FourColumn>
+    <Stat value="56" label="components" step={1} />
+    <Stat value="18" label="templates" step={2} />
+    <Stat value="1,920" label="pixels wide" step={3} />
+    <Stat value="2026" label="first release" countUp={false} step={4} />
+  </FourColumn>
+  <Notes>The year does not count up: it is a label, not a measurement.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Lists</Subtitle>
+  <Title>Bullets stagger in, one rule stands out</Title>
+  <List>
+    <ListItem>Write one idea per slide.</ListItem>
+    <ListItem>Make the title an assertion, not a topic.</ListItem>
+    <ListItem>Let the eyebrow carry the subject.</ListItem>
+  </List>
+  <Callout label="Rule:">If a document title wraps, rewrite it shorter.</Callout>
+</Slide>
+
+<Slide theme="dark" accent="red" layout="document">
+  <Subtitle>Inline</Subtitle>
+  <Title>Emphasis inside the text</Title>
+  <Text align="left">A word can take <Accent>the accent</Accent> or a <Accent gradient="sunset">gradient</Accent>.</Text>
+  <Text align="left">Status fits inline: <TagPill variant="good">Shipped</TagPill> <TagPill variant="warn">Review</TagPill> <TagPill variant="bad">Blocked</TagPill></Text>
+  <Legend title="Colour legend" items={[{ color: "teal", label: "Fine" }, { color: "yellow", label: "Caution" }, { color: "red", label: "Risk" }]} />
+  <Notes>The legend shows this deck's colour meanings; the same three appear on the verdict slides.</Notes>
+</Slide>
+
+<Slide theme="light" accent="red" gradient="radial-accent">
+  <Subtitle>In their words</Subtitle>
+  <Quote author="A presenter, after the switch">I stopped moving boxes and started writing the argument.</Quote>
+</Slide>
+
+<Slide theme="dark" accent="navy" layout="document">
+  <Subtitle>Decisions</Subtitle>
+  <Title>Options against criteria, one recommended</Title>
+  <ComparisonTable
+    headers={["Approach", "Diffable", "Reusable", "Learning curve"]}
+    rows={[
+      ["Drag-and-drop slides", "No", "Copy and paste", "Low"],
+      { cells: ["Components in MDX", "Yes", "Registry", "Medium"], highlight: true },
+      ["Hand-written HTML", "Yes", "Partly", "High"],
+    ]}
+  />
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Trade-offs</Subtitle>
+  <Title>Arguments tagged by verdict</Title>
+  <ProConList
+    items={[
+      { kind: "pro", text: "Decks live in version control next to the code they describe." },
+      { kind: "con", text: "Pixel-perfect freeform layouts are harder than in a drawing tool." },
+      { kind: "nuance", text: "Agents can write decks, but the authoring rules still need a human eye." },
+    ]}
+  />
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Process</Subtitle>
+  <Title>Phases, ranges and splits</Title>
+  <PhaseRow phases={[{ title: "Draft", items: ["Outline in MDX", "Pick templates"] }, { title: "Refine", items: ["Steps and morphs", "Check in dev mode"] }, { title: "Share", items: ["Present", "Export"] }]} />
+  <ProgressBar segments={[{ label: "Built 80%", flex: 8, color: "teal" }, { label: "To do 20%", flex: 2, color: "yellow" }]} />
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Time</Subtitle>
+  <Title>Milestones toward a deadline</Title>
+  <Timeline
+    color="teal"
+    events={[
+      { date: "Phase 1", title: "Stage", description: "Tokens and typography" },
+      { date: "Phase 3", title: "Motion", description: "Steps, morphs, canvas" },
+      { date: "Phase 6", title: "Editor", description: "Monaco and preview" },
+      { date: "Phase 12", title: "Release", isDeadline: true },
+    ]}
+  />
+</Slide>
+
+<Slide theme="dark" accent="red" layout="document">
+  <Subtitle>Risk</Subtitle>
+  <Title>From safe to risky</Title>
+  <Spectrum segments={[{ label: "Text", sub: "Always fine" }, { label: "Steps", sub: "When order matters" }, { label: "Canvas", sub: "Only for a real map" }]} />
+</Slide>
+
+<Slide theme="dark" accent="yellow">
+  <Quadrants
+    size={700}
+    xAxis={{ label: "Effort", low: "Low", high: "High" }}
+    yAxis={{ label: "Impact", low: "Low", high: "High" }}
+    quadrants={{ topLeft: { label: "Do first", color: "teal" }, topRight: { label: "Plan", color: "yellow" }, bottomRight: { label: "Avoid", color: "red" } }}
+    items={[{ label: "Templates", x: 0.2, y: 0.8, color: "teal" }, { label: "Canvas", x: 0.75, y: 0.7, color: "yellow" }, { label: "Custom CSS", x: 0.8, y: 0.2, color: "red" }]}
+  />
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Data</Subtitle>
+  <Title>Drag the cut-off, watch the count</Title>
+  <ScatterChart
+    height={520}
+    detail
+    pointLabel="run"
+    threshold={6}
+    thresholdLabel="at or below"
+    series={[{ id: "small", label: "Small model", color: "teal" }, { id: "large", label: "Large model", color: "navy" }]}
+    data={[
+      { series: "small", run: "a", cost: 1, latency: 0.6, score: 58 },
+      { series: "small", run: "b", cost: 2, latency: 1, score: 64 },
+      { series: "small", run: "c", cost: 3.5, latency: 1.6, score: 69 },
+      { series: "large", run: "a", cost: 6, latency: 2.6, score: 79 },
+      { series: "large", run: "b", cost: 10, latency: 3.9, score: 86 },
+      { series: "large", run: "c", cost: 14, latency: 5.2, score: 89 },
+    ]}
+    x={[{ key: "cost", label: "Cost per run", tab: "Cost", format: "${v}", domain: [0, 16] }, { key: "latency", label: "Latency", tab: "Latency", format: "{v}s", domain: [0, 6] }]}
+    y={{ key: "score", label: "Score", format: "{v}%" }}
+  />
+  <Notes>Drag the dashed line or focus it and use the arrow keys. Press N to switch the x axis: the same points move.</Notes>
+</Slide>
+
+<Slide theme="dark" accent="navy" layout="document">
+  <Subtitle>Architecture</Subtitle>
+  <Title>Boxes, arrows, drawn in reading order</Title>
+  <BlockDiagram
+    rowHeight={160}
+    gap={100}
+    nodes={[
+      { id: "mdx", row: 0, column: 0, kicker: "Source", title: "index.mdx", items: ["Slides", "Notes"] },
+      { id: "compile", row: 0, column: 1, kicker: "Browser", title: "MDX compiler", accent: "navy", emphasis: true },
+      { id: "deck", row: 0, column: 2, kicker: "React", title: "Presentation", items: ["Steps", "Canvas"] },
+      { id: "registry", row: 1, column: 1, kicker: "Metadata", title: "Registry", accent: "teal" },
+      { id: "export", row: 1, column: 2, title: "Export", sub: "HTML or PDF", dashed: true },
+    ]}
+    edges={[
+      { from: "mdx", to: "compile", label: "text" },
+      { from: "compile", to: "deck", label: "components" },
+      { from: "registry", to: "compile", accent: "teal" },
+      { from: "deck", to: "export", dashed: true, label: "optional" },
+    ]}
+  />
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Loops</Subtitle>
+  <Title>A loop is easier to see than to describe</Title>
+  <CycleDiagram size={720} centerTitle="Authoring" steps={[{ title: "Write", meta: "MDX" }, { title: "Preview", meta: "Live" }, { title: "Present", meta: "Steps" }, { title: "Revise", meta: "Notes" }]} />
+</Slide>
+
+<Slide theme="dark" accent="navy" layout="document">
+  <Subtitle>Layers</Subtitle>
+  <Title>What sits on what</Title>
+  <TwoColumn>
+    <StackDiagram width={780} layers={[{ title: "Decks", items: ["MDX"] }, { title: "Components", items: ["Registry"] }, { title: "Runtime", items: ["React", "motion"] }]} />
+    <PyramidDiagram width={560} layers={[{ title: "Visual", meta: "Few" }, { title: "Render", meta: "Some" }, { title: "Unit", meta: "Many" }]} />
+  </TwoColumn>
+</Slide>
+
+<Slide theme="dark" accent="teal" layout="document">
+  <Subtitle>Protocols and models</Subtitle>
+  <Title>Who talks to whom, and what they store</Title>
+  <TwoColumn>
+    <SequenceDiagram
+      width={800}
+      actors={[{ id: "editor", label: "Editor", color: "teal" }, { id: "server", label: "Server", color: "navy" }, { id: "viewer", label: "Viewer", color: "gray" }]}
+      messages={[
+        { from: "editor", to: "server", label: "PUT /api/mdx" },
+        { from: "server", to: "server", label: "validate" },
+        { from: "server", to: "viewer", label: "SSE: updated", type: "dashed" },
+      ]}
+    />
+    <DataModel
+      width={800}
+      entities={[
+        { id: "deck", name: "Deck", fields: [{ name: "source", type: "string", primary: true }, { name: "path", type: "string", primary: true }] },
+        { id: "slide", name: "Slide", color: "navy", fields: [{ name: "index", type: "number", required: true }, { name: "notes", type: "string" }] },
+      ]}
+      relations={[{ from: "deck", to: "slide", type: "one-to-many", label: "has" }]}
+    />
+  </TwoColumn>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Feedback</Subtitle>
+  <Title>Earlier feedback, cheaper fixes</Title>
+  <FeedbackLoops
+    height={720}
+    stages={[
+      { id: "write", title: "Write", color: "pale-yellow" },
+      { id: "preview", title: "Preview", color: "yellow" },
+      { id: "test", title: "Tests", color: "teal" },
+      { id: "present", title: "Present", color: "navy" },
+    ]}
+    arrows={[{ from: "write", to: "preview", label: "save" }, { from: "preview", to: "test", label: "commit" }, { from: "test", to: "present", label: "ship" }]}
+    targets={[{ id: "author", label: "Author" }, { id: "audience", label: "Audience", x: 1300, y: 600, w: 300 }]}
+    feedbacks={[{ from: "preview", to: "author" }, { from: "test", to: "author" }, { from: "present", to: "audience" }]}
+  />
+</Slide>
+
+<Slide theme="light" accent="teal">
+  <BracketDiagram title="Two kinds of slide" items={[{ content: "Centered: openers, statements, closers", color: "teal" }, { content: "Document: a header band, then the body", color: "navy" }]} />
+</Slide>
+
+<Slide theme="light" background="transparent">
+  <ComparisonLayout
+    leftHeader={{ label: "Before", title: "Drawing", subtitle: "Box by box" }}
+    rightHeader={{ label: "After", title: "Writing", subtitle: "Component by component" }}
+    icon="✍️"
+    centerTitle="Same deck"
+    leftContent={<List compact><ListItem>Nudge alignment by hand</ListItem><ListItem>Copy styles slide to slide</ListItem></List>}
+    rightContent={<List compact><ListItem>Fixed stage, fixed sizes</ListItem><ListItem>One accent, inherited</ListItem></List>}
+  />
+</Slide>
+
+<Slide theme="light" accent="navy">
+  <CenteredStatement label="Principle" statement="Colour and motion are information. Use them only when they say something." />
+  <ContentBox color="navy" width={900} title="Why">The audience reads every change of colour or movement as meaning, so unmotivated variation teaches them to ignore both.</ContentBox>
+</Slide>
+
+<Slide theme="dark" accent="yellow" layout="document">
+  <Subtitle>Media</Subtitle>
+  <Title>Images live next to the deck</Title>
+  <Code title="index.mdx" fontSize={24}>{`import stage from './images/stage.svg'
+
+<ContentImage src={stage} width={600} />`}</Code>
+  <ContentImage src={stage} alt="A slide stage inside a screen" width={600} />
+</Slide>
+
+<Slide theme="dark" accent="teal">
+  <Subtitle>People</Subtitle>
+  <PersonRow>
+    <PersonCard name="Ada Author" role="Writes the decks" email="ada@example.com" />
+    <PersonCard name="Pat Presenter" role="Gives the talks" email="pat@example.com" />
+    <PersonCard name="Remy Reviewer" role="Reads the diffs" email="remy@example.com" />
+  </PersonRow>
+  <Notes>Without a photo, a PersonCard shows initials.</Notes>
+</Slide>
+
+<Slide chrome="title">
+  <Title>The corporate frame</Title>
+  <Subtitle>Official decks wear the brand's slide master</Subtitle>
+  <Notes>7:30-7:50. In a real corporate deck every slide has chrome. Here three slides show the three variants.</Notes>
+</Slide>
+
+<Slide chrome="section">
+  <Title>A section divider</Title>
+</Slide>
+
+<Slide chrome="content">
+  <Subtitle>Corporate content</Subtitle>
+  <Title>The frame never scales; the body does</Title>
+  <List>
+    <ListItem>Title, section and content variants map onto the slide master.</ListItem>
+    <ListItem>Chrome forces the light theme and the document layout.</ListItem>
+    <ListItem>The geometry lives in one file, ready to replace with your own master.</ListItem>
+  </List>
 </Slide>
 
 <Slide hidden>

@@ -1,11 +1,65 @@
 /**
  * The slides barrel: every export is a registered slide component and is available in MDX.
- * Helpers (defineComponent, accents, contexts) are imported from their own modules.
+ * Helpers (defineComponent, accents, contexts, geometry) are imported from their own modules.
  */
+import './templates'
+
 export { Presentation } from './Presentation'
 export { Slide } from './Slide'
 export { Notes } from './Notes'
 export { Step } from './Step'
+// Typography and inline
 export { Title } from './Title'
 export { Subtitle } from './Subtitle'
 export { Text } from './Text'
+export { Accent } from './Accent'
+export { Caption } from './Caption'
+export { Highlight } from './Highlight'
+export { TagPill } from './TagPill'
+export { Quote } from './Quote'
+export { CenteredStatement } from './CenteredStatement'
+export { Section } from './Section'
+// Containers and boxes
+export { TwoColumn } from './TwoColumn'
+export { FourColumn } from './FourColumn'
+export { Stack } from './Stack'
+export { PersonRow } from './PersonRow'
+export { Divider } from './Divider'
+export { SplitBackground } from './SplitBackground'
+export { ContentBox } from './ContentBox'
+export { Callout } from './Callout'
+export { Card } from './Card'
+export { ComparisonLayout } from './ComparisonLayout'
+export { DefinitionLayout } from './DefinitionLayout'
+export { BracketDiagram } from './BracketDiagram'
+// Lists, tables and rows
+export { List, ListItem } from './List'
+export { ProConList } from './ProConList'
+export { ComparisonTable } from './ComparisonTable'
+export { Legend } from './Legend'
+export { IconRow } from './IconRow'
+export { PhaseRow } from './PhaseRow'
+// Data
+export { Stat } from './Stat'
+export { ProgressBar } from './ProgressBar'
+export { Spectrum } from './Spectrum'
+export { Timeline } from './Timeline'
+export { Quadrants } from './Quadrants'
+export { ScatterChart } from './ScatterChart'
+// Diagrams
+export { BlockDiagram } from './BlockDiagram'
+export { StackDiagram } from './StackDiagram'
+export { CycleDiagram } from './CycleDiagram'
+export { PyramidDiagram } from './PyramidDiagram'
+export { SequenceDiagram } from './SequenceDiagram'
+export { ActivityDiagram } from './ActivityDiagram'
+export { DataModel } from './DataModel'
+export { FeedbackLoops } from './FeedbackLoops'
+export { AppShellDiagram } from './AppShellDiagram'
+// Media and people
+export { ContentImage } from './ContentImage'
+export { Svg } from './Svg'
+export { BackgroundImage } from './BackgroundImage'
+export { YouTube } from './YouTube'
+export { Code } from './Code'
+export { PersonCard } from './PersonCard'

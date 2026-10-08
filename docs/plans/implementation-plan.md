@@ -271,6 +271,19 @@ CSS colours (as spec).
 **Done when:** every export is registered with a compiling snippet and preview; the gallery
 (Phase 7) shows them all; the four example decks (*Part 6 §8*) render.
 
+**Status (2026-10-08): done** (example decks remain Phase 12; the welcome deck tours the catalogue).
+56 registered components, 18 templates via `defineTemplate()`, the neutral corporate frame, and
+ScatterChart in plain SVG. Further deviations from the spec, all deliberate:
+- **Spec geometry bugs fixed:** Timeline placed its line above the dates and could not put nodes on
+  the line's endpoints; nodes now sit at `80 + i × spacing` on the line. BracketDiagram's box-centre
+  formula missed the boxes; connectors now end over the real centres (a single box is straight below).
+- **Readability:** SequenceDiagram, ActivityDiagram and DataModel take an optional `width` that scales
+  the drawing through its viewBox (their spec text sizes are 12–16 px on a 1920 stage).
+- **Theme-aware:** Section, CenteredStatement, Card fills and IconRow use `--text`-based colours
+  instead of fixed dark gray or white tints, so they read on both themes.
+- **PersonCard** shows initials when there is no photo.
+- **Card `accent`** also accepts a bare attribute (slide accent), as the spec's minimal corporate deck uses.
+
 ### Phase 5 — Server, content model, agent tools, MCP
 
 **Goal:** the Bun server serves decks from any content directory; external agents can edit decks.

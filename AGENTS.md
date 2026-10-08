@@ -5,7 +5,7 @@ folder, rendered by React components with motion animation at a fixed 1920×1080
 The full behavioural spec lives outside this repo (`../presentation-tool.md`); the build plan
 and every architectural decision are in [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md).
 
-> Status: Phase 3 (motion system) done. This file grows into the full agent guide in Phase 12.
+> Status: Phase 4 (component catalogue) done. This file grows into the full agent guide in Phase 12.
 
 ## Pick a persona
 

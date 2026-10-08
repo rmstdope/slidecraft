@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { slideVariants, TRANSITIONS, type SlideTransition } from '../../animations/variants'
 import { appPath } from '../../basePath'
 import { SLIDE_ACCENTS, type SlideAccent } from './accents'
+import { CorporateFrame } from './chrome/CorporateFrame'
 import { CHROME_PADDING, SECTION_TEXT_MAX_WIDTH } from './chrome/geometry'
 import { defineComponent } from './defineComponent'
 import { gradientFor, GRADIENTS, type SlideGradient } from './gradients'
@@ -217,6 +218,7 @@ function SlideComponent({
           overflow: 'hidden',
         }}
       >
+        {corporate && <CorporateFrame variant={chrome as Exclude<SlideChrome, 'none'>} />}
         {showBadge && (
           <div className="slide__dev-badge" role="status">
             {actualMode ? 'Content overflows slide bounds' : `Content scaled to fit (${Math.round(fit.scale * 100)}%)`}
