@@ -112,6 +112,7 @@ export const ListItem = defineComponent<ListItemProps>({
     id: 'list-item',
     name: 'ListItem',
     category: 'component',
+    parent: 'List',
     description: 'Individual item within a List component.',
     props: [{ name: 'step', type: 'number', description: 'Reveal this item on its own build step' }],
     snippet: '<ListItem>Item text</ListItem>',

@@ -272,6 +272,7 @@ export const SignalNode = defineComponent<SignalNodeProps>({
     id: 'signal-node',
     name: 'SignalNode',
     category: 'component',
+    parent: 'SignalFlow',
     description: 'One node of a SignalFlow, with a label and an optional figure.',
     props: [
       { name: 'label', type: 'string', description: 'Node name' },
@@ -290,6 +291,7 @@ export const SignalBypass = defineComponent<SignalBypassProps>({
     id: 'signal-bypass',
     name: 'SignalBypass',
     category: 'component',
+    parent: 'SignalFlow',
     description: 'A second path over a SignalFlow that skips nodes, such as a cache hit.',
     props: [
       { name: 'from', type: 'number', description: '1-based index of the node it leaves' },

@@ -2,7 +2,7 @@
  * Editor state for one deck (Part 3 §2.1) on top of the deck model. When the file does not parse,
  * the editor falls back to editing the whole file as one text (raw mode) until it does.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DeckRef } from '@shared/decks.ts'
 import {
   insertSlideText,
@@ -122,6 +122,8 @@ export function usePresentation(deck: DeckRef) {
         return slide ? updateSlideText(m, id, setSlideTextAttr(slide.text, 'hidden', isSlideTextHidden(slide.text) ? null : true)) : m
       }),
     setDeckTheme: (theme: string) => editModel((m) => setPresentationTextAttr(m, 'theme', theme ? theme : null)),
+    /** A deck-wide default on `<Presentation>` (scheme, accent); "" removes it. */
+    setDeckDefault: (name: 'scheme' | 'accent', value: string) => editModel((m) => setPresentationTextAttr(m, name, value ? value : null)),
     updateRaw: (text: string) => update((s) => (s.readOnly || !s.raw ? s : { ...s, raw: { ...s.raw, text }, isDirty: true })),
     /** Leave raw mode once the whole text parses again. */
     tryStructured: () =>
@@ -148,6 +150,8 @@ export function usePresentation(deck: DeckRef) {
   }
 
   const selected = state.model?.slides.find((s) => s.id === state.selectedId) ?? null
-  const deckTheme = state.model ? presentationAttrs(state.model).theme : undefined
-  return { state, actions, selected, selectedIndex, deckTheme: typeof deckTheme === 'string' ? deckTheme : undefined }
+  const attrs = state.model ? presentationAttrs(state.model) : {}
+  const text = (v: unknown) => (typeof v === 'string' ? v : undefined)
+  const deckLook = useMemo(() => ({ scheme: text(attrs.scheme), accent: text(attrs.accent) }), [attrs.scheme, attrs.accent])
+  return { state, actions, selected, selectedIndex, deckTheme: text(attrs.theme), deckLook }
 }

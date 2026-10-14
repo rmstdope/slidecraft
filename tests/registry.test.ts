@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { compile } from '@mdx-js/mdx'
 import { mdxComponentScope } from '../src/components/mdxScope'
 import * as slides from '../src/components/slides'
-import { getAllComponents, getAllTemplates } from '../src/components/slides/defineComponent'
+import { getAllComponents, getAllTemplates, getParts, getTopLevelComponents } from '../src/components/slides/defineComponent'
 
 const definitions = getAllComponents()
 const registries = [...definitions.map((d) => d.registry), ...getAllTemplates()]
@@ -58,4 +58,19 @@ describe('registry metadata', () => {
       }
     })
   }
+})
+
+describe('parts', () => {
+  test('a part names a registered, top-level parent', () => {
+    const topLevel = new Set(getTopLevelComponents().map((d) => d.registry.name))
+    for (const { registry } of definitions.filter((d) => d.registry.parent)) expect(topLevel.has(registry.parent!)).toBe(true)
+  })
+
+  test('the parent/child pairs are grouped', () => {
+    expect(getParts('SignalFlow').map((d) => d.registry.name)).toEqual(['SignalNode', 'SignalBypass'])
+    expect(getParts('List').map((d) => d.registry.name)).toEqual(['ListItem'])
+    expect(getParts('TracedPoints').map((d) => d.registry.name)).toEqual(['TracedPoint'])
+    expect(getParts('TraceTimeline').map((d) => d.registry.name)).toEqual(['Milestone'])
+    expect(getTopLevelComponents().some((d) => d.registry.name === 'SignalNode')).toBe(false)
+  })
 })

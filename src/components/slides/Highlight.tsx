@@ -1,24 +1,25 @@
 import type { ReactNode } from 'react'
+import { colorValue } from './accents'
 import { defineComponent } from './defineComponent'
 
 export interface HighlightProps {
   children?: ReactNode
-  /** Any CSS colour. */
+  /** An accent role or any CSS colour; defaults to the slide accent. */
   color?: string
   bold?: boolean
 }
 
 export const Highlight = defineComponent<HighlightProps>({
-  Component: ({ children, color = '#2e7d4f', bold = true }) => (
-    <span style={{ color, fontWeight: bold ? 600 : 'inherit' }}>{children}</span>
+  Component: ({ children, color, bold = true }) => (
+    <span style={{ color: color ? colorValue(color) : 'var(--accent)', fontWeight: bold ? 600 : 'inherit' }}>{children}</span>
   ),
   registry: {
     id: 'highlight',
     name: 'Highlight',
     category: 'component',
-    description: 'Inline text highlight with custom color.',
+    description: 'Inline text highlight in the slide accent or a chosen colour.',
     props: [
-      { name: 'color', type: 'string', default: '"#2e7d4f"', description: 'Any CSS colour' },
+      { name: 'color', type: 'string', description: 'An accent role ("teal", "red"…) or any CSS colour; defaults to the slide accent' },
       { name: 'bold', type: 'boolean', default: 'true', description: 'Semi-bold weight' },
     ],
     snippet: '<Highlight>highlighted text</Highlight>',

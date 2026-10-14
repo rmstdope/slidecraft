@@ -39,6 +39,11 @@ export interface RegistryConfig {
   previewCode: string
   keywords?: string[]
   useCases?: string[]
+  /**
+   * Name of the component this one is a part of (ListItem → List, SignalNode → SignalFlow). Parts
+   * stay in the MDX scope and completions, but listings show them inside their parent's entry.
+   */
+  parent?: string
 }
 
 export interface ComponentDefinition<P = Record<string, unknown>> {
@@ -72,6 +77,15 @@ export function defineTemplate(config: Omit<RegistryConfig, 'category' | 'props'
 
 export const getAllComponents = (): readonly AnyDefinition[] => allComponents
 export const getAllTemplates = (): readonly RegistryConfig[] => allTemplates
+
+/** Components with their own entry in listings: everything that is not a part of another. */
+export const getTopLevelComponents = (): readonly AnyDefinition[] => allComponents.filter((c) => !c.registry.parent)
+
+/** The parts of a component, in registration order. */
+export const getParts = (name: string): readonly AnyDefinition[] => allComponents.filter((c) => c.registry.parent === name)
+
+/** The top-level entry a component belongs to: its parent, or itself. */
+export const ownerName = (registry: RegistryConfig): string => registry.parent ?? registry.name
 
 export function getComponentById(id: string): AnyDefinition | undefined {
   return allComponents.find((c) => c.registry.id === id)

@@ -144,8 +144,8 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
 
 | Prop | Values | Default |
 |---|---|---|
-| `scheme` | `dark` / `light` | theme default (`dark` for slidecraft) |
-| `accent` | `yellow` / `red` / `teal` / `navy` | theme default (`yellow`) |
+| `scheme` | `dark` / `light` | the deck's `<Presentation scheme>`, else the theme's (`dark` for slidecraft) |
+| `accent` | `yellow` / `red` / `teal` / `navy` | the deck's `<Presentation accent>`, else the theme's (`yellow`) |
 | `gradient` | `none` / `radial` / `radial-accent` / `diagonal` / `spotlight` | `none` |
 | `background` | any CSS background; wins over `gradient` | – |
 | `layout` | `centered` (hero stack) / `document` (header band + body) | `centered` |
@@ -160,7 +160,8 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
 - **Theme** = the look and feel of a deck: `<Presentation theme="folio">`. Built-in themes live in
   `src/themes/builtin/<id>/theme.json`; content folders add their own under `themes/<id>/`.
   A theme can `extends` another. A single slide may borrow one with `<Slide theme="…">`.
-- **Scheme** = dark or light, per slide: `<Slide scheme="light">`. A theme can restrict schemes.
+- **Scheme** = dark or light, per slide: `<Slide scheme="light">`, or for the whole deck:
+  `<Presentation scheme="light" accent="teal">` (slides still override). A theme can restrict schemes.
 - **Frame** = a slide master defined by the theme: `<Slide frame="title">`. A theme can give every
   slide a default frame (the folio theme uses `content`); `frame="none"` opts out. Frames fix the
   scheme and layout and turn gradients off. Typical framed deck: title → section → content… → title.

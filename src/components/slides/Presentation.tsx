@@ -12,7 +12,9 @@ import { slideVariants } from '../../animations/variants'
 import { chatUrl, editorUrl, homeUrl } from '../../router'
 import { resolveTheme } from '../../themes/registry'
 import { resolveSlideLook } from '../../themes/resolveSlideLook'
-import { ThemeScope, useTheme, useThemesVersion } from '../../themes/ThemeContext'
+import type { Scheme } from '@shared/themes.ts'
+import { DeckLookContext, ThemeScope, useDeckLook, useTheme, useThemesVersion } from '../../themes/ThemeContext'
+import type { SlideAccent } from './accents'
 import { isExported, isTypingTarget, navigateTo } from '../../utils/environment'
 import type { AppMode } from '../../utils/keyboardShortcuts'
 import { GlobalCommandPalette, type CommandItem } from '../editor/GlobalCommandPalette'
@@ -33,6 +35,10 @@ export interface PresentationProps {
   children?: ReactNode
   /** The deck's look and feel: a built-in theme or one from the content folder's themes/. */
   theme?: string
+  /** Scheme for slides that do not set one; defaults to the theme's. */
+  scheme?: Scheme
+  /** Accent for slides that do not set one; defaults to the theme's. */
+  accent?: SlideAccent
 }
 
 function readPdfParams(): { only?: number } | null {
@@ -44,13 +50,16 @@ function readPdfParams(): { only?: number } | null {
 }
 
 /** The deck root (Part 1 §3). Decides between a still, the PDF render, the presenter and the live player. */
-function PresentationComponent({ children, theme }: PresentationProps) {
+function PresentationComponent({ children, theme, scheme, accent }: PresentationProps) {
   const inThumbnail = useInThumbnail()
   const analysis = useMemo(() => analyzeDeck(children), [children])
   const [pdf] = useState(readPdfParams)
+  const deckLook = useMemo(() => ({ scheme, accent }), [scheme, accent])
   return (
     <ThemeScope theme={theme}>
-      {inThumbnail ? (analysis.slides[0] ?? null) /* a deck card shows its first slide */ : pdf ? <PdfView slides={analysis.slides} only={pdf.only} /> : <SyncedDeck analysis={analysis} />}
+      <DeckLookContext.Provider value={deckLook}>
+        {inThumbnail ? (analysis.slides[0] ?? null) /* a deck card shows its first slide */ : pdf ? <PdfView slides={analysis.slides} only={pdf.only} /> : <SyncedDeck analysis={analysis} />}
+      </DeckLookContext.Provider>
     </ThemeScope>
   )
 }
@@ -91,6 +100,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const total = slides.length
   const { deck } = useDeck()
   const deckTheme = useTheme()
+  const deckLook = useDeckLook()
   useThemesVersion()
   const exported = useMemo(isExported, [])
   const { nav, actions } = useDeckNavigation(stepCounts, channel)
@@ -336,7 +346,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const onCanvas = !!run?.canvas
   const runFirst = run?.indices[0] ?? current
   const stageKey = onCanvas ? `canvas-${run.canvas}-${runFirst}` : `slide-${current}`
-  const lookOf = (s: typeof slide) => resolveSlideLook(s.props, s.props.theme ? resolveTheme(s.props.theme, deck?.source) : deckTheme)
+  const lookOf = (s: typeof slide) => resolveSlideLook(s.props, s.props.theme ? resolveTheme(s.props.theme, deck?.source) : deckTheme, deckLook)
   const transitionSource = onCanvas ? slides[runFirst] : slide
   // A canvas run enters with a fade unless its first slide names a transition.
   const variants = slideVariants[onCanvas && !transitionSource.props.transition ? 'fade' : lookOf(transitionSource).transition]
@@ -463,7 +473,11 @@ export const Presentation = defineComponent<PresentationProps>({
     name: 'Presentation',
     category: 'component',
     description: 'The deck root; every child Slide is one slide, styled by the deck theme.',
-    props: [{ name: 'theme', type: 'string', default: '"slidecraft"', description: 'Look and feel: a built-in theme or one from the content folder' }],
+    props: [
+      { name: 'theme', type: 'string', default: '"slidecraft"', description: 'Look and feel: a built-in theme or one from the content folder' },
+      { name: 'scheme', type: '"dark" | "light"', description: 'Scheme for slides that do not set one; defaults to the theme' },
+      { name: 'accent', type: '"yellow" | "red" | "teal" | "navy"', description: 'Accent for slides that do not set one; defaults to the theme' },
+    ],
     snippet: '<Presentation>\n\n<Slide>\n  <Title>First slide</Title>\n</Slide>\n\n</Presentation>',
     previewCode: '<Slide scheme="dark">\n  <Title>Presentation</Title>\n  <Subtitle>Wraps every slide</Subtitle>\n</Slide>',
     keywords: ['deck', 'root', 'presentation'],

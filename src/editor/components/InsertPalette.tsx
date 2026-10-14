@@ -26,7 +26,11 @@ export function InsertPalette({ isOpen, filter, target, theme, onClose, onInsert
   const listRef = useRef<HTMLDivElement>(null)
 
   const items = useMemo(() => {
-    const components = filter === 'templates' ? [] : filterItems(getAllComponents().map((c) => c.registry).filter((r) => r.name !== 'Presentation'), query)
+    // Parts (SignalNode, ListItem…) appear only when searched for; the parent's snippet already contains them.
+    const listed = getAllComponents()
+      .map((c) => c.registry)
+      .filter((r) => r.name !== 'Presentation' && (query.trim() !== '' || !r.parent))
+    const components = filter === 'templates' ? [] : filterItems(listed, query)
     const templates = filterItems([...getAllTemplates()], query)
     return [...components, ...templates]
   }, [filter, query])

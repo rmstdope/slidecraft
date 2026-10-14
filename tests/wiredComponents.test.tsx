@@ -4,7 +4,7 @@ import { mergeThemeSpecs, parseThemeSpec, resolveEffects } from '../shared/theme
 import { StepContext } from '../src/animations/stepContext'
 import { countSteps } from '../src/animations/steps'
 import { Gauge, GaugeRow, Milestone, Presentation, SignalBypass, SignalFlow, SignalNode, Slide, Title, TracedPoint, TracedPoints, TraceTimeline } from '../src/components/slides'
-import { gaugeAngle, polar } from '../src/components/slides/Gauge'
+import { gaugeAngle, gaugeSize, polar } from '../src/components/slides/Gauge'
 import { connector, nodePath, polyline, wireColors } from '../src/components/slides/glow'
 import { bypassWire, signalFlowLayout } from '../src/components/slides/SignalFlow'
 import { tracedPointsLayout } from '../src/components/slides/TracedPoints'
@@ -157,6 +157,24 @@ describe('rendering', () => {
     expect(container.textContent).toContain('Three things')
     expect(container.textContent).toContain('Two')
     expect(countSteps(tree)).toBe(2)
+  })
+
+  test('a GaugeRow sizes its gauges to fit the slide; an explicit size wins', () => {
+    expect([1, 2, 3, 4].map((n) => gaugeSize(n, 80))).toEqual([640, 640, 533, 380])
+    expect(gaugeSize(12, 80)).toBe(200) // never smaller than readable
+    const { container } = render(
+      <Slide>
+        <GaugeRow>
+          <Gauge value={1} />
+          <Gauge value={2} />
+          <Gauge value={3} size={300} />
+        </GaugeRow>
+      </Slide>,
+    )
+    const widths = [...container.querySelectorAll('div')].filter((d) => !d.classList.contains('slide__stage') && d.style.position === 'relative' && d.style.flexShrink === '0').map((d) => d.style.width)
+    expect(widths).toEqual(['533px', '533px', '300px'])
+    const lone = render(<Slide><Gauge value={1} /></Slide>).container
+    expect([...lone.querySelectorAll('div')].some((d) => d.style.width === '640px' && d.style.height === '620px')).toBe(true)
   })
 
   test('Gauge shows the final value and a target outside a running deck', () => {

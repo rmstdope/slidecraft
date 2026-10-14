@@ -1,29 +1,42 @@
-import { getAllComponents } from '../../components/slides/defineComponent'
+import { getParts, getTopLevelComponents, type RegistryProp } from '../../components/slides/defineComponent'
 import { getDisplayKey, getShortcutsForMode, groupShortcutsByCategory } from '../../utils/keyboardShortcuts'
+
+function PropList({ props }: { props: RegistryProp[] }) {
+  if (props.length === 0) return null
+  return (
+    <ul>
+      {props.map((p) => (
+        <li key={p.name}>
+          <code>{p.name}</code> : {p.type}
+          {p.default ? ` = ${p.default}` : ''}
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 /** Component reference and editor shortcuts (Part 3 §2.14). */
 export function HelpPanel() {
-  const components = getAllComponents()
+  // Variants (names with a parenthesis) are left out; parts are shown inside their parent.
+  const components = getTopLevelComponents()
     .map((c) => c.registry)
-    .filter((r) => !/\(/.test(r.name) && r.name !== 'ListItem')
+    .filter((r) => !/\(/.test(r.name))
   const groups = groupShortcutsByCategory(getShortcutsForMode('editor'))
   return (
     <aside className="help-panel">
       <h2>Component reference</h2>
       {components.map((r) => (
         <section key={r.id} className="help-panel__item">
-          <h3>{r.name === 'List' ? 'List / ListItem' : r.name}</h3>
+          <h3>{[r.name, ...getParts(r.name).map((p) => p.registry.name)].join(' · ')}</h3>
           <p>{r.description}</p>
-          {r.props.length > 0 && (
-            <ul>
-              {r.props.map((p) => (
-                <li key={p.name}>
-                  <code>{p.name}</code> : {p.type}
-                  {p.default ? ` = ${p.default}` : ''}
-                </li>
-              ))}
-            </ul>
-          )}
+          <PropList props={r.props} />
+          {getParts(r.name).map(({ registry: part }) => (
+            <div key={part.id} className="help-panel__part">
+              <h4>{part.name}</h4>
+              <p>{part.description}</p>
+              <PropList props={part.props} />
+            </div>
+          ))}
           <pre>{r.snippet}</pre>
         </section>
       ))}

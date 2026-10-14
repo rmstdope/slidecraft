@@ -195,6 +195,7 @@ export const TracedPoint = defineComponent<TracedPointProps>({
     id: 'traced-point',
     name: 'TracedPoint',
     category: 'component',
+    parent: 'TracedPoints',
     description: 'One point of a TracedPoints, with a label and an optional detail line.',
     props: [
       { name: 'label', type: 'string', description: 'The point' },

@@ -129,6 +129,10 @@ Each slide sets its look with props:
 | `hidden` | skip when presenting |
 
 The deck's **theme** sets palette, fonts, logos and frames: `<Presentation theme="folio">`.
+`<Presentation>` can also set `scheme` and `accent` for every slide that does not set its own, so
+a whole deck can be light in one place: `<Presentation theme="ion" scheme="light" accent="teal">`.
+A slide's own value wins, then the deck's, then the theme's default; a theme that allows only one
+scheme still decides. The editor's toolbar has pickers for all three.
 Built in are `slidecraft` (dark, slab-serif headings, four accents), `paper` (a quieter palette),
 `folio` (light, with title, section and content frames) and `ion` (black slides, metallic-blue
 titles and glowing wires). A content folder can add its own themes under `themes/<id>/theme.json`;
@@ -178,6 +182,11 @@ thing on every slide.
 Slidecraft has more than fifty components in families: text, lists, layout, blocks, diagrams,
 data, media, and motion. The **gallery** (`/gallery`, or **Gallery** on the home page) shows each
 one live with its props, use cases and a snippet to copy; the docs site has the same catalogue.
+The bar under the gallery's search box previews every component in another theme, scheme, accent
+or frame. Previews start dark; "Example's own" uses what each example was written with, which
+for some components is light. The choice is remembered. Opening a component
+plays it live, with **Replay** and ← → for its build steps, and its **Settings** change the props:
+the preview and the snippet follow, so **Copy** copies what you see.
 The [presentation author guide](agents/presentation-author.md) has a table for choosing one.
 
 ## Presenting

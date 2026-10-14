@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { accentColors, isAccent, tint, type AccentColor } from './accents'
 import { defineComponent } from './defineComponent'
+import { useAccent } from './slideLayoutContext'
 import { fadeRise, OVERSHOOT } from './styles'
 
 interface Axis {
@@ -29,6 +30,7 @@ const endLabel = { fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 600
 export const plotPosition = (x: number, y: number, size: number) => ({ left: Math.min(1, Math.max(0, x)) * size, top: (1 - Math.min(1, Math.max(0, y))) * size })
 
 function QuadrantsComponent({ xAxis, yAxis, items = [], quadrants = {}, size = 820, className }: QuadrantsProps) {
+  const slideAccent = useAccent()
   return (
     <motion.div className={className} {...fadeRise} style={{ display: 'grid', gridTemplateColumns: `${PADDING}px ${size}px`, gridTemplateRows: `${size}px ${PADDING}px` }}>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -63,7 +65,7 @@ function QuadrantsComponent({ xAxis, yAxis, items = [], quadrants = {}, size = 8
         </div>
         <div aria-hidden style={{ position: 'absolute', inset: 0, border: '2px solid var(--accent)', borderRadius: 16, pointerEvents: 'none' }} />
         {items.map((item, i) => {
-          const color: AccentColor = isAccent(item.color) ? item.color : 'yellow'
+          const color: AccentColor = isAccent(item.color) ? item.color : slideAccent
           return (
             <motion.div
               key={i}
@@ -98,7 +100,7 @@ export const Quadrants = defineComponent<QuadrantsProps>({
     props: [
       { name: 'xAxis', type: '{ label: string; low?: string; high?: string }', description: 'Horizontal axis' },
       { name: 'yAxis', type: '{ label: string; low?: string; high?: string }', description: 'Vertical axis' },
-      { name: 'items', type: 'Array<{ label: string; x: number; y: number; color?: string }>', default: '[]', description: 'Items with x and y from 0 to 1' },
+      { name: 'items', type: 'Array<{ label: string; x: number; y: number; color?: string }>', default: '[]', description: 'Items with x and y from 0 to 1; no colour means the slide accent' },
       { name: 'quadrants', type: '{ topLeft?, topRight?, bottomLeft?, bottomRight?: { label?: string; color?: string } }', default: '{}', description: 'Quadrant labels and tints' },
       { name: 'size', type: 'number', default: '820', description: 'Plot size in px' },
     ],

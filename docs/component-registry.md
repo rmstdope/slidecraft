@@ -31,6 +31,7 @@ component's `displayName`. `getAllComponents()`, `getAllTemplates()`, `getCompon
 | `previewCode` | MDX inside a `<Slide>` that looks good as a thumbnail; may set `scheme` and `accent` |
 | `keywords` | extra search words (synonyms people type: "bullets", "kpi", "flowchart") |
 | `useCases` | short phrases shown in the gallery and help panel |
+| `parent` | for a part that only makes sense inside another component (`ListItem`, `SignalNode`, `SignalBypass`, `TracedPoint`, `Milestone`): the parent's name. Parts stay in the MDX scope and completions, but the gallery, help panel, palette (until searched), agent docs and site catalogue show them inside the parent's entry |
 
 Guidelines:
 
@@ -58,7 +59,7 @@ Leave out props with structured values (arrays of objects); authors edit those i
 
 - A **variant** is a registry entry for a preset of another component, named with the variant
   in parentheses. The help panel lists components only and leaves variants out (any name with a
-  parenthesis), as it leaves out `ListItem`, which it shows together with `List`.
+  parenthesis). Parts (`parent` set) are shown inside their parent's entry.
 - A **template** is a whole slide (`category: 'template'`, no props). The palette's "Add slide"
   and the editor's **Add slide** button list templates; a template's `snippet` is a complete
   `<Slide>…</Slide>`. Frame templates (folio title, section, content) preview inside

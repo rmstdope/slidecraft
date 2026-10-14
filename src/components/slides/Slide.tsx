@@ -1,15 +1,15 @@
-import { Children, isValidElement, useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Children, isValidElement, useCallback, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { resolveEffects, type Placement, type Scheme } from '@shared/themes.ts'
 import { slideVariants, type SlideTransition } from '../../animations/variants'
 import { resolveSlideLook, type SlideLayout } from '../../themes/resolveSlideLook'
-import { ThemeContext, useResolvedTheme } from '../../themes/ThemeContext'
+import { ThemeContext, useDeckLook, useResolvedTheme } from '../../themes/ThemeContext'
 import { themeCssVars, useThemeFonts } from '../../themes/themeStyle'
 import type { SlideAccent } from './accents'
 import { defineComponent } from './defineComponent'
 import { gradientFor, type SlideGradient } from './gradients'
 import { SlideLayoutContext } from './slideLayoutContext'
-import { useInThumbnail } from './thumbnailContext'
+import { StageScaleContext, useInThumbnail } from './thumbnailContext'
 
 export const DESIGN_WIDTH = 1920
 export const DESIGN_HEIGHT = 1080
@@ -132,9 +132,11 @@ function SlideComponent({
 }: SlideProps) {
   const theme = useResolvedTheme(themeProp)
   useThemeFonts(theme)
+  const deckLook = useDeckLook()
   const look = resolveSlideLook(
     { scheme: schemeProp, accent: accentProp, gradient: gradientProp, layout: layoutProp, transition: transitionProp, frame: frameProp },
     theme,
+    deckLook,
   )
   const { scheme, accent, gradient, layout, transition, frame, frameName } = look
   const effects = resolveEffects(theme.spec)
@@ -148,7 +150,8 @@ function SlideComponent({
   const bodyRef = useRef<HTMLDivElement>(null)
 
   const inThumbnail = useInThumbnail()
-  const scale = useStageScale(_fixedScale, inThumbnail)
+  const contextScale = useContext(StageScaleContext)
+  const scale = useStageScale(_fixedScale ?? contextScale, inThumbnail)
 
   const { header, body } = isDocument ? splitHeaderBody(children) : { header: [], body: [] }
   const hasHeader = header.length > 0
@@ -273,6 +276,8 @@ function SlideComponent({
           transformOrigin: 'center',
           position: 'relative',
           overflow: 'hidden',
+          // Its own stacking context, so full-bleed backgrounds (SplitBackground) can sit under the content.
+          isolation: 'isolate',
           // The texture sits on the stage so it scales with the slide and stays under the content.
           ...(!frame && !background && effects.texture === 'grid' ? textureStyle(scheme) : {}),
         }}

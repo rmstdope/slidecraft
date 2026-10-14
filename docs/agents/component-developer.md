@@ -108,6 +108,7 @@ interface ComponentDefinition<P> {
     previewCode: string   // MDX wrapped in <Slide>, rendered live in the gallery and palette
     keywords?: string[]   // extra search terms
     useCases?: string[]   // shown in the gallery and the help panel
+    parent?: string       // for a part read by another component: listed inside that one
   }
   toolbar?: { prop: keyof P; type: 'boolean' | 'select' | 'number' | 'image'; options?: string[]; min?: number; max?: number; step?: number }[]
 }
@@ -142,7 +143,8 @@ More detail and conventions per field: [`docs/component-registry.md`](../compone
 | `Callout` | the minimal shape: accent inheritance, step and morph on the root, a toolbar |
 | `Card` | a container that works in grids, `compact` variant, bare boolean `accent` |
 | `Stat` | count-up that parses units and leaves labels alone; `countUp={false}` |
-| `List` / `ListItem` | context between parent and children; per-item steps |
+| `List` / `ListItem` | context between parent and children; per-item steps; `ListItem` has `parent: 'List'` |
+| `SignalFlow` / `SignalNode` | a parent that reads its parts' props and draws them itself; parts render nothing alone |
 | `BlockDiagram` | layout computed from data (grid boxes, edge routing) and drawn connectors |
 | `CycleDiagram` | ring geometry kept in pure functions that tests can check |
 | `ScatterChart` | an interactive component: tabs, keyboard, a draggable threshold, a frozen thumbnail |

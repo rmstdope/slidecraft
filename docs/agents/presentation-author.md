@@ -63,8 +63,8 @@ PyramidDiagram, CycleDiagram, AppShellDiagram) inherit the slide accent when you
 
 | Prop | Values | Notes |
 |---|---|---|
-| `scheme` | `dark` / `light` | some themes fix it; do not fight it |
-| `accent` | `yellow` / `red` / `teal` / `navy` | the slide's single colour |
+| `scheme` | `dark` / `light` | some themes fix it; do not fight it. `<Presentation scheme>` sets it for every slide that does not |
+| `accent` | `yellow` / `red` / `teal` / `navy` | the slide's single colour. `<Presentation accent>` sets it for every slide that does not |
 | `gradient` | `none` / `radial` / `radial-accent` / `diagonal` / `spotlight` | never inside a frame |
 | `layout` | `centered` / `document` | see Layout |
 | `frame` | a frame of the theme, or `none` | see Themes |

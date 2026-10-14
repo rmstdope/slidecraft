@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { getAllComponents, getAllTemplates } from '../../src/components/slides/defineComponent.ts'
+import { getAllTemplates, getParts, getTopLevelComponents, type RegistryConfig } from '../../src/components/slides/defineComponent.ts'
 import '../../src/components/slides/index.ts'
 import { readAuthorGuide } from './appFiles.ts'
 import { getDefaultContentSource } from './contentSources.ts'
@@ -19,25 +19,33 @@ export const CONTENT_INSTRUCTIONS_FILE = 'AGENTS.md'
 const CATEGORIES: Record<string, string[]> = {
   Structure: ['Presentation', 'Slide', 'Notes', 'Step'],
   Text: ['Title', 'Subtitle', 'Text', 'Accent', 'Highlight', 'Caption', 'Quote', 'CenteredStatement', 'TagPill', 'Section', 'Code'],
-  Lists: ['List', 'ListItem', 'ProConList'],
+  Lists: ['List', 'ProConList'],
   Layout: ['TwoColumn', 'FourColumn', 'Stack', 'Divider', 'SplitBackground', 'ComparisonLayout', 'DefinitionLayout', 'PersonRow'],
   Content: ['Card', 'Callout', 'ContentBox', 'PersonCard', 'Legend', 'IconRow', 'PhaseRow', 'ComparisonTable'],
-  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart', 'Gauge', 'GaugeRow', 'TraceTimeline', 'Milestone'],
-  'Technical Diagrams': ['BlockDiagram', 'StackDiagram', 'CycleDiagram', 'PyramidDiagram', 'SequenceDiagram', 'ActivityDiagram', 'DataModel', 'FeedbackLoops', 'AppShellDiagram', 'BracketDiagram', 'SignalFlow', 'SignalNode', 'SignalBypass', 'TracedPoints', 'TracedPoint'],
+  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart', 'Gauge', 'GaugeRow', 'TraceTimeline'],
+  'Technical Diagrams': ['BlockDiagram', 'StackDiagram', 'CycleDiagram', 'PyramidDiagram', 'SequenceDiagram', 'ActivityDiagram', 'DataModel', 'FeedbackLoops', 'AppShellDiagram', 'BracketDiagram', 'SignalFlow', 'TracedPoints'],
   Media: ['ContentImage', 'Svg', 'BackgroundImage', 'YouTube'],
 }
 
-/** Component list grouped by category, with every component's props. */
+/** Component list grouped by category, with every component's props; parts are listed with their parent. */
 export function buildComponentSummary(): string {
-  const all = getAllComponents().map((c) => c.registry)
+  const all = getTopLevelComponents().map((c) => c.registry)
   const known = new Set(Object.values(CATEGORIES).flat())
   const groups = { ...CATEGORIES, Other: all.map((r) => r.name).filter((n) => !known.has(n)) }
+  const withParts = (name: string) => {
+    const parts = getParts(name).map((p) => p.registry.name)
+    return parts.length ? `${name} (with ${parts.join(', ')})` : name
+  }
   const lines = ['## Available components', '', '| Category | Components |', '|---|---|']
-  for (const [category, names] of Object.entries(groups)) if (names.length) lines.push(`| ${category} | ${names.join(', ')} |`)
+  for (const [category, names] of Object.entries(groups)) if (names.length) lines.push(`| ${category} | ${names.map(withParts).join(', ')} |`)
   lines.push('', '### Props', '')
-  for (const r of all) {
+  const propLine = (r: RegistryConfig) => {
     const props = r.props.map((p) => `\`${p.name}\`${p.default ? ` = ${p.default}` : ''}`).join(', ')
-    lines.push(`- **${r.name}** — ${r.description}${props ? ` Props: ${props}.` : ''}`)
+    return `**${r.name}**${r.parent ? ` (inside ${r.parent})` : ''} — ${r.description}${props ? ` Props: ${props}.` : ''}`
+  }
+  for (const r of all) {
+    lines.push(`- ${propLine(r)}`)
+    for (const part of getParts(r.name)) lines.push(`  - ${propLine(part.registry)}`)
   }
   return lines.join('\n')
 }

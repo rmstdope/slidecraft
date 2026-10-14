@@ -1,11 +1,17 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react'
 import { useDeck } from '../components/slides/deckContext'
 import { DEFAULT_THEME_ID, getThemesVersion, resolveTheme, subscribeThemes, type ResolvedTheme } from './registry'
+import type { DeckLook } from './resolveSlideLook'
 import { themeCssVars, useThemeFonts } from './themeStyle'
 
 export const ThemeContext = createContext<ResolvedTheme>(resolveTheme(DEFAULT_THEME_ID))
 
 export const useTheme = (): ResolvedTheme => useContext(ThemeContext)
+
+/** The deck's default scheme and accent (`<Presentation scheme accent>`), for every slide inside. */
+export const DeckLookContext = createContext<DeckLook>({})
+
+export const useDeckLook = (): DeckLook => useContext(DeckLookContext)
 
 /** Re-render when themes are registered (content-directory themes arrive asynchronously). */
 export const useThemesVersion = (): number => useSyncExternalStore(subscribeThemes, getThemesVersion, getThemesVersion)

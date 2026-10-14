@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { staggerContainer } from '../../animations/variants'
 import { accentColors, isAccent, tint, type AccentColor } from './accents'
 import { defineComponent } from './defineComponent'
+import { useAccent } from './slideLayoutContext'
 
 export interface Field {
   name: string
@@ -58,6 +59,7 @@ export function layoutEntities(entities: Entity[], columnSpacing: number, rowSpa
 }
 
 function DataModelComponent({ entities, relations = [], columnSpacing = 280, rowSpacing = 200, width: renderWidth }: DataModelProps) {
+  const slideAccent = useAccent()
   const { boxes, width, height } = layoutEntities(entities, columnSpacing, rowSpacing)
   const byId = new Map(boxes.map((b) => [b.entity.id, b]))
   return (
@@ -119,7 +121,7 @@ function DataModelComponent({ entities, relations = [], columnSpacing = 280, row
           )
         })}
         {boxes.map(({ entity, x, y, h }) => {
-          const accent: AccentColor = isAccent(entity.color) ? entity.color : 'teal'
+          const accent: AccentColor = isAccent(entity.color) ? entity.color : slideAccent
           const header = accentColors[accent]
           const ink = accent === 'yellow' ? '#1a1a1a' : '#ffffff'
           const rows = entity.kind === 'enum' ? (entity.values ?? []).map((v) => ({ name: v, type: '' }) as Field) : (entity.fields ?? [])
@@ -156,7 +158,7 @@ export const DataModel = defineComponent<DataModelProps>({
     category: 'component',
     description: 'Entity relationship diagram for data models.',
     props: [
-      { name: 'entities', type: 'Array<{ id: string; name: string; kind?: "entity" | "interface" | "type" | "enum"; color?: string; fields?: Array<{ name: string; type: string; primary?: boolean; required?: boolean }>; values?: string[]; column?: number; row?: number }>', description: 'Boxes; column defaults to the index' },
+      { name: 'entities', type: 'Array<{ id: string; name: string; kind?: "entity" | "interface" | "type" | "enum"; color?: "teal" | "yellow" | "red" | "navy" | "gray"; fields?: Array<{ name: string; type: string; primary?: boolean; required?: boolean }>; values?: string[]; column?: number; row?: number }>', description: 'Boxes; column defaults to the index, colour to the slide accent' },
       { name: 'relations', type: 'Array<{ from: string; to: string; type?: "one-to-one" | "one-to-many" | "many-to-many" | "extends" | "implements"; label?: string }>', default: '[]', description: 'Lines between entities' },
       { name: 'columnSpacing', type: 'number', default: '280', description: 'Horizontal spacing in px' },
       { name: 'rowSpacing', type: 'number', default: '200', description: 'Vertical spacing in px' },

@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { itemVariants, staggerContainer } from '../../animations/variants'
 import { accentShades, isAccent, type AccentColor } from './accents'
 import { defineComponent } from './defineComponent'
+import { useAccent } from './slideLayoutContext'
 import { OVERSHOOT } from './styles'
 
 export interface TimelineEvent {
@@ -14,7 +15,7 @@ export interface TimelineEvent {
 
 export interface TimelineProps {
   events: TimelineEvent[]
-  /** Fallback colour for events without one. */
+  /** Colour for events without one; defaults to the slide accent. */
   color?: AccentColor
 }
 
@@ -28,7 +29,8 @@ const LINE_Y = PADDING + DATE_BLOCK + DEADLINE_NODE / 2
 
 export const timelineSpacing = (count: number): number => (count > 1 ? (TOTAL_WIDTH - 2 * PADDING) / (count - 1) : 0)
 
-function TimelineComponent({ events, color = 'teal' }: TimelineProps) {
+function TimelineComponent({ events, color }: TimelineProps) {
+  const fallback = useAccent(color)
   const spacing = timelineSpacing(events.length)
   return (
     <motion.div variants={staggerContainer} initial="initial" animate="animate" style={{ position: 'relative', width: TOTAL_WIDTH, padding: `${PADDING}px 0 120px` }}>
@@ -42,7 +44,7 @@ function TimelineComponent({ events, color = 'teal' }: TimelineProps) {
       {/* Each column is `spacing` wide and centred on its node, so nodes sit at PADDING + i × spacing on the line. */}
       <div style={{ display: 'flex', marginLeft: events.length > 1 ? PADDING - spacing / 2 : 0, width: events.length > 1 ? events.length * spacing : TOTAL_WIDTH }}>
         {events.map((event, i) => {
-          const accent = isAccent(event.color) ? event.color : isAccent(color) ? color : 'teal'
+          const accent = isAccent(event.color) ? event.color : fallback
           const shade = accentShades[accent]
           const size = event.isDeadline ? DEADLINE_NODE : NODE
           return (
@@ -90,7 +92,7 @@ export const Timeline = defineComponent<TimelineProps>({
     description: 'Horizontal timeline showing events or milestones leading to a deadline.',
     props: [
       { name: 'events', type: 'Array<{ date: string; title: string; description?: string; color?: "teal" | "yellow" | "red" | "navy"; isDeadline?: boolean }>', description: 'Events in order' },
-      { name: 'color', type: '"teal" | "yellow" | "red" | "navy"', default: '"teal"', description: 'Colour for events without one' },
+      { name: 'color', type: '"teal" | "yellow" | "red" | "navy"', description: 'Colour for events without one; defaults to the slide accent' },
     ],
     snippet:
       '<Timeline\n  color="teal"\n  events={[\n    { date: "Jan", title: "Kick-off" },\n    { date: "Mar", title: "Beta" },\n    { date: "Jun", title: "Launch", isDeadline: true },\n  ]}\n/>',

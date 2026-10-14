@@ -1,18 +1,22 @@
 import { motion } from 'motion/react'
 import { accentShades, isAccent, type AccentColor } from './accents'
 import { defineComponent } from './defineComponent'
+import { useAccent } from './slideLayoutContext'
 
 export interface ProgressBarProps {
-  segments: { label: string; flex: number; color: AccentColor }[]
+  /** A segment without a colour takes the slide accent. */
+  segments: { label: string; flex: number; color?: AccentColor }[]
   className?: string
 }
 
 export const ProgressBar = defineComponent<ProgressBarProps>({
-  Component: ({ segments, className }) => (
+  Component: function ProgressBarComponent({ segments, className }) {
+    const slideAccent = useAccent()
+    return (
     <motion.div className={className} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ width: 1400 }}>
       <div style={{ display: 'flex', height: 64, borderRadius: 12, overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
         {segments.map((segment, i) => {
-          const color = isAccent(segment.color) ? segment.color : 'teal'
+          const color = isAccent(segment.color) ? segment.color : slideAccent
           const shade = accentShades[color]
           const yellow = color === 'yellow'
           return (
@@ -51,13 +55,14 @@ export const ProgressBar = defineComponent<ProgressBarProps>({
         })}
       </div>
     </motion.div>
-  ),
+    )
+  },
   registry: {
     id: 'progressbar',
     name: 'ProgressBar',
     category: 'component',
     description: 'Segmented progress/percentage bar visualization.',
-    props: [{ name: 'segments', type: 'Array<{ label: string; flex: number; color: "teal" | "yellow" | "red" | "navy" }>', description: 'Segments with relative widths' }],
+    props: [{ name: 'segments', type: 'Array<{ label: string; flex: number; color?: "teal" | "yellow" | "red" | "navy" }>', description: 'Segments with relative widths; no colour means the slide accent' }],
     snippet: '<ProgressBar segments={[{ label: "Done 70%", flex: 7, color: "teal" }, { label: "Left 30%", flex: 3, color: "red" }]} />',
     previewCode: '<Slide scheme="dark">\n  <ProgressBar segments={[{ label: "Done 70%", flex: 7, color: "teal" }, { label: "Left 30%", flex: 3, color: "red" }]} />\n</Slide>',
     keywords: ['progress', 'bar', 'percentage', 'visualization', 'segment'],

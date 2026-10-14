@@ -153,4 +153,14 @@ export function listThemes(source?: string): ThemeSummary[] {
   return out
 }
 
+/** Every registered theme from every source (built-ins first), for pickers outside a deck. */
+export function listAllThemes(): ThemeSummary[] {
+  return [...entries.values()]
+    .sort((a, b) => Number(b.source === BUILTIN_SOURCE) - Number(a.source === BUILTIN_SOURCE))
+    .map((entry) => {
+      const resolved = resolveTheme(entry.id, entry.source)
+      return { id: entry.id, source: entry.source, name: resolved.spec.name, description: resolved.spec.description, frames: Object.keys(resolved.spec.frames ?? {}) }
+    })
+}
+
 for (const theme of BUILTIN_THEMES) registerTheme({ id: theme.id, source: BUILTIN_SOURCE, raw: theme.raw, baseUrl: '/', assets: theme.assets })

@@ -278,6 +278,7 @@ export const Milestone = defineComponent<MilestoneProps>({
     id: 'milestone',
     name: 'Milestone',
     category: 'component',
+    parent: 'TraceTimeline',
     description: 'One milestone of a TraceTimeline, at a month or a day.',
     props: [
       { name: 'at', type: 'string', description: '"YYYY-MM" or "YYYY-MM-DD"' },

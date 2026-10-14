@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { deckKey, deckName, type DeckRef } from '@shared/decks.ts'
 import { importBlock } from '@shared/deckModel.ts'
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal'
+import { SLIDE_ACCENTS } from '../components/slides/accents'
 import { assetResolverFor, DeckContext } from '../components/slides/deckContext'
 import { useSSE } from '../hooks/useSSE'
 import { registryLanguageService } from '../language-service'
 import type { LanguageService } from '../language-service/service'
 import { chatUrl, presentationUrl } from '../router'
 import { listThemes, resolveTheme } from '../themes/registry'
-import { useThemesVersion } from '../themes/ThemeContext'
+import { DeckLookContext, useThemesVersion } from '../themes/ThemeContext'
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from './api'
 import type { CompileTarget } from './compileSlide'
 import { ContextualToolbar } from './components/ContextualToolbar'
@@ -37,7 +38,7 @@ const inField = (el: EventTarget | null) => el instanceof HTMLElement && (['INPU
 
 /** The deck editor (Part 3 §2): rail, code editor with toolbars, live preview, help. */
 export default function EditorPage({ deck, defaultSource, onExit }: EditorPageProps) {
-  const { state, actions, selected, selectedIndex, deckTheme } = usePresentation(deck)
+  const { state, actions, selected, selectedIndex, deckTheme, deckLook } = usePresentation(deck)
   const editorRef = useRef<SlideEditorHandle>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const navigatingAway = useRef(false)
@@ -241,180 +242,209 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
 
   return (
     <DeckContext.Provider value={deckContext}>
-      <div className="editor">
-        <header className="editor-toolbar">
-          <button type="button" className="editor-button" onClick={exit}>
-            ← Exit
-          </button>
-          <span className="editor-toolbar__name">{deckName(deck)}</span>
-          {state.isDirty && <span className="editor-chip is-accent">Unsaved</span>}
-          {readOnly && <span className="editor-chip">Read-only</span>}
-          {state.error && <span className="editor-chip is-danger" title={state.error}>Save failed</span>}
-          <span className="editor-toolbar__spacer" />
-          {state.model && (
-            <label className="editor-toolbar__theme">
-              Theme
-              <select value={deckTheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckTheme(e.target.value)}>
-                <option value="">Default (slidecraft)</option>
-                {themes
-                  .filter((t) => t.id !== 'slidecraft')
-                  .map((t) => (
-                    <option key={`${t.source}:${t.id}`} value={t.id}>
-                      {t.name}
-                      {t.source !== 'builtin' ? ' (this folder)' : ''}
+      {/* Every preview in the editor renders single slides, so the deck's defaults come from here. */}
+      <DeckLookContext.Provider value={deckLook}>
+        <div className="editor">
+          <header className="editor-toolbar">
+            <button type="button" className="editor-button" onClick={exit}>
+              ← Exit
+            </button>
+            <span className="editor-toolbar__name">{deckName(deck)}</span>
+            {state.isDirty && <span className="editor-chip is-accent">Unsaved</span>}
+            {readOnly && <span className="editor-chip">Read-only</span>}
+            {state.error && <span className="editor-chip is-danger" title={state.error}>Save failed</span>}
+            <span className="editor-toolbar__spacer" />
+            {state.model && (
+              <label className="editor-toolbar__theme">
+                Theme
+                <select value={deckTheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckTheme(e.target.value)}>
+                  <option value="">Default (slidecraft)</option>
+                  {themes
+                    .filter((t) => t.id !== 'slidecraft')
+                    .map((t) => (
+                      <option key={`${t.source}:${t.id}`} value={t.id}>
+                        {t.name}
+                        {t.source !== 'builtin' ? ' (this folder)' : ''}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            {state.model && (
+              <label className="editor-toolbar__theme" title="For slides that do not set their own scheme">
+                Scheme
+                <select value={deckLook.scheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('scheme', e.target.value)}>
+                  <option value="">Theme default ({theme.spec.defaults?.scheme ?? 'dark'})</option>
+                  {(theme.spec.constraints?.schemes ?? ['dark', 'light']).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
                     </option>
                   ))}
-              </select>
-            </label>
-          )}
-          <button type="button" className="editor-button" onClick={() => void present()}>
-            ▶ Present
-          </button>
-          {!readOnly && (
-            <button type="button" className="editor-button" onClick={() => void openChat()}>
-              Chat
+                </select>
+              </label>
+            )}
+            {state.model && (
+              <label className="editor-toolbar__theme" title="For slides that do not set their own accent">
+                Accent
+                <select value={deckLook.accent ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('accent', e.target.value)}>
+                  <option value="">Theme default ({theme.spec.defaults?.accent ?? 'yellow'})</option>
+                  {SLIDE_ACCENTS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button type="button" className="editor-button" onClick={() => void present()}>
+              ▶ Present
             </button>
-          )}
-          {!readOnly && selected && (
-            <button type="button" className="editor-button" onClick={() => applyText(formatMdx(text))}>
-              Format
-            </button>
-          )}
-          <button type="button" className={`editor-button${helpOpen ? ' is-active' : ''}`} onClick={() => setHelpOpen((h) => !h)}>
-            Help
-          </button>
-          {!readOnly && (
-            <button type="button" className="editor-button is-primary" disabled={!state.isDirty || state.isSaving} onClick={() => void actions.save()}>
-              {state.isSaving ? 'Saving…' : 'Save (⌘S)'}
-            </button>
-          )}
-        </header>
-
-        {state.raw ? (
-          <div className="editor-raw">
-            <div className="editor-raw__banner" role="alert">
-              <strong>This file does not parse</strong> ({state.raw.error}). Edit it as one text; switch back to slides once it parses.
-              <button type="button" className="editor-button" onClick={actions.tryStructured}>
-                Back to slides
+            {!readOnly && (
+              <button type="button" className="editor-button" onClick={() => void openChat()}>
+                Chat
               </button>
-            </div>
-            <div className="editor-raw__code">
-              <SlideEditor
-                path={`${deckKey(deck)}/index.mdx`}
-                value={state.raw.text}
-                readOnly={readOnly}
-                service={() => service}
-                onChange={actions.updateRaw}
-                onSave={() => void actions.save()}
-                onCursor={() => {}}
-                onSelection={() => {}}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="editor-body" ref={containerRef}>
-            <div style={{ width: sidebarWidth, flex: '0 0 auto', display: 'flex' }}>
-              <SlideSidebar
-                slides={state.model!.slides}
-                selectedId={state.selectedId}
-                readOnly={readOnly}
-                target={target}
-                theme={deckTheme}
-                onSelect={actions.selectSlide}
-                onDelete={actions.deleteSlide}
-                onMove={actions.moveSlide}
-                onToggleHidden={actions.toggleHidden}
-                onAddSlide={() => setPalette('add-slide')}
-              />
-            </div>
-            <div className="editor-handle" onMouseDown={startResize('sidebar')} />
-            <div
-              className="editor-work"
-              onDragOver={(e) => {
-                if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/'))) {
-                  e.preventDefault()
-                  setDragging(true)
-                }
-              }}
-              onDragLeave={(e) => {
-                if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setDragging(false)
-              }}
-              onDrop={(e) => {
-                const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'))
-                setDragging(false)
-                if (!file) return
-                e.preventDefault()
-                void insertImage(file)
-              }}
-            >
-              <div className="editor-code" style={{ flex: editorRatio }}>
-                {!readOnly && selected && (
-                  <ContextualToolbar
-                    context={context}
-                    frames={frames}
-                    onSlideProp={(prop, value) => applyText(setPropAt(text, 0, prop, value))}
-                    onComponentProp={(prop, value) => context.type === 'component' && applyText(setPropAt(text, context.tagStart, prop, value))}
-                    onInsert={(snippet) => editorRef.current?.insertAtCursor(snippet)}
-                    onOpenPalette={() => setPalette('insert')}
-                    onDeleteComponent={() => context.type === 'component' && applyText(deleteElementAt(text, context.tagStart))}
-                    onPickImage={setImageProp}
-                  />
-                )}
-                <div className="editor-code__monaco">
-                  {selected ? (
-                    <SlideEditor
-                      ref={editorRef}
-                      path={`${deckKey(deck)}/${selected.id}.mdx`}
-                      value={selected.text}
-                      readOnly={readOnly}
-                      service={() => service}
-                      onChange={actions.updateSelectedSlide}
-                      onSave={() => void actions.save()}
-                      onCursor={setCursorOffset}
-                      onSelection={setSelection}
-                    />
-                  ) : (
-                    <div className="editor-still__placeholder">Select a slide to edit</div>
-                  )}
-                </div>
-              </div>
-              <div className="editor-handle" onMouseDown={startResize('editor')} />
-              <div className="editor-preview" style={{ flex: 1 - editorRatio }}>
-                {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <div className="editor-still__placeholder">No slide selected</div>}
-              </div>
-              {dragging && <div className="editor-overlay is-drop">Drop image here</div>}
-              {uploading && <div className="editor-overlay">Uploading image…</div>}
-            </div>
-            {helpOpen && <HelpPanel />}
-          </div>
-        )}
+            )}
+            {!readOnly && selected && (
+              <button type="button" className="editor-button" onClick={() => applyText(formatMdx(text))}>
+                Format
+              </button>
+            )}
+            <button type="button" className={`editor-button${helpOpen ? ' is-active' : ''}`} onClick={() => setHelpOpen((h) => !h)}>
+              Help
+            </button>
+            {!readOnly && (
+              <button type="button" className="editor-button is-primary" disabled={!state.isDirty || state.isSaving} onClick={() => void actions.save()}>
+                {state.isSaving ? 'Saving…' : 'Save (⌘S)'}
+              </button>
+            )}
+          </header>
 
-        {selection && !readOnly && (
-          <SelectionToolbar
-            selection={selection}
-            onWrap={(color) => {
-              editorRef.current?.wrapSelection(`<Accent color="${color}">`, '</Accent>')
-              setSelection(null)
-            }}
+          {state.raw ? (
+            <div className="editor-raw">
+              <div className="editor-raw__banner" role="alert">
+                <strong>This file does not parse</strong> ({state.raw.error}). Edit it as one text; switch back to slides once it parses.
+                <button type="button" className="editor-button" onClick={actions.tryStructured}>
+                  Back to slides
+                </button>
+              </div>
+              <div className="editor-raw__code">
+                <SlideEditor
+                  path={`${deckKey(deck)}/index.mdx`}
+                  value={state.raw.text}
+                  readOnly={readOnly}
+                  service={() => service}
+                  onChange={actions.updateRaw}
+                  onSave={() => void actions.save()}
+                  onCursor={() => {}}
+                  onSelection={() => {}}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="editor-body" ref={containerRef}>
+              <div style={{ width: sidebarWidth, flex: '0 0 auto', display: 'flex' }}>
+                <SlideSidebar
+                  slides={state.model!.slides}
+                  selectedId={state.selectedId}
+                  readOnly={readOnly}
+                  target={target}
+                  theme={deckTheme}
+                  onSelect={actions.selectSlide}
+                  onDelete={actions.deleteSlide}
+                  onMove={actions.moveSlide}
+                  onToggleHidden={actions.toggleHidden}
+                  onAddSlide={() => setPalette('add-slide')}
+                />
+              </div>
+              <div className="editor-handle" onMouseDown={startResize('sidebar')} />
+              <div
+                className="editor-work"
+                onDragOver={(e) => {
+                  if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/'))) {
+                    e.preventDefault()
+                    setDragging(true)
+                  }
+                }}
+                onDragLeave={(e) => {
+                  if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setDragging(false)
+                }}
+                onDrop={(e) => {
+                  const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'))
+                  setDragging(false)
+                  if (!file) return
+                  e.preventDefault()
+                  void insertImage(file)
+                }}
+              >
+                <div className="editor-code" style={{ flex: editorRatio }}>
+                  {!readOnly && selected && (
+                    <ContextualToolbar
+                      context={context}
+                      frames={frames}
+                      onSlideProp={(prop, value) => applyText(setPropAt(text, 0, prop, value))}
+                      onComponentProp={(prop, value) => context.type === 'component' && applyText(setPropAt(text, context.tagStart, prop, value))}
+                      onInsert={(snippet) => editorRef.current?.insertAtCursor(snippet)}
+                      onOpenPalette={() => setPalette('insert')}
+                      onDeleteComponent={() => context.type === 'component' && applyText(deleteElementAt(text, context.tagStart))}
+                      onPickImage={setImageProp}
+                    />
+                  )}
+                  <div className="editor-code__monaco">
+                    {selected ? (
+                      <SlideEditor
+                        ref={editorRef}
+                        path={`${deckKey(deck)}/${selected.id}.mdx`}
+                        value={selected.text}
+                        readOnly={readOnly}
+                        service={() => service}
+                        onChange={actions.updateSelectedSlide}
+                        onSave={() => void actions.save()}
+                        onCursor={setCursorOffset}
+                        onSelection={setSelection}
+                      />
+                    ) : (
+                      <div className="editor-still__placeholder">Select a slide to edit</div>
+                    )}
+                  </div>
+                </div>
+                <div className="editor-handle" onMouseDown={startResize('editor')} />
+                <div className="editor-preview" style={{ flex: 1 - editorRatio }}>
+                  {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <div className="editor-still__placeholder">No slide selected</div>}
+                </div>
+                {dragging && <div className="editor-overlay is-drop">Drop image here</div>}
+                {uploading && <div className="editor-overlay">Uploading image…</div>}
+              </div>
+              {helpOpen && <HelpPanel />}
+            </div>
+          )}
+
+          {selection && !readOnly && (
+            <SelectionToolbar
+              selection={selection}
+              onWrap={(color) => {
+                editorRef.current?.wrapSelection(`<Accent color="${color}">`, '</Accent>')
+                setSelection(null)
+              }}
+            />
+          )}
+          <InsertPalette
+            isOpen={palette !== null}
+            filter={palette === 'add-slide' ? 'templates' : 'all'}
+            target={target}
+            theme={deckTheme}
+            onClose={() => setPalette(null)}
+            onInsert={(snippet) => (palette === 'add-slide' ? actions.addSlide(snippet) : editorRef.current?.insertAtCursor(snippet))}
           />
-        )}
-        <InsertPalette
-          isOpen={palette !== null}
-          filter={palette === 'add-slide' ? 'templates' : 'all'}
-          target={target}
-          theme={deckTheme}
-          onClose={() => setPalette(null)}
-          onInsert={(snippet) => (palette === 'add-slide' ? actions.addSlide(snippet) : editorRef.current?.insertAtCursor(snippet))}
-        />
-        <ImagePickerModal
-          isOpen={imageProp !== null}
-          deck={deck}
-          defaultSource={defaultSource}
-          onClose={() => setImageProp(null)}
-          onSelect={(path) => imageProp && context.type === 'component' && applyText(setPropAt(text, context.tagStart, imageProp, path))}
-        />
-        <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="editor" />
-      </div>
+          <ImagePickerModal
+            isOpen={imageProp !== null}
+            deck={deck}
+            defaultSource={defaultSource}
+            onClose={() => setImageProp(null)}
+            onSelect={(path) => imageProp && context.type === 'component' && applyText(setPropAt(text, context.tagStart, imageProp, path))}
+          />
+          <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="editor" />
+        </div>
+      </DeckLookContext.Provider>
     </DeckContext.Provider>
   )
 }

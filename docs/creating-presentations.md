@@ -57,6 +57,9 @@ Each `<Slide>` is one slide; keep a blank line between them.
 | `canvas`, `camera` | slides on one plane |
 | `hidden` | skipped when presenting |
 
+`<Presentation scheme="light" accent="teal">` sets `scheme` and `accent` for every slide that does
+not set its own; without them the theme's defaults apply.
+
 ## Common components
 
 ```mdx

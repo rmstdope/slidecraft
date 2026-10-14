@@ -531,6 +531,18 @@
   list-style: none;
 }
 
+.help-panel__part {
+  margin: 0.4rem 0 0 0.6rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-panel__part h4 {
+  font: 600 0.75rem var(--font-mono);
+  color: var(--accent-teal);
+  opacity: 0.85;
+}
+
 /* Image picker. */
 .image-picker {
   position: absolute;
