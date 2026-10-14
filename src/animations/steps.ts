@@ -21,6 +21,7 @@ const displayName = (type: unknown): string | undefined =>
 
 /**
  * The highest build step referenced in a slide's element tree (Part 1 §2.3), capped at MAX_STEPS.
+ * A component can add beats of its own with a static `countSteps(props)`.
  * It is the beat number, not the count of distinct beats: a slide with only step={3} has three beats.
  */
 export function countSteps(node: ReactNode, depth = 0): number {
@@ -31,6 +32,9 @@ export function countSteps(node: ReactNode, depth = 0): number {
   const props = node.props
   let max = readStep(props.step) ?? 0
   if (displayName(node.type) === 'Step') max = Math.max(max, readStep(props.at) ?? 0)
+  // A component whose beats come from its data (e.g. TraceTimeline with `steps`) counts them itself.
+  const own = typeof node.type === 'function' ? (node.type as { countSteps?: unknown }).countSteps : undefined
+  if (typeof own === 'function') max = Math.max(max, readStep((own as (p: Record<string, unknown>) => unknown)(props)) ?? 0)
   for (const value of Object.values(props)) {
     if (!Array.isArray(value)) continue
     for (const entry of value) if (isPlainObject(entry)) max = Math.max(max, readStep(entry.step) ?? 0)

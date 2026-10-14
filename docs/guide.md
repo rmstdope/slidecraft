@@ -129,10 +129,28 @@ Each slide sets its look with props:
 | `hidden` | skip when presenting |
 
 The deck's **theme** sets palette, fonts, logos and frames: `<Presentation theme="folio">`.
-Built in are `slidecraft` (dark, slab-serif headings, four accents), `paper` (a quieter palette)
-and `folio` (light, with title, section and content frames). A content folder can add its own
-themes under `themes/<id>/theme.json`; a theme can extend another and bring its own frame SVGs,
-fonts and logos.
+Built in are `slidecraft` (dark, slab-serif headings, four accents), `paper` (a quieter palette),
+`folio` (light, with title, section and content frames) and `ion` (black slides, metallic-blue
+titles and glowing wires). A content folder can add its own themes under `themes/<id>/theme.json`;
+a theme can extend another and bring its own frame SVGs, fonts and logos.
+
+A theme can also set an optional `effects` block. It changes how the wired components
+(`SignalFlow`, `TracedPoints`, `Gauge`, `TraceTimeline`) and titles are finished; a theme
+without it stays flat.
+
+```json
+"effects": { "glow": "strong", "titleFinish": "metal", "corners": "chamfer", "texture": "grid" }
+```
+
+| Effect | Values | Default | What it changes |
+|---|---|---|---|
+| `glow` | `none` / `soft` / `strong` | `none` | light around wires, dots, arcs and lit nodes |
+| `titleFinish` | `solid` / `metal` | `solid` | `Title` and the big numbers in brushed metal, mixed from the accent |
+| `corners` | `square` / `round` / `chamfer` | `round` | the corners of diagram nodes |
+| `texture` | `none` / `grid` | `none` | a dot grid behind slides without a frame |
+
+In the `ion` theme the accent roles keep their names but take its own colours: yellow is
+blue, red is ember orange, teal is aurora green and navy is violet.
 
 | Accent | Default colour | Use for |
 |---|---|---|

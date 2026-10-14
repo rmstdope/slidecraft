@@ -7,7 +7,7 @@ What Slidecraft does today, and what may come next. The detailed build history i
 
 - Decks as one MDX file; more than fifty registered components and eighteen slide templates.
 - Semantic motion: build steps, shared-element morphs, canvas and camera, count-up, drawn connectors.
-- Themes with schemes and frames (slidecraft, paper, folio), per-folder themes with `extends`.
+- Themes with schemes and frames (slidecraft, paper, folio, ion), per-folder themes with `extends` and optional `effects`.
 - Browser editor with live preview, insert palette, contextual toolbar, language service, image picker.
 - Several content folders at once, with read-only mounts and live reload.
 - Presenter view with notes, next slide and timer; drawing and annotations in both windows.

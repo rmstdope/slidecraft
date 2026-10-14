@@ -80,7 +80,7 @@ TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · V
 ```
 src/            client: App router (src/router.ts), views, styles
 src/components/slides/   slide components, defineComponent registry, accents, contexts
-src/themes/     theme registry and the built-in themes (slidecraft, paper, folio)
+src/themes/     theme registry and the built-in themes (slidecraft, paper, folio, ion)
 src/animations/ springs and variant tables
 src/presenter/  presenter window, cross-window sync, navigation hook
 src/drawing/    annotations: canvas, toolbar, history, persistence
@@ -166,6 +166,10 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
   scheme and layout and turn gradients off. Typical framed deck: title → section → content… → title.
 - When a deck is asked for as official, brand-compliant or for outside the team, use the
   organisation's theme from the content folder (`list_themes`).
+- `<Presentation theme="ion">` is the futuristic look: black slides, metal titles, glowing wires.
+  It comes from an optional `effects` block in `theme.json` (`glow`, `titleFinish`, `corners`,
+  `texture`); themes without one stay flat. Read it in a component with `useWireKit` or
+  `useThemeEffects` from `src/components/slides/glow.tsx`.
 - Components never hard-code colours: they use `var(--accent)`, `--text`, `--muted`, `--bg`, the
   accent variables and `tint()`, all set by the theme on the slide root.
 
@@ -183,7 +187,9 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
 | This arrives now | `<Step at={n}>`, or `step={n}` on Card, Stat, Callout, Text, ListItem…; `stagger row` for a row landing one by one |
 | The same thing as before | `morph="id"` on both slides, `transition="morph"` on the second |
 | A detail inside a whole | `canvas="name"` plus `camera={{ x, y, scale, rotate }}` |
-| A measurement | `Stat` counts up (`countUp={false}` for years and versions); `ScatterChart threshold` |
+| Work flowing | `SignalFlow`: lights travel along the wires, looping, once the chain is built |
+| A measurement | `Stat` counts up (`countUp={false}` for years and versions); `ScatterChart threshold`; `Gauge` fills to a lit `target` |
+| Progress to today | `TraceTimeline`: a charge runs to `now`; `steps` makes each milestone a beat |
 
 Connectors in diagrams draw themselves, `prefers-reduced-motion` is honoured, thumbnails and
 handouts show every step at once. More than three or four steps on a slide is usually two slides.
@@ -231,6 +237,7 @@ theirs under `?` as well.
 | `folio-minimal` | the smallest framed deck |
 | `motion` | every motion mechanism, with a colour legend and time-budgeted notes |
 | `safe-retries` | a realistic research-based talk with full notes and sources |
+| `ion-tour` | the ion theme and the wired components: SignalFlow, TracedPoints, Gauge, TraceTimeline |
 
 ## Documentation
 

@@ -46,6 +46,7 @@
       "title": { "size": 60 }
     }
   },
+  "effects": { "corners": "square" },
   "defaults": { "scheme": "light", "accent": "teal", "frame": "content" },
   "constraints": { "schemes": ["light"], "gradients": false }
 }

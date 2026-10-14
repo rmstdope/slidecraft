@@ -149,4 +149,5 @@ Put images beside the deck in `images/`. Supported: png, jpg, gif, webp, svg. Al
 - Keys while presenting: `→` next step, `↓` next slide, `M` overview, `D` dev mode, `P` presenter,
   `A` draw, `Esc` edit this slide, `?` all shortcuts.
 - Example decks: `welcome` (everything), `folio-tour` and `folio-minimal` (frames), `motion`
-  (every motion tool), `safe-retries` (a full talk with notes).
+  (every motion tool), `safe-retries` (a full talk with notes), `ion-tour` (the ion theme and the
+  wired components).

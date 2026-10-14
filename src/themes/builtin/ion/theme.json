@@ -1,0 +1,39 @@
+{
+  "name": "Ion",
+  "description": "Black slides, metallic-blue titles and glowing wires: a futuristic look for the animated diagrams.",
+  "extends": "slidecraft",
+  "tokens": {
+    "accents": {
+      "yellow": "#4d9bff",
+      "red": "#ff7a3d",
+      "teal": "#22c7ad",
+      "navy": "#5b46c9",
+      "navyOnDark": "#b393ff",
+      "gray": "#8a93a6"
+    },
+    "dark": { "bg": "#04060a", "text": "#e6eef8", "muted": "rgba(230, 238, 248, 0.58)" },
+    "light": { "bg": "#f3f5f8", "text": "#0e1521", "muted": "rgba(14, 21, 33, 0.62)" },
+    "ink": "#04060a",
+    "bar": "#4d9bff"
+  },
+  "fonts": {
+    "display": {
+      "family": "Saira",
+      "fallback": "'Arial Narrow', system-ui, sans-serif",
+      "files": [
+        { "src": "fonts/saira-latin-400-normal.woff2", "weight": 400 },
+        { "src": "fonts/saira-latin-600-normal.woff2", "weight": 600 }
+      ]
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "fallback": "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+      "files": [
+        { "src": "fonts/ibm-plex-sans-latin-400-normal.woff2", "weight": 400 },
+        { "src": "fonts/ibm-plex-sans-latin-600-normal.woff2", "weight": 600 }
+      ]
+    }
+  },
+  "effects": { "glow": "strong", "titleFinish": "metal", "corners": "chamfer", "texture": "grid" },
+  "defaults": { "scheme": "dark", "accent": "yellow" }
+}

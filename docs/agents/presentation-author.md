@@ -76,7 +76,9 @@ PyramidDiagram, CycleDiagram, AppShellDiagram) inherit the slide accent when you
 ## Themes, schemes and frames
 
 - **Theme** (`<Presentation theme="…">`): the deck's look — palette, fonts, logos and slide masters.
-  Built-in: `slidecraft` (default), `paper`, `folio`. Content folders can add themes under
+  Built-in: `slidecraft` (default), `paper`, `folio`, `ion` (futuristic: black slides, metal
+  titles, glowing wires; use it when a deck is asked to look futuristic or high-tech). In `ion` the
+  accent names map to blue (yellow), ember (red), aurora green (teal) and violet (navy). Content folders can add themes under
   `themes/<id>/`. Use `list_themes` (or the generated folder instructions) to see what exists.
 - **Scheme** (`<Slide scheme="dark|light">`): the colour scheme of one slide.
 - **Frame** (`<Slide frame="…">`): a slide master from the theme, e.g. the folio theme's
@@ -119,7 +121,8 @@ read as the official template.
 ```
 
 Reference decks: `folio-tour` (every frame around a broad set of components), `folio-minimal`
-(the smallest framed deck), `safe-retries` (a full framed talk).
+(the smallest framed deck), `safe-retries` (a full framed talk), `ion-tour` (the ion theme with
+SignalFlow, TracedPoints, Gauge and TraceTimeline).
 
 ## Colour
 

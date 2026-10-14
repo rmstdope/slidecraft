@@ -67,6 +67,30 @@ export interface FrameSpec {
   subtitle?: { variant?: 'eyebrow' | 'subheadline'; color?: string }
 }
 
+/** Optional finish for the animated components (glow, metal titles, node corners, texture). */
+export const GLOW_LEVELS = ['none', 'soft', 'strong'] as const
+export const TITLE_FINISHES = ['solid', 'metal'] as const
+export const CORNER_STYLES = ['square', 'round', 'chamfer'] as const
+export const TEXTURES = ['none', 'grid'] as const
+export type GlowLevel = (typeof GLOW_LEVELS)[number]
+export type TitleFinish = (typeof TITLE_FINISHES)[number]
+export type CornerStyle = (typeof CORNER_STYLES)[number]
+export type Texture = (typeof TEXTURES)[number]
+
+export interface ThemeEffects {
+  /** Light around wires, dots and arcs. */
+  glow?: GlowLevel
+  /** Titles and big numbers in solid text or brushed metal. */
+  titleFinish?: TitleFinish
+  /** Corners of diagram nodes. */
+  corners?: CornerStyle
+  /** A dot grid behind slides without a frame. */
+  texture?: Texture
+}
+
+/** What a theme without an `effects` block gets: flat, like the original look. */
+export const DEFAULT_EFFECTS: Required<ThemeEffects> = { glow: 'none', titleFinish: 'solid', corners: 'round', texture: 'none' }
+
 export interface ThemeSpec {
   name: string
   description?: string
@@ -95,6 +119,7 @@ export interface ThemeSpec {
     /** Frame for slides that do not name one; "none" for no frame. */
     frame?: string
   }
+  effects?: ThemeEffects
   constraints?: {
     /** Allowed schemes; slides asking for another get the first. */
     schemes?: Scheme[]
@@ -306,6 +331,20 @@ export function parseThemeSpec(raw: unknown): ParsedTheme {
     }
   }
 
+  if (raw.effects !== undefined) {
+    if (!isObject(raw.effects)) errors.push('effects must be an object')
+    else {
+      const e = raw.effects
+      for (const key of Object.keys(e)) if (!['glow', 'titleFinish', 'corners', 'texture'].includes(key)) errors.push(`effects.${key} is not a known effect (glow, titleFinish, corners, texture)`)
+      spec.effects = stripUndefined({
+        glow: pickEnum(e, 'glow', GLOW_LEVELS, 'effects', errors),
+        titleFinish: pickEnum(e, 'titleFinish', TITLE_FINISHES, 'effects', errors),
+        corners: pickEnum(e, 'corners', CORNER_STYLES, 'effects', errors),
+        texture: pickEnum(e, 'texture', TEXTURES, 'effects', errors),
+      })
+    }
+  }
+
   if (isObject(raw.constraints)) {
     const c = raw.constraints
     spec.constraints = {}
@@ -318,6 +357,9 @@ export function parseThemeSpec(raw: unknown): ParsedTheme {
 
   return { spec, errors }
 }
+
+/** A theme's effects with the defaults filled in. */
+export const resolveEffects = (spec: ThemeSpec): Required<ThemeEffects> => ({ ...DEFAULT_EFFECTS, ...stripUndefined(spec.effects ?? {}) })
 
 const stripUndefined = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T
 
@@ -342,6 +384,7 @@ export function mergeThemeSpecs(base: ThemeSpec, override: ThemeSpec): ThemeSpec
     footer: { ...base.footer, ...stripUndefined(override.footer ?? {}) },
     frames,
     defaults: { ...base.defaults, ...stripUndefined(override.defaults ?? {}) },
+    effects: { ...base.effects, ...stripUndefined(override.effects ?? {}) },
     constraints: { ...base.constraints, ...stripUndefined(override.constraints ?? {}) },
   }
 }

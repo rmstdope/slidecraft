@@ -1,6 +1,6 @@
 import { Children, isValidElement, useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import type { Placement, Scheme } from '@shared/themes.ts'
+import { resolveEffects, type Placement, type Scheme } from '@shared/themes.ts'
 import { slideVariants, type SlideTransition } from '../../animations/variants'
 import { resolveSlideLook, type SlideLayout } from '../../themes/resolveSlideLook'
 import { ThemeContext, useResolvedTheme } from '../../themes/ThemeContext'
@@ -87,6 +87,17 @@ function useStageScale(fixedScale: number | undefined, inThumbnail: boolean): nu
   return fixedScale ?? scale
 }
 
+/** The effects texture "grid": a dot grid every 64 px with a soft light behind the middle. */
+export function textureStyle(scheme: Scheme): CSSProperties {
+  const dot = `color-mix(in srgb, var(--accent) ${scheme === 'dark' ? 16 : 22}%, var(--bg))`
+  const light = scheme === 'dark' ? 'color-mix(in srgb, var(--accent) 9%, transparent)' : 'rgba(255, 255, 255, 0.7)'
+  return {
+    backgroundImage: `radial-gradient(circle at 32px 32px, ${dot} 1.6px, transparent 2.4px), radial-gradient(1500px 1000px at 960px 480px, ${light}, transparent)`,
+    backgroundSize: '64px 64px, 1920px 1080px',
+    backgroundRepeat: 'repeat, no-repeat',
+  }
+}
+
 const px = (value: string) => Number.parseFloat(value) || 0
 
 const placementStyle = (p: Placement): CSSProperties => ({
@@ -126,6 +137,7 @@ function SlideComponent({
     theme,
   )
   const { scheme, accent, gradient, layout, transition, frame, frameName } = look
+  const effects = resolveEffects(theme.spec)
   const isDocument = layout === 'document'
   const alignLeft = frame?.align === 'left'
   const unknownFrame = frameName !== 'none' && !frame
@@ -198,7 +210,7 @@ function SlideComponent({
     : { variants: slideVariants[transition], initial: 'initial', animate: 'animate', exit: 'exit', custom: direction }
 
   const content = (
-    <SlideLayoutContext.Provider value={{ layout, devMode: _devMode, accent, frame, align: alignLeft ? 'left' : 'center' }}>
+    <SlideLayoutContext.Provider value={{ layout, devMode: _devMode, accent, scheme, frame, align: alignLeft ? 'left' : 'center' }}>
       {isDocument ? (
         <>
           {hasHeader && (
@@ -261,6 +273,8 @@ function SlideComponent({
           transformOrigin: 'center',
           position: 'relative',
           overflow: 'hidden',
+          // The texture sits on the stage so it scales with the slide and stays under the content.
+          ...(!frame && !background && effects.texture === 'grid' ? textureStyle(scheme) : {}),
         }}
       >
         {/* Frame art is drawn in design space behind the content and never scales with the body. */}

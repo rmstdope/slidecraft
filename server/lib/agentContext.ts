@@ -22,8 +22,8 @@ const CATEGORIES: Record<string, string[]> = {
   Lists: ['List', 'ListItem', 'ProConList'],
   Layout: ['TwoColumn', 'FourColumn', 'Stack', 'Divider', 'SplitBackground', 'ComparisonLayout', 'DefinitionLayout', 'PersonRow'],
   Content: ['Card', 'Callout', 'ContentBox', 'PersonCard', 'Legend', 'IconRow', 'PhaseRow', 'ComparisonTable'],
-  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart'],
-  'Technical Diagrams': ['BlockDiagram', 'StackDiagram', 'CycleDiagram', 'PyramidDiagram', 'SequenceDiagram', 'ActivityDiagram', 'DataModel', 'FeedbackLoops', 'AppShellDiagram', 'BracketDiagram'],
+  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart', 'Gauge', 'GaugeRow', 'TraceTimeline', 'Milestone'],
+  'Technical Diagrams': ['BlockDiagram', 'StackDiagram', 'CycleDiagram', 'PyramidDiagram', 'SequenceDiagram', 'ActivityDiagram', 'DataModel', 'FeedbackLoops', 'AppShellDiagram', 'BracketDiagram', 'SignalFlow', 'SignalNode', 'SignalBypass', 'TracedPoints', 'TracedPoint'],
   Media: ['ContentImage', 'Svg', 'BackgroundImage', 'YouTube'],
 }
 

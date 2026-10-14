@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { itemVariants } from '../../animations/variants'
 import { defineComponent } from './defineComponent'
+import { metalTextStyle, useThemeEffects } from './glow'
 import { useSlideLayout } from './slideLayoutContext'
 import { textSignature } from './textSignature'
 
@@ -60,7 +61,8 @@ const GRADE_TOOLTIP = {
 } as const
 
 function TitleComponent({ children, size = 'hero', accent = false, nowrap = false, className = '' }: TitleProps) {
-  const { layout, devMode, frame, align } = useSlideLayout()
+  const { layout, devMode, frame, align, scheme } = useSlideLayout()
+  const { titleFinish } = useThemeEffects()
   const isDocument = layout === 'document'
   // A theme frame can fix the title size and colour, like a slide master's title placeholder.
   const frameSize = frame?.title?.size
@@ -104,6 +106,8 @@ function TitleComponent({ children, size = 'hero', accent = false, nowrap = fals
 
   const alignLeft = isDocument || align === 'left'
   const color = accent ? 'var(--accent)' : (frame?.title?.color ?? 'var(--text)')
+  // A theme's metal finish replaces the plain text colour, never an accent or a frame's colour.
+  const metal = titleFinish === 'metal' && !accent && !frame?.title?.color
   const maxWidth = nowrap || frame ? undefined : isDocument ? '100%' : preset.maxWidth
   const gradeLevel = grade ? (lines >= 3 ? 3 : lines === 2 ? 2 : 0) : 0
 
@@ -120,6 +124,7 @@ function TitleComponent({ children, size = 'hero', accent = false, nowrap = fals
         fontSize: fitted ?? baseSize,
         lineHeight: LINE_HEIGHT,
         color,
+        ...(metal ? metalTextStyle(scheme) : {}),
         textAlign: alignLeft ? 'left' : 'center',
         maxWidth,
         whiteSpace: nowrap ? 'nowrap' : undefined,

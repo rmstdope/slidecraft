@@ -1,4 +1,5 @@
 import folio from './builtin/folio/theme.json'
+import ion from './builtin/ion/theme.json'
 import paper from './builtin/paper/theme.json'
 import slidecraft from './builtin/slidecraft/theme.json'
 
@@ -20,6 +21,16 @@ export const BUILTIN_THEMES: BuiltinTheme[] = [
       'frames/title.svg': new URL('./builtin/folio/frames/title.svg', import.meta.url).href,
       'frames/section.svg': new URL('./builtin/folio/frames/section.svg', import.meta.url).href,
       'frames/content.svg': new URL('./builtin/folio/frames/content.svg', import.meta.url).href,
+    },
+  },
+  {
+    id: 'ion',
+    raw: ion,
+    assets: {
+      'fonts/saira-latin-400-normal.woff2': new URL('./builtin/ion/fonts/saira-latin-400-normal.woff2', import.meta.url).href,
+      'fonts/saira-latin-600-normal.woff2': new URL('./builtin/ion/fonts/saira-latin-600-normal.woff2', import.meta.url).href,
+      'fonts/ibm-plex-sans-latin-400-normal.woff2': new URL('./builtin/ion/fonts/ibm-plex-sans-latin-400-normal.woff2', import.meta.url).href,
+      'fonts/ibm-plex-sans-latin-600-normal.woff2': new URL('./builtin/ion/fonts/ibm-plex-sans-latin-600-normal.woff2', import.meta.url).href,
     },
   },
 ]

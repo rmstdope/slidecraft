@@ -1,0 +1,135 @@
+import {
+  Presentation, Slide, Notes,
+  Title, Subtitle, Text,
+  SignalFlow, SignalNode, SignalBypass,
+  TracedPoints, TracedPoint,
+  Gauge, GaugeRow,
+  TraceTimeline, Milestone,
+} from '@components'
+
+<Presentation theme="ion">
+
+<Slide>
+  <Subtitle>The ion theme</Subtitle>
+  <Title>Wires between ideas</Title>
+  <Text muted>Four animated components, and what each movement means</Text>
+  <Notes>
+    0:00-0:30. Everything that moves in this deck says one of three things: these are
+    connected, work flows along here, or this is a measurement. Nothing moves for decoration.
+  </Notes>
+</Slide>
+
+<Slide layout="document">
+  <Subtitle>Signal flow</Subtitle>
+  <Title>Retrieval in four hops</Title>
+  <SignalFlow>
+    <SignalNode label="Ingest" metric="2.1k docs/s" />
+    <SignalNode label="Embed" metric="12 ms p50" />
+    <SignalNode label="Index" metric="40M vectors" />
+    <SignalNode label="Answer" metric="380 ms p95" />
+    <SignalBypass from={1} to={3} label="cache hit · 62%" />
+  </SignalFlow>
+  <Notes>
+    0:30-1:30. The chain builds left to right, then lights travel along the wires for as long
+    as the slide is up: work is flowing. The arc over the top is the cache hit that skips the
+    embed step.
+  </Notes>
+</Slide>
+
+<Slide>
+  <TracedPoints title="Three things changed">
+    <TracedPoint step={1} label="Build time down 41%" detail="Remote cache on every branch" />
+    <TracedPoint step={2} label="Flaky tests quarantined" detail="212 moved, 9 fixed so far" />
+    <TracedPoint step={3} label="Two regions, one pipeline" detail="eu-north joins in November" />
+  </TracedPoints>
+  <Notes>
+    1:30-3:00. One point per beat. Each line runs out from the headline as its point arrives,
+    so the audience sees that all three follow from it.
+  </Notes>
+</Slide>
+
+<Slide layout="document">
+  <Subtitle>September 2026 · CI</Subtitle>
+  <Title>Both targets met</Title>
+  <GaugeRow>
+    <Gauge value={87} target={80} label="Remote cache hits" caption="of all builds" />
+    <Gauge value={94} target={90} label="Builds under 10 min" caption="of all builds" />
+  </GaugeRow>
+  <Notes>
+    3:00-3:40. A measurement: the arc fills while the number counts up, and the target tick
+    lights the moment the value passes it.
+  </Notes>
+</Slide>
+
+<Slide layout="document">
+  <Subtitle>Platform rollout · 2026</Subtitle>
+  <Title>From pilot to every team</Title>
+  <TraceTimeline from="2026-01" to="2026-12" now="2026-10-14">
+    <Milestone at="2026-01" label="Pilot" detail="2 teams" />
+    <Milestone at="2026-03" label="Remote cache" detail="41% faster builds" />
+    <Milestone at="2026-05" label="Flake quarantine" detail="212 tests" />
+    <Milestone at="2026-07" label="10 teams" detail="self-serve onboarding" />
+    <Milestone at="2026-09" label="Under 10 minutes" detail="p95 build time" />
+    <Milestone at="2026-11" label="Every team" detail="planned" />
+  </TraceTimeline>
+  <Notes>
+    3:40-4:30. The charge runs to today and lights each milestone it passes. November is still
+    dashed: planned, not done.
+  </Notes>
+</Slide>
+
+<Slide layout="document" accent="teal">
+  <Subtitle>The same timeline, in steps</Subtitle>
+  <Title>Walk the milestones one by one</Title>
+  <TraceTimeline from="2026-01" to="2026-12" now="2026-10-14" steps>
+    <Milestone at="2026-01" label="Pilot" detail="2 teams" />
+    <Milestone at="2026-03" label="Remote cache" detail="41% faster builds" />
+    <Milestone at="2026-05" label="Flake quarantine" detail="212 tests" />
+    <Milestone at="2026-07" label="10 teams" detail="self-serve onboarding" />
+    <Milestone at="2026-09" label="Under 10 minutes" detail="p95 build time" />
+    <Milestone at="2026-11" label="Every team" detail="planned" />
+  </TraceTimeline>
+  <Notes>
+    4:30-5:30. With steps on, each right arrow moves the charge to the next milestone, and the
+    last one runs on to today.
+  </Notes>
+</Slide>
+
+<Slide scheme="light" layout="document">
+  <Subtitle>Light scheme</Subtitle>
+  <Title>The glow becomes a soft halo</Title>
+  <SignalFlow lines="angled">
+    <SignalNode label="Request" metric="edge" />
+    <SignalNode label="Auth" metric="4 ms" />
+    <SignalNode label="Service" metric="28 ms" />
+    <SignalNode label="Store" metric="9 ms" />
+    <SignalBypass from={2} to={4} label="cached read" />
+  </SignalFlow>
+  <Notes>
+    5:30-6:00. On light slides the titles turn to dark steel and the wires keep a soft halo.
+    This one uses the circuit-trace shape for the bypass.
+  </Notes>
+</Slide>
+
+<Slide theme="slidecraft" layout="document" accent="teal">
+  <Subtitle>In another theme</Subtitle>
+  <Title>The same components, flat</Title>
+  <TracedPoints title="Any theme" titleSize={80}>
+    <TracedPoint label="Colours from the slide accent" detail="teal here" />
+    <TracedPoint label="Fonts from the theme" detail="Zilla Slab and Source Sans 3" />
+    <TracedPoint label="Glow only where the theme asks" detail="effects in theme.json" />
+  </TracedPoints>
+  <Notes>
+    6:00-6:30. This slide borrows the slidecraft theme. Its theme.json has no effects block, so
+    the wires are flat, titles are plain and the background has no grid.
+  </Notes>
+</Slide>
+
+<Slide accent="red">
+  <Subtitle>Try it</Subtitle>
+  <Title>Set theme="ion" on a deck</Title>
+  <Text muted>Or add an effects block to your own theme</Text>
+  <Notes>6:30-7:00. Close on how to use it.</Notes>
+</Slide>
+
+</Presentation>

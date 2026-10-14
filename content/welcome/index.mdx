@@ -8,6 +8,7 @@ import {
   List, ListItem, ProConList, ComparisonTable, Legend, PhaseRow,
   Stat, ProgressBar, Spectrum, Timeline, Quadrants, ScatterChart,
   BlockDiagram, StackDiagram, CycleDiagram, PyramidDiagram, SequenceDiagram, DataModel, FeedbackLoops,
+  SignalFlow, SignalNode, SignalBypass,
   ContentImage, Code, PersonRow, PersonCard,
 } from '@components'
 import stage from './images/stage.svg'
@@ -766,6 +767,18 @@ import docsShot from './images/docs.png'
     <Card compact title="safe-retries">A complete engineering talk with full notes and sources.</Card>
   </FourColumn>
   <Notes>They sit next to this deck on the home page and on the docs site. Each one passes the content tests, so they stay compiling as the components change.</Notes>
+</Slide>
+
+<Slide theme="ion" layout="document">
+  <Subtitle>Ion theme</Subtitle>
+  <Title>Wires that draw and carry light</Title>
+  <SignalFlow>
+    <SignalNode label="Theme" metric="effects block" />
+    <SignalNode label="Slide" metric="accent, scheme" />
+    <SignalNode label="Component" metric="glow, corners" />
+    <SignalBypass from={1} to={3} label="no effects · flat" />
+  </SignalFlow>
+  <Notes>The ion theme turns on glow, metal titles, cut corners and a dot grid through an effects block in its theme.json. SignalFlow, TracedPoints, Gauge and TraceTimeline read it; in any other theme they draw flat. The ion-tour deck shows all four.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="navy" layout="document">
