@@ -27,7 +27,7 @@ export function Select<T extends string>({
   'aria-label'?: string
 }) {
   return (
-    <S.Root value={value} onValueChange={(v) => onValueChange(v as T)} disabled={disabled}>
+    <S.Root value={value ?? ''} onValueChange={(v) => onValueChange(v as T)} disabled={disabled}>
       <S.Trigger
         aria-label={ariaLabel}
         className={cn(
@@ -44,7 +44,7 @@ export function Select<T extends string>({
         <S.Content
           position="popper"
           sideOffset={6}
-          className="sc-app tw:z-50 tw:min-w-(--radix-select-trigger-width) tw:overflow-hidden tw:rounded-xl tw:bg-raised tw:p-1 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)]"
+          className="sc-app tw:z-50 tw:max-h-(--radix-select-content-available-height) tw:min-w-(--radix-select-trigger-width) tw:overflow-y-auto tw:rounded-xl tw:bg-raised tw:p-1 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)]"
         >
           <S.Viewport>
             {options.map((o) => (

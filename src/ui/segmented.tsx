@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string>({
           title={item.title}
           className={cn(
             'tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-[7px] tw:px-3 tw:font-medium tw:text-fg-2 tw:transition-colors tw:duration-150 tw:hover:text-fg',
-            'tw:data-[state=on]:bg-panel tw:data-[state=on]:text-fg tw:data-[state=on]:shadow-line',
+            'tw:data-[state=on]:bg-panel tw:data-[state=on]:text-fg tw:data-[state=on]:shadow-hairline',
             size === 'sm' ? 'tw:h-7 tw:text-[13px]' : 'tw:h-[30px]',
           )}
         >
