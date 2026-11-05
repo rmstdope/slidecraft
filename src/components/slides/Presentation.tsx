@@ -106,7 +106,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const { nav, actions } = useDeckNavigation(stepCounts, channel)
   const drawing = useDrawing()
   const remote = useRemoteOverlay(channel, true)
-  const [guides, setGuides] = useState(() => isGuidesMode(new URLSearchParams(window.location.search).get('mode')))
+  const [guides, setGuides] = useState(() => !exported && isGuidesMode(new URLSearchParams(window.location.search).get('mode')))
   // Reader mode is a handout for exported decks (Part 4 §8.3): every slide with its notes.
   const [readMode, setReadMode] = useState(() => exported && new URLSearchParams(window.location.search).get('mode') === 'read')
   const setViewerMode = useCallback((mode: 'read' | null) => {
@@ -197,7 +197,8 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
         drawing?.toggleDrawMode()
         return
       case 'e':
-        if (!exported && deck && !overviewOpen) editSlide()
+        // In the overview, E edits the focused slide.
+        if (!exported && deck) navigateTo(editorUrl(deck, (overviewOpen ? focused : nav.current) + 1))
         return
     }
     if (key === 'Escape' && drawing?.isDrawMode) {
@@ -466,15 +467,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
               }}
               onClose={() => setOverviewOpen(false)}
               onColumnsChange={(columns) => (columnsRef.current = columns)}
-              onEditSlide={
-                exported
-                  ? undefined
-                  : (i) => {
-                      actions.goTo(i)
-                      setGuides(true)
-                      setOverviewOpen(false)
-                    }
-              }
+              onEditSlide={exported || !deck ? undefined : (i) => navigateTo(editorUrl(deck, i + 1))}
             />
           )}
         </AnimatePresence>

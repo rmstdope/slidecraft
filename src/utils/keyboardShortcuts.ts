@@ -1,4 +1,4 @@
-import { isMac } from './environment'
+import { isExported, isMac } from './environment'
 
 /** The single source of truth for the shortcuts modal and help panel (Part 3 §1.9). */
 export type AppMode = 'home' | 'presentation' | 'miniature' | 'guides' | 'editor' | 'presenter'
@@ -57,6 +57,7 @@ const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
       { keys: ['End'], action: 'Focus last slide', category: 'Navigation' },
       { keys: ['Enter'], action: 'Go to focused slide', category: 'Navigation' },
       { keys: ['Tab'], action: 'Toggle large preview', category: 'Views' },
+      { keys: ['E'], action: 'Edit focused slide', category: 'Views' },
       { keys: ['Esc'], action: 'Close overview', category: 'Views' },
     ],
   },
@@ -99,7 +100,17 @@ const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
 
 export const getModeLabel = (mode: AppMode): string => MODES[mode].label
 
-export const getShortcutsForMode = (mode: AppMode): Shortcut[] => [...GLOBAL, ...MODES[mode].shortcuts]
+/** An exported file has no editor, home page or guides: Esc opens the overview there. */
+function forExport(shortcuts: Shortcut[]): Shortcut[] {
+  return shortcuts
+    .filter((s) => !(s.keys.length === 1 && ['G', 'E'].includes(s.keys[0])))
+    .map((s) => (s.keys[0] === 'Esc' && s.action === 'Back to the home page' ? { ...s, action: 'Slide overview' } : s))
+}
+
+export const getShortcutsForMode = (mode: AppMode, exported = isExported()): Shortcut[] => {
+  const shortcuts = [...GLOBAL, ...MODES[mode].shortcuts]
+  return exported ? forExport(shortcuts) : shortcuts
+}
 
 /** Group by category, preserving first-seen order; uncategorised entries go under "Other". */
 export function groupShortcutsByCategory(shortcuts: Shortcut[]): Map<string, Shortcut[]> {
