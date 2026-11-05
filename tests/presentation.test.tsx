@@ -5,6 +5,7 @@ import { Presentation } from '../src/components/slides/Presentation'
 import { Slide } from '../src/components/slides/Slide'
 import { Title } from '../src/components/slides/Title'
 import { DeckContext, assetResolverFor } from '../src/components/slides/deckContext'
+import { getShortcutsForMode } from '../src/utils/keyboardShortcuts'
 import { useDom } from './setup/dom'
 
 useDom()
@@ -134,6 +135,25 @@ describe('Presentation', () => {
     render(withDeck())
     press('Escape')
     expect(window.location.pathname).toBe('/v/examples/')
+  })
+
+  test('E in the overview edits the focused slide', () => {
+    const ref = { source: 'examples', path: 'motion' }
+    render(<DeckContext.Provider value={{ deck: ref, resolveAsset: assetResolverFor(ref) }}>{deck()}</DeckContext.Provider>)
+    press('m')
+    press('ArrowRight')
+    press('e')
+    expect(window.location.pathname).toBe('/v/examples/edit/motion')
+    expect(window.location.search).toBe('?slide=2')
+  })
+
+  test('an exported file ignores ?mode=guides, and its shortcut list has no G, E or home', () => {
+    window.history.replaceState(null, '', '/deck.html?mode=guides')
+    const { container } = render(deck())
+    expect(container.querySelector('.guides-frame')).toBeNull()
+    const shortcuts = getShortcutsForMode('presentation', true)
+    expect(shortcuts.some((s) => s.keys[0] === 'G' || s.keys[0] === 'E')).toBe(false)
+    expect(shortcuts.find((s) => s.keys[0] === 'Esc' && s.category === 'Views')?.action).toBe('Slide overview')
   })
 
   test('Cmd+K opens the command palette and ? the shortcuts modal', () => {

@@ -99,10 +99,12 @@ separators between them can be dragged:
 
 Saving (`⌘S`) writes the whole file and adds imports for new components. **Autosave** (the switch
 beside **Save**, on by default) saves a moment after you stop typing and when the window loses
-focus, but only once the slide compiles, never while the agent is working. Unsaved changes are
-marked; leaving saves them with autosave on, and otherwise asks whether to save them first.
-`Esc` goes back to the home page, like the back arrow (it first closes an open completion list,
-search box or menu). When the file changes on disk (another editor or an agent), the editor
+focus, but only once every changed slide compiles, and never while the agent is working. If
+another program changes the file while you have unsaved edits, the status says **Changed on
+disk** and autosave pauses: **Save** writes your version over theirs. Unsaved changes are marked;
+leaving saves them with autosave on, and otherwise asks whether to save them first. `Esc` goes
+back to the home page, like the back arrow (it first closes an open completion list, search box
+or menu, and in a text box such as the agent's message it only leaves the box). When the file changes on disk (another editor or an agent), the editor
 reloads it unless you have unsaved changes.
 
 **Help** (the question mark) opens a panel listing every component with its props and an
@@ -214,7 +216,7 @@ Open a deck from the home page. Slides scale to fit the window; nothing reflows.
 | `←`, Backspace | previous step |
 | `↓` / `↑` | next / previous slide, skipping steps |
 | Home / End | first / last slide |
-| `M`, `Tab` | overview of every slide (arrows and Enter to jump; `Tab` again for a large preview) |
+| `M`, `Tab` | overview of every slide (arrows and Enter to jump; `Tab` again for a large preview; `E` edits the focused slide) |
 | `F` | fullscreen |
 | `G` | guides: overflow warnings, title-length marks, frame outline (`F` toggles fit); also the **Guides** button beside Fullscreen |
 | `P` | presenter window |

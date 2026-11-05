@@ -12,7 +12,7 @@ export interface OverviewProps {
   onSelect: (index: number) => void
   onClose: () => void
   onColumnsChange: (columns: number) => void
-  /** Opens the guides at the focused slide; omitted in exported files. */
+  /** Opens the focused slide in the editor; omitted in exported files. */
   onEditSlide?: (index: number) => void
 }
 
@@ -57,7 +57,7 @@ export function Overview({ slides, current, focused, previewMode, onFocus, onSel
     >
       <header className="overview__header" onClick={(e) => e.stopPropagation()}>
         <h2>Slide Overview</h2>
-        <span className="overview__hints">Arrows to move · Enter to open · Tab for preview · Esc to close</span>
+        <span className="overview__hints">Arrows to move · Enter to open · Tab for preview{onEditSlide ? ' · E to edit' : ''} · Esc to close</span>
         {onEditSlide && (
           <button type="button" className="presentation-view-button" onClick={() => onEditSlide(focused)}>
             Edit Slide {focused + 1}

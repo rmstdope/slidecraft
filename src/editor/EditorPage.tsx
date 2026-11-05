@@ -65,6 +65,9 @@ function store(key: string, value: string): void {
 /** Inside Monaco, including its floating widgets (quick-fix menu, suggest list, hovers), which render outside the editor. */
 const inMonaco = (el: EventTarget | null) =>
   el instanceof Element && !!el.closest('.monaco-editor, .context-view, .action-widget, .monaco-hover, .overflowingContentWidgets, .monaco-menu-container')
+/** A text box outside the code editor, where Esc should not throw away what was typed. */
+const isTextBox = (el: EventTarget | null) =>
+  el instanceof HTMLElement && !inMonaco(el) && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'range', 'color'].includes((el as HTMLInputElement).type)) || el.isContentEditable)
 /** A form control, including Radix selects and menus (a button trigger and role=option items), which need the arrow keys and Enter. */
 const inField = (el: EventTarget | null) =>
   el instanceof HTMLElement &&
@@ -92,6 +95,10 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   // Leaving with unsaved changes asks first: save, discard or stay.
   const [leaving, setLeaving] = useState<'asking' | 'saving' | 'failed' | null>(null)
   const saveAndLeaveRef = useRef<HTMLButtonElement>(null)
+  // The buttons are disabled while saving, which drops focus; give it back if the save failed.
+  useEffect(() => {
+    if (leaving === 'failed') saveAndLeaveRef.current?.focus()
+  }, [leaving])
   const [imageProp, setImageProp] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -164,25 +171,32 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   const beforeSend = useCallback(async () => (state.isDirty ? actions.save() : true), [state.isDirty, actions])
 
   // Autosave writes only what compiles: half-typed MDX would break the deck's card, an open
-  // presenter window and what the agent reads. A deck in whole-file mode does not parse at all.
-  const latestText = useRef<string | null>(null)
-  latestText.current = selected?.text ?? null
-  const slideCompiles = async (): Promise<boolean> => {
-    if (state.raw) return false
-    if (!selected) return true
-    const slideText = selected.text
+  // presenter window and what the agent reads. Every slide changed since the last save is
+  // compiled (cached, so usually free); a deck in whole-file mode does not parse at all.
+  const latestModel = useRef(state.model)
+  latestModel.current = state.model
+  const changesCompile = async (): Promise<boolean> => {
+    if (state.raw || !state.model) return false
+    const model = state.model
     try {
-      await compileSlidePreview(slideText, target)
+      await Promise.all(actions.unsavedSlides().map((slide) => compileSlidePreview(slide, target)))
     } catch {
       return false
     }
-    return latestText.current === slideText // typed on meanwhile: the next edit's timer saves
+    return latestModel.current === model // edited meanwhile: the next edit's timer saves
   }
+  // Someone else changed the file while there were unsaved edits here: autosave stops rather
+  // than overwrite their version, until a manual save (overwrite) or leaving decides.
+  const [changedOnDisk, setChangedOnDisk] = useState(false)
+  useEffect(() => {
+    if (!state.isDirty) setChangedOnDisk(false)
+  }, [state.isDirty])
+  const autosaveOn = autosave && !deckReadOnly && !changedOnDisk
   const autosaveNow = async () => {
     if (!state.isDirty || state.isSaving || readOnly || leaving) return
-    if (await slideCompiles()) await actions.save()
+    if (await changesCompile()) await actions.save()
   }
-  useAutosave({ enabled: autosave && !deckReadOnly, dirty: state.isDirty, version: state.model ?? state.raw, save: () => void autosaveNow() })
+  useAutosave({ enabled: autosaveOn, dirty: state.isDirty, version: state.model ?? state.raw, save: () => void autosaveNow() })
 
   const exiting = useRef(false)
   const leave = () => {
@@ -193,9 +207,9 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     if (exiting.current) return
     if (!state.isDirty) return leave()
     // With autosave on, leaving saves what is pending; it asks only when that cannot be saved.
-    if (autosave && !readOnly) {
+    if (autosaveOn && !readOnly) {
       exiting.current = true
-      const saved = (await slideCompiles()) && (await actions.save())
+      const saved = (await changesCompile()) && (await actions.save())
       exiting.current = false
       if (saved) return leave()
     }
@@ -265,6 +279,9 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   escapeHandler.current = (e) => {
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing || palette || imageProp || shortcutsOpen || leaving) return
     e.preventDefault()
+    // In a text box (the agent's message, a prop field) the first Esc only leaves the box, so a
+    // draft is not lost to a reflex; the next one goes home.
+    if (isTextBox(e.target)) return (e.target as HTMLElement).blur()
     void exit()
   }
   useEffect(() => {
@@ -281,9 +298,10 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [state.isDirty])
 
-  // External edits reload the deck unless there are unsaved changes here.
+  // External edits reload the deck unless there are unsaved changes here; then they pause autosave.
   useSSE(deck, () => {
     if (!state.isDirty && !state.isSaving) void actions.reload()
+    else void actions.diskChanged().then((changed) => changed && setChangedOnDisk(true))
   })
 
   // Images: paste or drop into the editor area uploads into the deck and inserts a ContentImage.
@@ -359,7 +377,17 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     )
   }
 
-  const status = deckReadOnly ? 'Read-only' : state.error ? 'Save failed' : state.isSaving ? 'Saving…' : state.isDirty ? 'Unsaved changes' : 'Saved'
+  const status = deckReadOnly
+    ? 'Read-only'
+    : state.error
+      ? 'Save failed'
+      : state.isSaving
+        ? 'Saving…'
+        : changedOnDisk
+          ? 'Changed on disk'
+          : state.isDirty
+            ? 'Unsaved changes'
+            : 'Saved'
 
   return (
     <DeckContext.Provider value={deckContext}>
@@ -374,7 +402,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
               <span className="tw:truncate tw:text-[15px] tw:font-semibold">{deckName(deck)}</span>
               <span className="tw:truncate tw:text-[12px] tw:text-muted">
                 {deck.source} / {deck.path} ·{' '}
-                <span className={cn(state.error ? 'tw:text-removed' : state.isDirty ? 'tw:text-on-accent-tint' : !deckReadOnly && 'tw:text-agent')} title={state.error ?? undefined}>
+                <span className={cn(state.error ? 'tw:text-removed' : state.isDirty ? 'tw:text-on-accent-tint' : !deckReadOnly && 'tw:text-agent')} title={state.error ?? (changedOnDisk ? 'Another program changed this file. Autosave is paused: Save writes your version over it; leaving without saving keeps theirs.' : undefined)}>
                   {status}
                 </span>
               </span>
@@ -656,7 +684,11 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
               saveAndLeaveRef.current?.focus()
             }}
           >
-            {leaving === 'failed' && <p className="tw:m-0 tw:text-removed">Saving failed{state.error ? `: ${state.error}` : '.'}</p>}
+            {leaving === 'failed' && (
+              <p role="alert" className="tw:m-0 tw:text-removed">
+                Saving failed{state.error ? `: ${state.error}` : '.'}
+              </p>
+            )}
             <div className="tw:flex tw:justify-end tw:gap-2">
               <Button variant="ghost" disabled={leaving === 'saving'} onClick={() => setLeaving(null)}>
                 Cancel

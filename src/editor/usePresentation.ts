@@ -42,6 +42,15 @@ function initialSlideIndex(): number {
   return initialSlides.get(key)!
 }
 
+const parses = (content: string) => {
+  try {
+    modelFromSource(content)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function usePresentation(deck: DeckRef) {
   const [state, setState] = useState<PresentationState>({ deck, readOnly: false, model: null, raw: null, selectedId: null, isDirty: false, isLoading: true, isSaving: false, error: null })
   const stateRef = useRef(state)
@@ -52,6 +61,14 @@ export function usePresentation(deck: DeckRef) {
       return next
     })
   }, [])
+
+  // What is on disk as far as this editor knows: the text last loaded or saved, and its slides.
+  // Autosave compiles only slides that differ from it; a file change that does not match it
+  // came from someone else.
+  const onDisk = useRef<{ content: string; slides: Set<string> }>({ content: '', slides: new Set() })
+  const remember = (content: string, model: DeckModel | null) => {
+    onDisk.current = { content, slides: new Set(model?.slides.map((s) => s.text) ?? []) }
+  }
 
   const load = useCallback(
     async (keepIndex?: number, reloading = false) => {
@@ -67,13 +84,17 @@ export function usePresentation(deck: DeckRef) {
         // (the file-changed event after every save, or autosave): same text, nothing to do.
         const s = stateRef.current
         if (s.isDirty || s.isSaving) return
-        if (content === (s.model ? serializeModel(s.model) : s.raw?.text)) return
+        if (s.model && content === serializeModel(s.model)) return
+        // In whole-file mode the same text is news once it parses: a save that fixed it.
+        if (s.raw && content === s.raw.text && !parses(content)) return
       }
       try {
         const model = modelFromSource(content)
+        remember(content, model)
         const index = Math.min(keepIndex ?? initialSlideIndex(), Math.max(0, model.slides.length - 1))
         update((s) => ({ ...s, readOnly, model, raw: null, selectedId: model.slides[index]?.id ?? null, isDirty: false, isLoading: false, error: null }))
       } catch (error) {
+        remember(content, null)
         update((s) => ({ ...s, readOnly, model: null, raw: { text: content, error: (error as Error).message }, selectedId: null, isDirty: false, isLoading: false, error: null }))
       }
     },
@@ -158,9 +179,21 @@ export function usePresentation(deck: DeckRef) {
       const model = s.model ? syncComponentImports(s.model, Object.keys(mdxComponentScope)) : null
       update((x) => ({ ...x, isSaving: true, model: x.model && model && x.model === s.model ? model : x.model }))
       const content = model ? serializeModel(model) : s.raw!.text
+      const before = onDisk.current
+      remember(content, model) // before the write, so its file-changed echo is recognised
       const result = await saveMdx(deck, content)
-      update((x) => ({ ...x, isSaving: false, isDirty: result.error ? x.isDirty : false, error: result.error ?? null }))
+      if (result.error) onDisk.current = before
+      // Edits made while the save was in flight stay unsaved.
+      const stillSaved = (x: PresentationState) => (model ? x.model === model : x.raw?.text === content)
+      update((x) => ({ ...x, isSaving: false, isDirty: result.error ? x.isDirty : !stillSaved(x), error: result.error ?? null }))
       return !result.error
+    },
+    /** Texts of the slides changed since the last load or save. */
+    unsavedSlides: (): string[] => stateRef.current.model?.slides.map((s) => s.text).filter((t) => !onDisk.current.slides.has(t)) ?? [],
+    /** True when the file on disk is no longer what this editor last loaded or saved. */
+    diskChanged: async (): Promise<boolean> => {
+      const result = await loadMdx(deck)
+      return !!result.data && result.data.content !== onDisk.current.content
     },
     reload: () => load(Math.max(0, stateRef.current.model?.slides.findIndex((x) => x.id === stateRef.current.selectedId) ?? 0), true),
   }
