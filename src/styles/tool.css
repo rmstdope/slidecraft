@@ -398,8 +398,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   vertical-align: top;
 }
-.gallery-detail__props code,
-.error-panel code {
+.gallery-detail__props code {
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--accent-teal);
@@ -419,57 +418,6 @@
   overflow-x: auto;
 }
 
-/* Presentation errors. */
-.error-screen {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background: var(--dark-bg);
-}
-.error-panel {
-  width: 100%;
-  max-width: 600px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.9rem;
-  padding: 1.75rem;
-  border-radius: 12px;
-  background: rgba(224, 69, 43, 0.08);
-  border: 1px solid rgba(224, 69, 43, 0.3);
-  color: var(--dark-text);
-}
-.error-panel h1 {
-  font: 600 1.375rem var(--font-display);
-  color: var(--brand-red);
-}
-.error-panel__deck {
-  padding: 0.15rem 0.6rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 0.8125rem;
-}
-.error-panel__message {
-  width: 100%;
-  max-height: 200px;
-  overflow: auto;
-  padding: 0.8rem;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.35);
-  font: 0.8125rem/1.5 var(--font-mono);
-  white-space: pre-wrap;
-}
-.error-panel__help {
-  font-size: 0.875rem;
-  color: var(--dark-muted);
-}
-.error-panel__actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
 /* Button states. */
 .tool-button.is-danger {
   border-color: var(--brand-red);
@@ -479,4 +427,3 @@
   opacity: 0.5;
   cursor: default;
 }
-

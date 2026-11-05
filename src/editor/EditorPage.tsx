@@ -26,7 +26,7 @@ import { getCursorContext, type CursorContext } from './cursorContext'
 import { deleteElementAt, formatMdx, setPropAt } from './sourceEdits'
 import { usePresentation } from './usePresentation'
 import { StillPlaceholder } from './components/SlideStill'
-import { Badge, Button, cn, Field, NativeSelect, Popover, SegmentedControl } from '../ui'
+import { Badge, Button, cn, Field, LoadingScreen, NativeSelect, Popover, SegmentedControl } from '../ui'
 
 export interface EditorPageProps {
   deck: DeckRef
@@ -289,7 +289,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
 
   const deckContext = useMemo(() => ({ deck, resolveAsset: assetResolverFor(deck, defaultSource) }), [deck, defaultSource])
 
-  if (state.isLoading && !state.model && !state.raw) return <div className="spinner" role="status" aria-label="Loading" />
+  if (state.isLoading && !state.model && !state.raw) return <LoadingScreen label="Loading the deck" />
   if (!state.model && !state.raw) {
     return (
       <div className="sc-app tw:flex tw:h-full tw:flex-col tw:items-center tw:justify-center tw:gap-4 tw:bg-ground tw:p-8 tw:text-center">

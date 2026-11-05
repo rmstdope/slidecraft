@@ -248,7 +248,7 @@ export function PresenterView({ analysis, nav, actions, deckKey, deckLabel, chan
           <kbd>Esc</kbd> Close
         </span>
       </div>
-      <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="presenter" />
+      <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="presenter" theme="dark" />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
 import { getDisplayKey } from '../../utils/keyboardShortcuts'
+import { Kbd, Sheet, SheetGroup, SheetSearch, sheetRowClass } from '../../ui'
 
 export interface CommandItem {
   id: string
@@ -18,6 +19,8 @@ export interface GlobalCommandPaletteProps {
   /** Shown in the placeholder: "Search commands in <mode>...". */
   mode: string
   commands: CommandItem[]
+  /** Forces a theme: the player and presenter are always dark. */
+  theme?: 'light' | 'dark'
 }
 
 const GROUPS: { category: CommandItem['category']; label: string }[] = [
@@ -36,7 +39,7 @@ export function filterCommands(commands: CommandItem[], query: string): CommandI
 }
 
 /** Cmd/Ctrl+K palette shared by home, presentation and editor (Part 3 §1.8). */
-export function GlobalCommandPalette({ isOpen, onClose, mode, commands }: GlobalCommandPaletteProps) {
+export function GlobalCommandPalette({ isOpen, onClose, mode, commands, theme }: GlobalCommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const [hasNavigated, setHasNavigated] = useState(false)
@@ -93,68 +96,39 @@ export function GlobalCommandPalette({ isOpen, onClose, mode, commands }: Global
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="palette-scrim"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onClick={onClose}
-          onKeyDown={onKeyDown}
-          data-no-advance
-        >
-          <div className="palette" role="dialog" aria-label="Command palette" onClick={(e) => e.stopPropagation()}>
-            <div className="palette__search">
-              <span aria-hidden className="palette__icon">⌕</span>
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Search commands in ${mode}...`}
-                aria-label="Search commands"
-              />
-              <kbd>Esc</kbd>
-            </div>
-            <div className="palette__list" ref={listRef} role="listbox">
-              {items.length === 0 && <div className="palette__empty">No matching commands</div>}
-              {GROUPS.map(({ category, label }) => {
-                const group = items.filter((c) => c.category === category)
-                if (group.length === 0) return null
-                return (
-                  <div key={category}>
-                    <div className="palette__group">{label}</div>
-                    {group.map((item) => {
-                      index += 1
-                      const i = index
-                      return (
-                        <div
-                          key={item.id}
-                          data-index={i}
-                          role="option"
-                          aria-selected={i === selected}
-                          className={`palette__row${i === selected ? ' is-selected' : ''}`}
-                          onMouseEnter={() => setSelected(i)}
-                          onClick={() => run(item)}
-                        >
-                          {item.icon && <span className="palette__row-icon">{item.icon}</span>}
-                          <span className="palette__row-name">{item.name}</span>
-                          {item.description && <span className="palette__row-description">{item.description}</span>}
-                          {item.shortcut && (
-                            <span className="palette__row-keys">
-                              {item.shortcut.map((key) => (
-                                <kbd key={key}>{getDisplayKey(key)}</kbd>
-                              ))}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-            </div>
+        <Sheet label="Command palette" theme={theme} onClose={onClose} onKeyDown={onKeyDown}>
+          <SheetSearch inputRef={inputRef} value={query} onChange={(e) => setQuery((e.target as HTMLInputElement).value)} placeholder={`Search commands in ${mode}...`} aria-label="Search commands" />
+          <div className="tw:max-h-[min(420px,60vh)] tw:overflow-y-auto tw:pb-1.5" ref={listRef} role="listbox" aria-label="Commands">
+            {items.length === 0 && <div className="tw:px-4 tw:py-6 tw:text-center tw:text-muted">No matching commands</div>}
+            {GROUPS.map(({ category, label }) => {
+              const group = items.filter((c) => c.category === category)
+              if (group.length === 0) return null
+              return (
+                <div key={category} role="group" aria-label={label}>
+                  <SheetGroup>{label}</SheetGroup>
+                  {group.map((item) => {
+                    index += 1
+                    const i = index
+                    return (
+                      <div key={item.id} data-index={i} role="option" aria-selected={i === selected} className={sheetRowClass(i === selected)} onMouseEnter={() => setSelected(i)} onClick={() => run(item)}>
+                        {item.icon && <span className="tw:text-muted tw:[&_svg]:size-4">{item.icon}</span>}
+                        <span className="tw:shrink-0 tw:font-medium">{item.name}</span>
+                        {item.description && <span className="tw:min-w-0 tw:flex-1 tw:truncate tw:text-[12px] tw:text-muted">{item.description}</span>}
+                        {item.shortcut && (
+                          <span className="tw:ml-auto tw:flex tw:gap-1">
+                            {item.shortcut.map((key) => (
+                              <Kbd key={key}>{getDisplayKey(key)}</Kbd>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
           </div>
-        </motion.div>
+        </Sheet>
       )}
     </AnimatePresence>
   )

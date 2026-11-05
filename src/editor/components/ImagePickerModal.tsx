@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { DeckRef } from '@shared/decks.ts'
 import { appPath } from '../../basePath'
 import { assetResolverFor } from '../../components/slides/deckContext'
+import { ImageUp } from 'lucide-react'
+import { Button, cn, SegmentedControl, Sheet } from '../../ui'
 import { ACCEPTED_IMAGE_TYPES, listLibraryImages, listPresentationImages, uploadImage, type ImageInfo } from '../api'
 
 type Tab = 'library' | 'presentation' | 'upload'
@@ -58,69 +60,87 @@ export function ImagePickerModal({ isOpen, deck, defaultSource, onClose, onSelec
   const src = (path: string) => (path.startsWith('/') ? appPath(path) : resolve(path))
 
   return (
-    <div className="palette-scrim" onClick={onClose}>
-      <div
-        className="image-picker"
-        role="dialog"
-        aria-label="Images"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          e.stopPropagation()
-          if (e.key === 'Escape') onClose()
-          if (e.key === 'Enter') choose(selected)
-        }}
-      >
-        <nav className="image-picker__tabs">
-          {(['presentation', 'library', 'upload'] as Tab[]).map((t) => (
-            <button key={t} type="button" className={tab === t ? 'is-active' : ''} onClick={() => setTab(t)}>
-              {t === 'presentation' ? 'This presentation' : t === 'library' ? 'Library' : 'Upload'}
+    <Sheet
+      label="Images"
+      onClose={onClose}
+      animate={false}
+      className="tw:max-w-[760px]"
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        if (e.key === 'Escape') onClose()
+        if (e.key === 'Enter') choose(selected)
+      }}
+    >
+      <div className="tw:flex tw:items-center tw:gap-3 tw:border-b tw:border-line tw:px-4 tw:py-3">
+        <h2 className="tw:font-display tw:text-[20px] tw:font-semibold">Images</h2>
+        <span className="tw:flex-1" />
+        <SegmentedControl
+          aria-label="Images from"
+          value={tab}
+          onValueChange={setTab}
+          items={[
+            { value: 'presentation', label: 'This presentation' },
+            { value: 'library', label: 'Library' },
+            { value: 'upload', label: 'Upload' },
+          ]}
+        />
+      </div>
+      {error && (
+        <p role="alert" className="tw:mx-4 tw:mt-3 tw:rounded-lg tw:bg-field tw:px-3 tw:py-2 tw:text-[13px] tw:text-removed">
+          {error}
+        </p>
+      )}
+      {tab === 'upload' ? (
+        <div className="tw:flex tw:flex-col tw:gap-3 tw:p-4">
+          <button
+            type="button"
+            className="tw:flex tw:h-44 tw:flex-col tw:items-center tw:justify-center tw:gap-2 tw:rounded-xl tw:border-2 tw:border-dashed tw:border-line tw:text-fg-2 tw:hover:bg-field tw:[&_svg]:size-6"
+            onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              void upload(e.dataTransfer.files[0])
+            }}
+          >
+            <ImageUp aria-hidden className="tw:text-muted" />
+            Drag & drop or click to browse
+            <small className="tw:text-[12px] tw:text-muted">PNG, JPG, GIF or WebP</small>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void upload(e.target.files?.[0])} />
+          <fieldset className="tw:flex tw:flex-wrap tw:gap-x-5 tw:gap-y-2 tw:border-0 tw:text-[13px] tw:text-fg-2">
+            <legend className="tw:sr-only">Store the upload in</legend>
+            <label className="tw:flex tw:items-center tw:gap-2">
+              <input type="radio" className="tw:accent-(--sc-focus)" checked={storage === 'presentation'} onChange={() => setStorage('presentation')} /> This presentation
+            </label>
+            <label className="tw:flex tw:items-center tw:gap-2">
+              <input type="radio" className="tw:accent-(--sc-focus)" checked={storage === 'library'} onChange={() => setStorage('library')} /> Library (all presentations)
+            </label>
+          </fieldset>
+        </div>
+      ) : (
+        <div className="tw:grid tw:max-h-[56vh] tw:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] tw:gap-3 tw:overflow-y-auto tw:p-4">
+          {images.length === 0 && <p className="tw:col-span-full tw:py-8 tw:text-center tw:text-muted">No images yet. Upload one, or paste or drop an image into the editor.</p>}
+          {images.map((img) => (
+            <button
+              key={img.path}
+              type="button"
+              aria-pressed={selected === img.path}
+              className={cn('tw:flex tw:flex-col tw:gap-1.5 tw:rounded-lg tw:p-1.5 tw:text-left tw:hover:bg-field', selected === img.path && 'tw:bg-field tw:shadow-[0_0_0_2px_var(--sc-focus)]')}
+              onClick={() => setSelected(img.path)}
+              onDoubleClick={() => choose(img.path)}
+            >
+              <img src={src(img.path)} alt="" className="tw:aspect-video tw:w-full tw:rounded-md tw:bg-field tw:object-cover" />
+              <span className="tw:truncate tw:text-[12px] tw:text-fg-2">{img.name}</span>
             </button>
           ))}
-        </nav>
-        {error && <p className="image-picker__error">{error}</p>}
-        {tab === 'upload' ? (
-          <div className="image-picker__upload">
-            <button
-              type="button"
-              className="image-picker__drop"
-              onClick={() => fileRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                void upload(e.dataTransfer.files[0])
-              }}
-            >
-              Drag & drop or click to browse
-              <small>PNG, JPG, GIF or WebP</small>
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void upload(e.target.files?.[0])} />
-            <label>
-              <input type="radio" checked={storage === 'presentation'} onChange={() => setStorage('presentation')} /> This presentation
-            </label>
-            <label>
-              <input type="radio" checked={storage === 'library'} onChange={() => setStorage('library')} /> Library (all presentations)
-            </label>
-          </div>
-        ) : (
-          <div className="image-picker__grid">
-            {images.length === 0 && <p className="image-picker__empty">No images yet. Upload one, or paste or drop an image into the editor.</p>}
-            {images.map((img) => (
-              <button key={img.path} type="button" className={`image-picker__tile${selected === img.path ? ' is-selected' : ''}`} onClick={() => setSelected(img.path)} onDoubleClick={() => choose(img.path)}>
-                <img src={src(img.path)} alt="" />
-                <span>{img.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-        <footer className="image-picker__footer">
-          <button type="button" className="editor-button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="editor-button is-primary" disabled={!selected} onClick={() => choose(selected)}>
-            Select
-          </button>
-        </footer>
-      </div>
-    </div>
+        </div>
+      )}
+      <footer className="tw:flex tw:justify-end tw:gap-2 tw:border-t tw:border-line tw:px-4 tw:py-3">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="primary" disabled={!selected} onClick={() => choose(selected)}>
+          Select
+        </Button>
+      </footer>
+    </Sheet>
   )
 }

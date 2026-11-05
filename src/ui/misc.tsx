@@ -85,3 +85,12 @@ export function Tooltip({ content, children, side = 'bottom' }: { content: React
     </TooltipPrimitive.Provider>
   )
 }
+
+/** A full-page loading state on the app's ground, so a light theme does not flash dark. */
+export function LoadingScreen({ label = 'Loading' }: { label?: string }) {
+  return (
+    <div className="sc-app tw:grid tw:h-full tw:place-items-center tw:bg-ground" role="status" aria-label={label}>
+      <span aria-hidden className="tw:size-7 tw:animate-spin tw:rounded-full tw:border-[3px] tw:border-line tw:border-t-focus" />
+    </div>
+  )
+}
