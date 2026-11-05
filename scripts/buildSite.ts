@@ -35,6 +35,7 @@ export const PAGES: Page[] = [
   { file: 'docs/slidecraft-styleguide.md', slug: 'styleguide', title: 'Style guide', group: 'Framework' },
   { file: 'docs/ROADMAP.md', slug: 'roadmap', title: 'Roadmap', group: 'Framework' },
   { file: 'docs/plans/implementation-plan.md', slug: 'implementation-plan', title: 'Implementation plan', group: 'Framework' },
+  { file: 'docs/plans/ux-overhaul-plan.md', slug: 'ux-overhaul-plan', title: 'UX overhaul plan', group: 'Framework' },
 ]
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string; repository?: { url?: string } }

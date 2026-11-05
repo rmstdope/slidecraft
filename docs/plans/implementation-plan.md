@@ -1,5 +1,10 @@
 # Slidecraft implementation plan
 
+> **Overridden in part (2026-11-05):** [`ux-overhaul-plan.md`](ux-overhaul-plan.md) replaces this
+> plan's AI chat (Phase 10), the dropped skills directory and the "all content sources at once"
+> model with vaults, streaming CLI agents and three skills. Where the two disagree, the overhaul
+> plan wins.
+
 Slidecraft is a from-scratch implementation of the specification in
 `../presentation-tool.md` (kept outside this repo; referred to below as "the spec",
 with citations like *Part 1 §3.7*). The spec is authoritative for behaviour unless this
