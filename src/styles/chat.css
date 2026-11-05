@@ -358,3 +358,185 @@
   color: var(--dark-muted);
   font-size: 0.875rem;
 }
+
+/* Agent conversation (UX overhaul U2). */
+.agent-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.agent-chat__bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.agent-chat__threads {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--dark-text);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+.agent-chat__log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.agent-empty,
+.agent-setup {
+  margin: auto 0;
+  text-align: center;
+  color: var(--dark-muted);
+  line-height: 1.5;
+}
+.agent-empty h2 {
+  font: 600 1.25rem var(--font-display);
+  color: var(--dark-text);
+  margin-bottom: 0.5rem;
+}
+.agent-setup {
+  text-align: left;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 180, 0, 0.3);
+  background: rgba(245, 180, 0, 0.06);
+}
+.agent-setup strong {
+  color: var(--dark-text);
+}
+.agent-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.agent-turn__context {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.agent-text {
+  white-space: pre-wrap;
+  align-self: flex-start;
+  max-width: 100%;
+}
+.agent-tools {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.25rem;
+}
+.agent-tool {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+  min-width: 0;
+}
+.agent-tool__summary {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-tool__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dark-muted);
+}
+.agent-tool.is-running .agent-tool__dot {
+  background: var(--brand-yellow);
+  animation: pulse 1s ease-in-out infinite;
+}
+.agent-tool.is-ok .agent-tool__dot {
+  background: var(--accent-teal);
+}
+.agent-tool.is-failed .agent-tool__dot {
+  background: var(--brand-red);
+}
+.agent-tool__state {
+  color: var(--brand-red);
+}
+.agent-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+.agent-approval > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.agent-approval code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dark-text);
+  overflow-wrap: anywhere;
+}
+.agent-approval.is-open {
+  border-color: var(--brand-yellow);
+  background: rgba(245, 180, 0, 0.08);
+}
+.agent-approval.is-open strong {
+  color: var(--brand-yellow);
+}
+.agent-approval__detail {
+  font-size: 0.75rem;
+}
+.agent-approval__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.agent-working {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+.agent-done {
+  font-size: 0.75rem;
+  color: var(--dark-muted);
+}
+.agent-done.is-bad,
+.agent-error {
+  color: var(--brand-red);
+  font-size: 0.8125rem;
+}
+.chat-send.is-stop {
+  background: var(--brand-red);
+  color: #fff;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-tool.is-running .agent-tool__dot {
+    animation: none;
+  }
+}

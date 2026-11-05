@@ -142,6 +142,34 @@ on a vault URL, and `mcp.ts --vault Private` listing only that vault. Deviations
 **Done when:** a thread started in the app streams text and tool calls live, survives a server
 restart, can be stopped mid-turn, and a shell command waits for approval in the UI.
 
+**Status (2026-11-05): done.** `shared/agent.ts` is the contract; `server/lib/agent/` holds the
+`AgentBackend` seam, the Claude Code backend and the thread store and runner;
+`server/routes/agent.ts` is the API; `src/agent/` is the chat panel (for now on the chat page when
+Claude Code is the provider; Phase U3 moves it into the deck workspace). Checked in the browser
+against Claude Code 2.1.318: text and tool calls stream, the preview follows the edit, a shell
+command waits for Allow, Stop ends a turn waiting for approval (denying it), and after a server
+restart the thread reloads and the next turn still remembers the earlier ones. Deviations:
+
+- **Claude Agent SDK** (`@anthropic-ai/claude-agent-sdk` 0.3.310, pinned) instead of parsing
+  `--output-format stream-json` by hand. Approvals travel over the CLI's control protocol, which
+  the SDK implements (`canUseTool`). It runs the user's `claude` (`pathToClaudeCodeExecutable`), so
+  their login and settings apply.
+- **Permissions:** `permissionMode: 'acceptEdits'`, and only `TodoWrite` and the Slidecraft MCP
+  server are approved up front. File tools are deliberately not listed in `allowedTools`: a bare
+  name approves the tool everywhere, outside the vault too. Claude Code's `acceptEdits` also lets
+  shell commands through without asking when they only write files inside the working directory
+  (`echo … > deck/note.txt`). Their effect stays in the vault, so this was accepted. Any other command
+  asks.
+- **Tests** use a recorded real run (`tests/fixtures/agent/claude-edit-and-shell.jsonl`, paths
+  scrubbed) for the message mapping and a scripted backend for threads, not a fake CLI binary:
+  a fake would have to speak the SDK's control protocol.
+- One SSE stream for everything (`agent-event`, `agent-thread` on `/api/events`) rather than a
+  stream per thread; a reconnect reloads the open thread.
+- The release binary runs its own MCP server with `--mcp`, so the agent gets Slidecraft's tools
+  without the repository.
+- Turn latency includes the user's own Claude Code hooks: with a wrapper that adds Stop hooks, a
+  turn can stay "working" for a while after the last text.
+
 ### Phase U3 — Deck workspace
 
 - One page per deck: the chat panel (collapsible) and a right pane switching between Preview, Code

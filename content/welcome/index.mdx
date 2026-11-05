@@ -725,6 +725,22 @@ import docsShot from './images/docs.png'
   <Notes>All three get the same context: the components, the templates, the themes, the author guide and the folder's own AGENTS.md.</Notes>
 </Slide>
 
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Agent</Subtitle>
+  <Title>Edits in the vault, a question for the rest</Title>
+  <ComparisonTable
+    headers={["When the agent wants to", "What happens"]}
+    align={["left", "left"]}
+    rows={[
+      ["Read or edit a deck in the vault", "It goes ahead; the preview follows each edit"],
+      ["Run a shell command", "Allow or Deny appears in the conversation"],
+      ["Touch a file outside the vault", "Allow or Deny appears in the conversation"],
+      ["Wait for an answer when you press Stop", "The turn ends and the question is denied"],
+    ]}
+  />
+  <Notes>Claude Code streams into the chat: its text, each tool call and each changed file, as they happen. Conversations are kept in the vault's .slidecraft folder and pick up where they left off after a restart.</Notes>
+</Slide>
+
 <Slide scheme="dark" accent="teal" gradient="radial-accent">
   <Subtitle>Packaging</Subtitle>
   <Title>One file runs it all</Title>

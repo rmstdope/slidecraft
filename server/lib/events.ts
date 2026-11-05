@@ -1,5 +1,6 @@
 /** Server-Sent Events (Part 4 §6): one stream per browser tab, heartbeat every 5 s, no replay. */
 import { deckName, type DeckRef } from '../../shared/decks.ts'
+import type { AgentServerEvent, AgentThreadServerEvent } from '../../shared/agent.ts'
 import { corsHeaders } from './http.ts'
 
 export type ServerEvent =
@@ -8,6 +9,8 @@ export type ServerEvent =
   | { type: 'themes-updated'; source: string; timestamp: number }
   | { type: 'chat-tool-call'; conversationId: string; toolCall: unknown; timestamp: number }
   | { type: 'chat-iteration'; conversationId: string; iteration: number; maxIterations: number; timestamp: number }
+  | AgentServerEvent
+  | AgentThreadServerEvent
 
 type Client = ReadableStreamDefaultController<Uint8Array>
 

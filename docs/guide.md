@@ -240,8 +240,12 @@ Three providers:
 
 - **An OpenAI-compatible API:** set `AI_API_KEY` (and optionally `SLIDECRAFT_AI_URL` and
   `SLIDECRAFT_AI_MODEL`).
-- **Claude Code** and **GitHub Copilot CLI:** installed command-line agents; they edit the files
-  directly and keep their own sessions.
+- **Claude Code:** your installed `claude`, signed in. Its work streams into the chat as it
+  happens: text, each tool call, each changed file. It edits decks in the vault without asking; a
+  shell command or a file outside the vault shows **Allow** and **Deny** first. **Stop** ends the
+  turn. Each deck keeps its conversations, and they resume after a restart.
+- **GitHub Copilot CLI:** an installed command-line agent; it edits the files directly and keeps
+  its own sessions.
 
 If the assistant leaves a slide that does not compile, a repair editor opens with the error.
 [Getting started with agents](getting-started-with-agents.md) shows other ways to use a coding

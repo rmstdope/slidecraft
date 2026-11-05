@@ -112,8 +112,14 @@ left alone.
 | Claude Code | the `claude` CLI on your `PATH` (`SLIDECRAFT_CLAUDE_BIN` to override) |
 | GitHub Copilot CLI | the `copilot` CLI on your `PATH` (`SLIDECRAFT_COPILOT_BIN`; `"copilot": { "model", "effort" }` in the config) |
 
-Every change is compile-checked before it is written; a slide the model cannot fix opens in a
-repair editor.
+With **Claude Code** the conversation streams: its text, every tool call and every changed file
+appear as they happen, through the Claude Agent SDK driving your own `claude` (and its login). It
+works in the vault folder: reading and editing decks there goes ahead, while a shell command or a
+file outside the vault shows **Allow / Deny** in the chat. **Stop** ends a turn. Conversations are
+kept per deck in `<vault>/.slidecraft/conversations/` and resume after a restart.
+
+With the AI API every change is compile-checked before it is written; a slide the model cannot fix
+opens in a repair editor.
 
 ## Agents over MCP
 
