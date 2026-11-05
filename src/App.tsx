@@ -24,6 +24,7 @@ import {
   type ViewState,
 } from './router'
 import { startContentThemes } from './themes/contentThemes'
+import { LoadingScreen } from './ui'
 
 /** Monaco is large: the editor loads only when someone opens it. */
 const EditorPage = lazy(() => import('./editor/EditorPage'))
@@ -204,10 +205,10 @@ export function App() {
 
   switch (view.type) {
     case 'loading':
-      return <div className="spinner" role="status" aria-label="Loading" />
+      return <LoadingScreen />
     case 'settings':
       return (
-        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading settings" />}>
+        <Suspense fallback={<LoadingScreen label="Loading settings" />}>
           <SettingsPage vaults={content?.vaults ?? []} onChanged={reloadVaults} onOpenVault={(id) => go(homeUrl(id))} onExit={goHome} />
         </Suspense>
       )
@@ -234,13 +235,13 @@ export function App() {
     }
     case 'gallery':
       return (
-        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading gallery" />}>
+        <Suspense fallback={<LoadingScreen label="Loading gallery" />}>
           <GalleryPage vault={view.vault} onExit={goHome} />
         </Suspense>
       )
     case 'editor':
       return (
-        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading editor" />}>
+        <Suspense fallback={<LoadingScreen label="Loading editor" />}>
           <EditorPage key={`${view.deck.source}:${view.deck.path}`} deck={view.deck} defaultSource={assetSource} onExit={goHome} />
         </Suspense>
       )

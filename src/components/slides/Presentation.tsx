@@ -459,8 +459,8 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
           )}
         </AnimatePresence>
 
-        <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode={mode === 'miniature' ? 'Overview' : mode === 'dev' ? 'Dev' : 'Presentation'} commands={commands} />
-        <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode={mode} />
+        <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode={mode === 'miniature' ? 'Overview' : mode === 'dev' ? 'Dev' : 'Presentation'} commands={commands} theme="dark" />
+        <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode={mode} theme="dark" />
       </div>
     </MotionConfig>
   )

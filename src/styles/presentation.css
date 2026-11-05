@@ -224,114 +224,6 @@
   background: var(--dark-bg);
 }
 
-/* Command palette and shortcuts modal (tool UI). */
-.palette-scrim,
-.shortcuts-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  cursor: default;
-}
-
-.palette {
-  color: var(--dark-text); /* the workspace root may be light */
-  position: absolute;
-  top: 10vh;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 200px);
-  max-width: 1500px;
-  max-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #1a1a1a;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-}
-
-.palette__search {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.palette__icon {
-  color: var(--dark-muted);
-  font-size: 1.25rem;
-}
-
-.palette__search input {
-  flex: 1;
-  background: none;
-  border: 0;
-  outline: 0;
-  color: var(--dark-text);
-  font: inherit;
-  font-size: 1rem;
-}
-
-.palette__list {
-  overflow-y: auto;
-  padding: 0.5rem;
-}
-
-.palette__group {
-  padding: 0.5rem 0.75rem 0.25rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.palette__row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.palette__row.is-selected {
-  background: rgba(245, 180, 0, 0.12);
-}
-
-.palette__row.is-selected .palette__row-name {
-  color: var(--brand-yellow);
-}
-
-.palette__row-name {
-  white-space: nowrap;
-}
-
-.palette__row-description {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--dark-muted);
-  font-size: 0.8125rem;
-}
-
-.palette__row-keys {
-  margin-left: auto;
-  display: flex;
-  gap: 4px;
-}
-
-.palette__empty {
-  padding: 1rem;
-  color: var(--dark-muted);
-}
-
 /* In the lowest layer so the redesigned chrome can style its own kbd (ui-redesign-plan §3). */
 @layer sc-reset {
   kbd {
@@ -345,90 +237,6 @@
     text-align: center;
     color: var(--dark-text);
   }
-}
-
-.shortcuts {
-  color: var(--dark-text); /* the workspace root may be light */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 500px;
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #1a1a1a;
-  overflow: hidden;
-}
-
-.shortcuts__header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.shortcuts__header h2 {
-  font: 600 1.25rem var(--font-display);
-  color: var(--brand-yellow);
-}
-
-.shortcuts__header span {
-  font-size: 0.8125rem;
-  color: var(--dark-muted);
-}
-
-.shortcuts__body {
-  overflow-y: auto;
-  padding: 0.5rem 1.25rem 1.25rem;
-}
-
-.shortcuts__body h3 {
-  margin: 1rem 0 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.shortcuts__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.3rem 0;
-  font-size: 0.875rem;
-}
-
-.shortcuts__keys {
-  display: flex;
-  gap: 4px;
-}
-
-/* Preview error box used by thumbnails and previews. */
-.preview-error {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 48px;
-  background: rgba(224, 69, 43, 0.1);
-  border: 2px solid rgba(224, 69, 43, 0.3);
-  color: var(--brand-red);
-  font: 32px/1.4 var(--font-body);
-}
-
-.preview-error pre {
-  white-space: pre-wrap;
-  font-size: 28px;
-  color: var(--dark-text);
 }
 
 /* App chrome around a deck. */
@@ -839,6 +647,7 @@
   .reader-slide__notes {
     max-height: none;
   }
+
 }
 @media print {
   html,
@@ -873,4 +682,5 @@
     max-height: none;
     overflow: visible;
   }
+
 }
