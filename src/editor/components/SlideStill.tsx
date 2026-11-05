@@ -1,6 +1,22 @@
+import type { ReactNode } from 'react'
 import { SlideThumbnail } from '../../components/editor/SlideThumbnail'
 import { ThemeScope } from '../../themes/ThemeContext'
 import { useMdxCompiler, type CompileTarget } from '../compileSlide'
+
+/** Fills a positioned slide frame with a short message (loading, nothing selected). */
+export function StillPlaceholder({ children }: { children: ReactNode }) {
+  return <div className="tw:absolute tw:inset-0 tw:grid tw:place-items-center tw:p-2 tw:text-center tw:text-[12px] tw:text-muted">{children}</div>
+}
+
+/** A slide that does not compile: the compiler's message, scrollable. */
+export function CompileError({ error }: { error: string }) {
+  return (
+    <div role="alert" className="tw:absolute tw:inset-0 tw:flex tw:flex-col tw:gap-2 tw:overflow-auto tw:bg-panel tw:p-4 tw:text-removed">
+      <strong className="tw:font-semibold">Compilation error</strong>
+      <pre className="tw:m-0 tw:font-mono tw:text-[12px] tw:whitespace-pre-wrap tw:text-fg-2">{error}</pre>
+    </div>
+  )
+}
 
 export interface SlideStillProps {
   /** MDX of one slide (or any snippet wrapped in a Slide); null to compile nothing yet. */
@@ -19,13 +35,10 @@ export function SlideStill({ source, target, theme, scale = 'fit', showBorder, s
   const { Component, error, isCompiling } = useMdxCompiler(source, target)
   if (showErrors && error) {
     return (
-      <div className="editor-compile-error" role="alert">
-        <strong>Compilation error</strong>
-        <pre>{error}</pre>
-      </div>
+      <CompileError error={error} />
     )
   }
-  if (!Component) return <div className="editor-still__placeholder">{isCompiling || source === null ? 'Loading…' : (error ?? '')}</div>
+  if (!Component) return <StillPlaceholder>{isCompiling || source === null ? 'Loading…' : (error ?? '')}</StillPlaceholder>
   return (
     <ThemeScope theme={theme}>
       <SlideThumbnail scale={scale} showBorder={showBorder}>

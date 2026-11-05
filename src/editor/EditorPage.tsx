@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowLeft, CircleHelp, PanelRightOpen, Play, Sparkles, WandSparkles } from 'lucide-react'
 import { deckKey, deckName, type DeckRef } from '@shared/decks.ts'
 import { importBlock } from '@shared/deckModel.ts'
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal'
@@ -24,6 +25,8 @@ import { SlideSidebar } from './components/SlideSidebar'
 import { getCursorContext, type CursorContext } from './cursorContext'
 import { deleteElementAt, formatMdx, setPropAt } from './sourceEdits'
 import { usePresentation } from './usePresentation'
+import { StillPlaceholder } from './components/SlideStill'
+import { Badge, Button, cn, Field, NativeSelect, Popover, SegmentedControl } from '../ui'
 
 export interface EditorPageProps {
   deck: DeckRef
@@ -35,10 +38,10 @@ const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 /** What the work area shows: the slide, the code, or both side by side. */
 export type WorkspaceView = 'preview' | 'code' | 'split'
-const VIEWS: { id: WorkspaceView; label: string }[] = [
-  { id: 'preview', label: 'Preview' },
-  { id: 'code', label: 'Code' },
-  { id: 'split', label: 'Split' },
+const VIEWS: { value: WorkspaceView; label: string }[] = [
+  { value: 'preview', label: 'Preview' },
+  { value: 'split', label: 'Split' },
+  { value: 'code', label: 'Code' },
 ]
 const VIEW_KEY = 'slidecraft-workspace-view'
 const CHAT_KEY = 'slidecraft-workspace-chat'
@@ -73,7 +76,9 @@ const inField = (el: EventTarget | null) =>
 export default function EditorPage({ deck, defaultSource, onExit }: EditorPageProps) {
   const { state, actions, selected, selectedIndex, deckTheme, deckLook } = usePresentation(deck)
   const editorRef = useRef<SlideEditorHandle>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const railRef = useRef<HTMLDivElement>(null)
+  const workRef = useRef<HTMLDivElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
   const navigatingAway = useRef(false)
   const [cursorOffset, setCursorOffset] = useState(0)
   const [selection, setSelection] = useState<SelectionInfo | null>(null)
@@ -248,13 +253,19 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
 
   // Resizable rail and editor/preview split.
   useEffect(() => {
+    // Each handle sizes the pane beside it, measured from that pane's own edge.
     const onMove = (e: MouseEvent) => {
-      const box = containerRef.current?.getBoundingClientRect()
-      if (!resizing.current || !box) return
-      const chat = chatShown ? chatWidth + 6 : 0
-      if (resizing.current === 'chat') setChatWidth(clamp(e.clientX - box.left, 300, 640))
-      else if (resizing.current === 'sidebar') setSidebarWidth(clamp(e.clientX - box.left - chat, 120, 400))
-      else setEditorRatio(clamp((e.clientX - box.left - chat - sidebarWidth - 16) / (box.width - chat - sidebarWidth - 32 - (helpOpen ? 320 : 0)), 0.2, 0.8))
+      if (!resizing.current) return
+      if (resizing.current === 'chat') {
+        const box = chatRef.current?.getBoundingClientRect()
+        if (box) setChatWidth(clamp(box.right - e.clientX, 300, 640))
+      } else if (resizing.current === 'sidebar') {
+        const box = railRef.current?.getBoundingClientRect()
+        if (box) setSidebarWidth(clamp(e.clientX - box.left, 120, 400))
+      } else {
+        const box = workRef.current?.getBoundingClientRect()
+        if (box && box.width > 0) setEditorRatio(clamp((e.clientX - box.left) / box.width, 0.2, 0.8))
+      }
     }
     const onUp = () => {
       resizing.current = null
@@ -267,7 +278,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [sidebarWidth, helpOpen, chatWidth, chatShown])
+  }, [])
   const startResize = (which: 'sidebar' | 'editor' | 'chat') => () => {
     resizing.current = which
     document.body.style.cursor = 'col-resize'
@@ -279,223 +290,267 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   if (state.isLoading && !state.model && !state.raw) return <div className="spinner" role="status" aria-label="Loading" />
   if (!state.model && !state.raw) {
     return (
-      <div className="placeholder">
-        <h1>Could not open {deckName(deck)}</h1>
-        <pre className="error-text">{state.error}</pre>
-        <button type="button" className="pill-button" onClick={onExit}>
-          Go back
-        </button>
+      <div className="sc-app tw:flex tw:h-full tw:flex-col tw:items-center tw:justify-center tw:gap-4 tw:bg-ground tw:p-8 tw:text-center">
+        <h1 className="tw:font-display tw:text-[32px] tw:font-semibold">Could not open {deckName(deck)}</h1>
+        <pre className="tw:max-w-[640px] tw:font-mono tw:text-[13px] tw:whitespace-pre-wrap tw:text-removed">{state.error}</pre>
+        <Button onClick={onExit}>Go back</Button>
       </div>
     )
   }
+
+  const status = deckReadOnly ? 'Read-only' : state.error ? 'Save failed' : state.isSaving ? 'Saving…' : state.isDirty ? 'Unsaved changes' : 'Saved'
 
   return (
     <DeckContext.Provider value={deckContext}>
       {/* Every preview in the editor renders single slides, so the deck's defaults come from here. */}
       <DeckLookContext.Provider value={deckLook}>
-        <div className="editor">
-          <header className="editor-toolbar">
-            <button type="button" className="editor-button" onClick={exit}>
-              ← Exit
-            </button>
-            <span className="editor-toolbar__name">{deckName(deck)}</span>
-            {state.isDirty && <span className="editor-chip is-accent">Unsaved</span>}
-            {deckReadOnly && <span className="editor-chip">Read-only</span>}
-            {agentRunning && <span className="editor-chip is-accent">Agent is editing</span>}
-            {state.error && <span className="editor-chip is-danger" title={state.error}>Save failed</span>}
-            <span className="editor-toolbar__spacer" />
-            {state.model && (
-              <label className="editor-toolbar__theme">
-                Theme
-                <select value={deckTheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckTheme(e.target.value)}>
-                  <option value="">Default (slidecraft)</option>
-                  {themes
-                    .filter((t) => t.id !== 'slidecraft')
-                    .map((t) => (
-                      <option key={`${t.source}:${t.id}`} value={t.id}>
-                        {t.name}
-                        {t.source !== 'builtin' ? ' (this folder)' : ''}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            )}
-            {state.model && (
-              <label className="editor-toolbar__theme" title="For slides that do not set their own scheme">
-                Scheme
-                <select value={deckLook.scheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('scheme', e.target.value)}>
-                  <option value="">Theme default ({theme.spec.defaults?.scheme ?? 'dark'})</option>
-                  {(theme.spec.constraints?.schemes ?? ['dark', 'light']).map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {state.model && (
-              <label className="editor-toolbar__theme" title="For slides that do not set their own accent">
-                Accent
-                <select value={deckLook.accent ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('accent', e.target.value)}>
-                  <option value="">Theme default ({theme.spec.defaults?.accent ?? 'yellow'})</option>
-                  {SLIDE_ACCENTS.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <button type="button" className="editor-button" onClick={() => void present()}>
-              ▶ Present
-            </button>
-            <div className="workspace-views" role="radiogroup" aria-label="Show">
-              {VIEWS.map((v) => (
-                <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className={view === v.id ? 'is-active' : ''} onClick={() => chooseView(v.id)}>
-                  {v.label}
-                </button>
-              ))}
+        <div className="sc-app tw:flex tw:h-full tw:flex-col tw:bg-ground">
+          <header className="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5 tw:px-3.5 tw:py-2.5">
+            <Button size="icon" onClick={exit} aria-label="Back to presentations" title="Back to presentations">
+              <ArrowLeft aria-hidden />
+            </Button>
+            <div className="tw:flex tw:min-w-0 tw:flex-col">
+              <span className="tw:truncate tw:text-[15px] tw:font-semibold">{deckName(deck)}</span>
+              <span className="tw:truncate tw:text-[12px] tw:text-muted">
+                {deck.source} / {deck.path} ·{' '}
+                <span className={cn(state.error ? 'tw:text-removed' : state.isDirty ? 'tw:text-on-accent-tint' : !deckReadOnly && 'tw:text-agent')} title={state.error ?? undefined}>
+                  {status}
+                </span>
+              </span>
             </div>
-            {!readOnly && selected && (
-              <button type="button" className="editor-button" onClick={() => applyText(formatMdx(text))}>
+            {agentRunning && (
+              <Badge tone="agent" role="status">
+                <span className="tw:size-1.5 tw:animate-pulse tw:rounded-full tw:bg-agent" aria-hidden />
+                Agent is editing
+              </Badge>
+            )}
+            <span className="tw:flex-1" />
+            <SegmentedControl aria-label="Show" value={view} onValueChange={chooseView} items={VIEWS} />
+            {state.model && (
+              <Popover
+                trigger={
+                  <Button title="The deck's theme, scheme and accent">
+                    <span className="tw:max-w-40 tw:truncate">
+                      {(deckTheme && themes.find((t) => t.id === deckTheme)?.name) || 'Slidecraft'} · {deckLook.scheme ?? theme.spec.defaults?.scheme ?? 'dark'}
+                    </span>
+                  </Button>
+                }
+              >
+                <div className="tw:flex tw:flex-col tw:gap-3.5">
+                  <Field label="Theme">
+                    <NativeSelect value={deckTheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckTheme(e.target.value)}>
+                      <option value="">Default (slidecraft)</option>
+                      {themes
+                        .filter((t) => t.id !== 'slidecraft')
+                        .map((t) => (
+                          <option key={`${t.source}:${t.id}`} value={t.id}>
+                            {t.name}
+                            {t.source !== 'builtin' ? ' (this folder)' : ''}
+                          </option>
+                        ))}
+                    </NativeSelect>
+                  </Field>
+                  <Field label="Scheme" hint="For slides that do not set their own">
+                    <NativeSelect value={deckLook.scheme ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('scheme', e.target.value)}>
+                      <option value="">Theme default ({theme.spec.defaults?.scheme ?? 'dark'})</option>
+                      {(theme.spec.constraints?.schemes ?? ['dark', 'light']).map((sch) => (
+                        <option key={sch} value={sch}>
+                          {sch}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+                  <Field label="Accent" hint="For slides that do not set their own">
+                    <NativeSelect value={deckLook.accent ?? ''} disabled={readOnly} onChange={(e) => actions.setDeckDefault('accent', e.target.value)}>
+                      <option value="">Theme default ({theme.spec.defaults?.accent ?? 'yellow'})</option>
+                      {SLIDE_ACCENTS.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </Field>
+                </div>
+              </Popover>
+            )}
+            {!readOnly && selected && view !== 'preview' && (
+              <Button variant="ghost" onClick={() => applyText(formatMdx(text))} title="Format this slide's MDX">
+                <WandSparkles aria-hidden />
                 Format
-              </button>
+              </Button>
             )}
-            <button type="button" className={`editor-button${helpOpen ? ' is-active' : ''}`} onClick={() => setHelpOpen((h) => !h)}>
-              Help
-            </button>
+            <Button size="icon" variant={helpOpen ? 'quiet' : 'ghost'} aria-pressed={helpOpen} onClick={() => setHelpOpen((h) => !h)} aria-label="Help" title="Component reference and shortcuts">
+              <CircleHelp aria-hidden />
+            </Button>
             {!deckReadOnly && (
-              <button type="button" className="editor-button is-primary" disabled={!state.isDirty || state.isSaving || agentRunning} onClick={() => void actions.save()}>
-                {state.isSaving ? 'Saving…' : 'Save (⌘S)'}
-              </button>
+              <Button disabled={!state.isDirty || state.isSaving || agentRunning} onClick={() => void actions.save()} title="Save (⌘S)">
+                {state.isSaving ? 'Saving…' : 'Save'}
+              </Button>
             )}
+            <Button variant="primary" onClick={() => void present()} title="Present from this slide (⌘⇧Enter)">
+              <Play className="tw:size-3! tw:fill-current" aria-hidden />
+              Present
+            </Button>
           </header>
 
-          <div className="workspace-body" ref={containerRef}>
-          {chatShown ? (
-            <>
-              {/* The conversation is already on the new chrome; the workspace stays dark until it moves too (ui-redesign-plan R4). */}
-              <div className="workspace-chat sc-app" data-sc-theme="dark" style={{ width: chatWidth }}>
-                <AgentChat
-                  vault={deck.source}
-                  deck={deck}
-                  context={{ slide: selectedIndex >= 0 ? selectedIndex : undefined, selection: selection?.text }}
-                  beforeSend={beforeSend}
-                  onCollapse={() => toggleChat(false)}
-                  onRunningChange={setAgentRunning}
-                />
-              </div>
-              <div className="editor-handle" onMouseDown={startResize('chat')} />
-            </>
-          ) : (
-            !deckReadOnly && (
-              <button type="button" className="workspace-chat-tab" onClick={() => toggleChat(true)} aria-label="Show the conversation">
-                Agent ⟩
-              </button>
-            )
-          )}
-          {state.raw ? (
-            <div className="editor-raw">
-              <div className="editor-raw__banner" role="alert">
-                <strong>This file does not parse</strong> ({state.raw.error}). Edit it as one text; switch back to slides once it parses.
-                <button type="button" className="editor-button" onClick={actions.tryStructured}>
-                  Back to slides
-                </button>
-              </div>
-              <div className="editor-raw__code">
-                <SlideEditor
-                  path={`${deckKey(deck)}/index.mdx`}
-                  value={state.raw.text}
-                  readOnly={readOnly}
-                  service={() => service}
-                  onChange={actions.updateRaw}
-                  onSave={() => void actions.save()}
-                  onCursor={() => {}}
-                  onSelection={() => {}}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="editor-body">
-              <div style={{ width: sidebarWidth, flex: '0 0 auto', display: 'flex' }}>
-                <SlideSidebar
-                  slides={state.model!.slides}
-                  selectedId={state.selectedId}
-                  readOnly={readOnly}
-                  target={target}
-                  theme={deckTheme}
-                  onSelect={actions.selectSlide}
-                  onDelete={actions.deleteSlide}
-                  onMove={actions.moveSlide}
-                  onToggleHidden={actions.toggleHidden}
-                  onAddSlide={() => setPalette('add-slide')}
-                />
-              </div>
-              <div className="editor-handle" onMouseDown={startResize('sidebar')} />
-              <div
-                className="editor-work"
-                onDragOver={(e) => {
-                  if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/'))) {
+          <div className="tw:flex tw:min-h-0 tw:flex-1 tw:px-2.5 tw:pb-2.5">
+            {state.raw ? (
+              <Pane className="tw:flex-1">
+                <div role="alert" className="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:border-b tw:border-line tw:bg-accent-tint tw:px-4 tw:py-2.5 tw:text-on-accent-tint">
+                  <span className="tw:flex-1">
+                    <strong className="tw:font-semibold">This file does not parse</strong> ({state.raw.error}). Edit it as one text; switch back to slides once it parses.
+                  </span>
+                  <Button size="sm" onClick={actions.tryStructured}>
+                    Back to slides
+                  </Button>
+                </div>
+                <div className="tw:relative tw:min-h-0 tw:flex-1">
+                  <SlideEditor
+                    path={`${deckKey(deck)}/index.mdx`}
+                    value={state.raw.text}
+                    readOnly={readOnly}
+                    service={() => service}
+                    onChange={actions.updateRaw}
+                    onSave={() => void actions.save()}
+                    onCursor={() => {}}
+                    onSelection={() => {}}
+                  />
+                </div>
+              </Pane>
+            ) : (
+              <>
+                <div ref={railRef} className="tw:flex tw:shrink-0" style={{ width: sidebarWidth }}>
+                  <SlideSidebar
+                    slides={state.model!.slides}
+                    selectedId={state.selectedId}
+                    readOnly={readOnly}
+                    target={target}
+                    theme={deckTheme}
+                    onSelect={actions.selectSlide}
+                    onDelete={actions.deleteSlide}
+                    onMove={actions.moveSlide}
+                    onToggleHidden={actions.toggleHidden}
+                    onAddSlide={() => setPalette('add-slide')}
+                  />
+                </div>
+                <Handle label="Resize the slide list" onStart={startResize('sidebar')} />
+                <Pane
+                  className="tw:min-w-0 tw:flex-1"
+                  innerRef={workRef}
+                  onDragOver={(e) => {
+                    if ([...e.dataTransfer.items].some((i) => i.type.startsWith('image/'))) {
+                      e.preventDefault()
+                      setDragging(true)
+                    }
+                  }}
+                  onDragLeave={(e) => {
+                    if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setDragging(false)
+                  }}
+                  onDrop={(e) => {
+                    const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'))
+                    setDragging(false)
+                    if (!file) return
                     e.preventDefault()
-                    setDragging(true)
-                  }
-                }}
-                onDragLeave={(e) => {
-                  if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setDragging(false)
-                }}
-                onDrop={(e) => {
-                  const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'))
-                  setDragging(false)
-                  if (!file) return
-                  e.preventDefault()
-                  void insertImage(file)
-                }}
-              >
-                {view !== 'preview' && (
-                <div className="editor-code" style={{ flex: view === 'split' ? editorRatio : 1 }}>
-                  {!readOnly && selected && (
-                    <ContextualToolbar
-                      context={context}
-                      frames={frames}
-                      onSlideProp={(prop, value) => applyText(setPropAt(text, 0, prop, value))}
-                      onComponentProp={(prop, value) => context.type === 'component' && applyText(setPropAt(text, context.tagStart, prop, value))}
-                      onInsert={(snippet) => editorRef.current?.insertAtCursor(snippet)}
-                      onOpenPalette={() => setPalette('insert')}
-                      onDeleteComponent={() => context.type === 'component' && applyText(deleteElementAt(text, context.tagStart))}
-                      onPickImage={setImageProp}
+                    void insertImage(file)
+                  }}
+                  row
+                >
+                  {view !== 'preview' && (
+                    <div className="tw:flex tw:min-w-0 tw:flex-col tw:bg-panel" style={{ flex: view === 'split' ? editorRatio : 1 }}>
+                      {!readOnly && selected && (
+                        <ContextualToolbar
+                          context={context}
+                          frames={frames}
+                          onSlideProp={(prop, value) => applyText(setPropAt(text, 0, prop, value))}
+                          onComponentProp={(prop, value) => context.type === 'component' && applyText(setPropAt(text, context.tagStart, prop, value))}
+                          onInsert={(snippet) => editorRef.current?.insertAtCursor(snippet)}
+                          onOpenPalette={() => setPalette('insert')}
+                          onDeleteComponent={() => context.type === 'component' && applyText(deleteElementAt(text, context.tagStart))}
+                          onPickImage={setImageProp}
+                        />
+                      )}
+                      <div className="tw:relative tw:min-h-0 tw:flex-1">
+                        {selected ? (
+                          <SlideEditor
+                            ref={editorRef}
+                            path={`${deckKey(deck)}/${selected.id}.mdx`}
+                            value={selected.text}
+                            readOnly={readOnly}
+                            service={() => service}
+                            onChange={actions.updateSelectedSlide}
+                            onSave={() => void actions.save()}
+                            onCursor={setCursorOffset}
+                            onSelection={setSelection}
+                          />
+                        ) : (
+                          <StillPlaceholder>Select a slide to edit</StillPlaceholder>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {view === 'split' && (
+                    <button
+                      type="button"
+                      aria-label="Resize the code and the preview"
+                      onMouseDown={startResize('editor')}
+                      className="tw:w-1 tw:shrink-0 tw:cursor-col-resize tw:bg-line tw:transition-colors tw:hover:bg-focus"
                     />
                   )}
-                  <div className="editor-code__monaco">
-                    {selected ? (
-                      <SlideEditor
-                        ref={editorRef}
-                        path={`${deckKey(deck)}/${selected.id}.mdx`}
-                        value={selected.text}
-                        readOnly={readOnly}
-                        service={() => service}
-                        onChange={actions.updateSelectedSlide}
-                        onSave={() => void actions.save()}
-                        onCursor={setCursorOffset}
-                        onSelection={setSelection}
-                      />
-                    ) : (
-                      <div className="editor-still__placeholder">Select a slide to edit</div>
-                    )}
-                  </div>
+                  {view !== 'code' && (
+                    <div
+                      className="tw:relative tw:min-w-0 tw:bg-canvas tw:[background-image:radial-gradient(var(--sc-canvas-dot)_1px,transparent_1px)] tw:[background-size:18px_18px]"
+                      style={{ flex: view === 'split' ? 1 - editorRatio : 1 }}
+                    >
+                      {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <StillPlaceholder>No slide selected</StillPlaceholder>}
+                    </div>
+                  )}
+                  {(dragging || uploading) && (
+                    <div className="tw:pointer-events-none tw:absolute tw:inset-2 tw:z-10 tw:grid tw:place-items-center tw:rounded-xl tw:bg-accent-tint/80 tw:font-semibold tw:text-on-accent-tint tw:shadow-[inset_0_0_0_2px_var(--sc-focus)]">
+                      {uploading ? 'Uploading image…' : 'Drop the image here'}
+                    </div>
+                  )}
+                </Pane>
+                {helpOpen && (
+                  <>
+                    <span className="tw:w-2.5 tw:shrink-0" />
+                    <HelpPanel />
+                  </>
+                )}
+              </>
+            )}
+
+            {chatShown ? (
+              <>
+                <Handle label="Resize the conversation" onStart={startResize('chat')} />
+                <div ref={chatRef} className="tw:flex tw:shrink-0 tw:flex-col tw:overflow-hidden tw:rounded-[14px] tw:bg-panel tw:shadow-hairline" style={{ width: chatWidth }}>
+                  <AgentChat
+                    vault={deck.source}
+                    deck={deck}
+                    context={{ slide: selectedIndex >= 0 ? selectedIndex : undefined, selection: selection?.text }}
+                    beforeSend={beforeSend}
+                    onCollapse={() => toggleChat(false)}
+                    onRunningChange={setAgentRunning}
+                  />
                 </div>
-                )}
-                {view === 'split' && <div className="editor-handle" onMouseDown={startResize('editor')} />}
-                {view !== 'code' && (
-                  <div className="editor-preview" style={{ flex: view === 'split' ? 1 - editorRatio : 1 }}>
-                    {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <div className="editor-still__placeholder">No slide selected</div>}
-                  </div>
-                )}
-                {dragging && <div className="editor-overlay is-drop">Drop image here</div>}
-                {uploading && <div className="editor-overlay">Uploading image…</div>}
-              </div>
-              {helpOpen && <HelpPanel />}
-            </div>
-          )}
+              </>
+            ) : (
+              !deckReadOnly && (
+                <>
+                  <span className="tw:w-2.5 tw:shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => toggleChat(true)}
+                    aria-label="Show the conversation"
+                    title="Show the conversation"
+                    className="tw:flex tw:w-11 tw:shrink-0 tw:flex-col tw:items-center tw:gap-3 tw:rounded-[14px] tw:bg-panel tw:py-3.5 tw:text-fg-2 tw:shadow-hairline tw:hover:text-fg tw:[&_svg]:size-4"
+                  >
+                    <PanelRightOpen aria-hidden />
+                    <Sparkles aria-hidden className="tw:text-agent" />
+                    <span className="tw:text-[12px] tw:font-medium tw:[writing-mode:vertical-rl]">Agent</span>
+                  </button>
+                </>
+              )
+            )}
           </div>
 
           {selection && !readOnly && (
@@ -526,5 +581,34 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
         </div>
       </DeckLookContext.Provider>
     </DeckContext.Provider>
+  )
+}
+
+/** A rounded panel of the workspace (the code and preview, the raw editor). */
+function Pane({
+  className,
+  innerRef,
+  row,
+  children,
+  ...events
+}: {
+  className?: string
+  innerRef?: React.Ref<HTMLDivElement>
+  row?: boolean
+  children: ReactNode
+} & Pick<React.HTMLAttributes<HTMLDivElement>, 'onDragOver' | 'onDragLeave' | 'onDrop'>) {
+  return (
+    <div ref={innerRef} className={cn('tw:relative tw:flex tw:overflow-hidden tw:rounded-[14px] tw:bg-panel tw:shadow-hairline', row ? 'tw:flex-row' : 'tw:flex-col', className)} {...events}>
+      {children}
+    </div>
+  )
+}
+
+/** The gap between two panes, which drags to resize the one beside it. */
+function Handle({ label, onStart }: { label: string; onStart(): void }) {
+  return (
+    <button type="button" aria-label={label} onMouseDown={onStart} className="tw:group tw:flex tw:w-2.5 tw:shrink-0 tw:cursor-col-resize tw:justify-center">
+      <span className="tw:my-6 tw:w-0.5 tw:rounded-full tw:bg-transparent tw:transition-colors tw:group-hover:bg-focus" />
+    </button>
   )
 }

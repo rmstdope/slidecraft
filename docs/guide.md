@@ -94,15 +94,19 @@ separators between them can be dragged:
   inline errors and hover help. The contextual toolbar above it edits the props of whatever
   the cursor is on (accent, size, toggles, images). Select text and click an accent dot to wrap
   it in `<Accent>`.
-- **Preview** (right): the selected slide as it will look, with every step shown.
+- **Preview** (right): the selected slide as it will look, with every step shown, on a dotted
+  canvas.
 
 Saving (`⌘S`) writes the whole file and adds imports for new components. Unsaved changes are
 marked; leaving asks first. When the file changes on disk (another editor or an agent), the
 editor reloads it unless you have unsaved changes.
 
-**Help** opens a panel listing every component with its props and an example. **Present**
-(`⌘⇧Enter`) presents from the selected slide. **Preview**, **Code** and **Split** choose what
-the work area shows; the agent's conversation sits on the left (hide it with **⟨**).
+**Help** (the question mark) opens a panel listing every component with its props and an
+example. **Present** (`⌘⇧Enter`) presents from the selected slide. **Preview**, **Split** and
+**Code** choose what the work area shows. The button showing the theme and scheme opens the
+deck's theme, scheme and accent. The agent's conversation sits on the right (hide it with the
+panel button in its bar; the **Agent** tab brings it back). The code editor follows the app's
+light or dark theme.
 
 If a deck cannot be split into slides (a syntax error between slides), the editor opens the
 whole file in one code editor until it parses again.

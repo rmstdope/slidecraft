@@ -3,7 +3,8 @@ import Editor, { type OnMount } from '@monaco-editor/react'
 import type * as Monaco from 'monaco-editor-esm/editor/editor.api.js'
 import type { LanguageService } from '../../language-service/service'
 import { LANGUAGE_ID, registerMdxLanguageFeatures, setupDiagnostics } from '../../language-service-monaco'
-import { monaco } from '../monacoSetup'
+import { useAppearance } from '../../appearance/useAppearance'
+import { MONACO_THEMES, monaco } from '../monacoSetup'
 
 export interface SelectionInfo {
   text: string
@@ -45,6 +46,7 @@ export function minimalEdit(a: string, b: string): { start: number; end: number;
 }
 
 export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(function SlideEditor(props, ref) {
+  const { theme: appTheme } = useAppearance()
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
   const callbacks = useRef(props)
   callbacks.current = props
@@ -112,6 +114,8 @@ export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(funct
       cursor.dispose()
       selection.dispose()
     }
+    // Geist Mono may still be loading; measure again once it is, or the cursor drifts.
+    void document.fonts?.ready.then(() => monaco.editor.remeasureFonts())
     editor.focus()
     callbacks.current.onCursor(editor.getModel()?.getOffsetAt(editor.getPosition() ?? { lineNumber: 1, column: 1 }) ?? 0)
   }
@@ -121,13 +125,13 @@ export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(funct
       path={props.path}
       value={props.value}
       language={LANGUAGE_ID}
-      theme="vs-dark"
+      theme={MONACO_THEMES[appTheme]}
       onChange={(value) => props.onChange(value ?? '')}
       onMount={onMount}
       options={{
         readOnly: props.readOnly,
         fontSize: 14,
-        fontFamily: "ui-monospace, 'JetBrains Mono', Menlo, monospace",
+        fontFamily: "'Geist Mono', ui-monospace, Menlo, monospace",
         minimap: { enabled: false },
         lineNumbers: 'on',
         wordWrap: 'on',

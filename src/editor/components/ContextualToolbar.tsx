@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { Trash2 } from 'lucide-react'
 import { getAllComponents, getComponentById, getToolbarConfig, type ToolbarPropEditor } from '../../components/slides/defineComponent'
+import { cn, Kbd, NativeSelect } from '../../ui'
+import type { CursorContext } from '../cursorContext'
 
 const getComponentByName = (name: string) => getAllComponents().find((c) => c.registry.name === name)
-import type { CursorContext } from '../cursorContext'
+
+/** The pieces of the bar, so each control reads the same. */
+const fieldClass = 'tw:flex tw:items-center tw:gap-1.5 tw:text-[12px] tw:text-muted'
+const buttonClass =
+  'tw:inline-flex tw:h-7 tw:items-center tw:gap-1.5 tw:rounded-md tw:px-2 tw:text-[12px] tw:font-medium tw:whitespace-nowrap tw:text-fg-2 tw:hover:bg-field tw:hover:text-fg'
+const labelClass = 'tw:mr-1 tw:rounded-md tw:bg-accent-tint tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-semibold tw:tracking-wide tw:text-on-accent-tint tw:uppercase'
 
 const QUICK_INSERT = [
   ['title', 'T', 'Title'],
@@ -44,7 +52,7 @@ function NumberInput({ value, editor, onCommit }: { value: string; editor: Toolb
   return (
     <input
       type="number"
-      className="ctx-input"
+      className="tw:h-7 tw:w-16 tw:rounded-md tw:border-0 tw:bg-field tw:px-2 tw:text-[12px] tw:text-fg tw:outline-none tw:focus-visible:shadow-[0_0_0_2px_var(--sc-focus)]"
       value={local}
       min={editor.min}
       max={editor.max}
@@ -63,29 +71,29 @@ function NumberInput({ value, editor, onCommit }: { value: string; editor: Toolb
 export function ContextualToolbar(props: ContextualToolbarProps) {
   const { context } = props
   return (
-    <div className="ctx-toolbar">
+    <div className="tw:flex tw:h-11 tw:shrink-0 tw:items-center tw:overflow-x-auto tw:overflow-y-hidden tw:border-b tw:border-line tw:px-3">
       <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={context.type} className="ctx-toolbar__inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+        <motion.div key={context.type} className="tw:flex tw:min-w-full tw:items-center tw:gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
           {context.type === 'slide' && (
             <>
-              <span className="ctx-label">Slide</span>
+              <span className={labelClass}>Slide</span>
               {SLIDE_SELECTS.map(({ prop, label, options }) => (
-                <label key={prop} className="ctx-field">
+                <label key={prop} className={fieldClass}>
                   <span>{label}</span>
-                  <select value={context.props[prop] ?? options[0]} onChange={(e) => props.onSlideProp(prop, e.target.value)}>
+                  <NativeSelect size="sm" value={context.props[prop] ?? options[0]} onChange={(e) => props.onSlideProp(prop, e.target.value)}>
                     {options.map((o) => (
                       <option key={o} value={o}>
                         {title(o)}
                       </option>
                     ))}
-                  </select>
-                  {prop === 'accent' && <span className={`ctx-swatch accent-${context.props.accent ?? 'yellow'}`} aria-hidden />}
+                  </NativeSelect>
+                  {prop === 'accent' && <span className={`accent-${context.props.accent ?? 'yellow'} tw:size-2.5 tw:rounded-full tw:bg-(--accent)`} aria-hidden />}
                 </label>
               ))}
               {props.frames.length > 0 && (
-                <label className="ctx-field">
+                <label className={fieldClass}>
                   <span>Frame</span>
-                  <select value={context.props.frame ?? ''} onChange={(e) => props.onSlideProp('frame', e.target.value)}>
+                  <NativeSelect size="sm" value={context.props.frame ?? ''} onChange={(e) => props.onSlideProp('frame', e.target.value)}>
                     <option value="">Theme default</option>
                     <option value="none">None</option>
                     {props.frames.map((f) => (
@@ -93,27 +101,30 @@ export function ContextualToolbar(props: ContextualToolbarProps) {
                         {title(f)}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </label>
               )}
             </>
           )}
           {context.type === 'insert' && (
             <>
-              <span className="ctx-label">Insert{context.parentComponent ? ` in ${context.parentComponent}` : ''}</span>
+              <span className={labelClass}>Insert{context.parentComponent ? ` in ${context.parentComponent}` : ''}</span>
               {QUICK_INSERT.map(([id, glyph, label]) => (
-                <button key={id} type="button" className="ctx-button" onClick={() => props.onInsert(getComponentById(id)?.registry.snippet ?? '')}>
-                  <span aria-hidden>{glyph}</span> {label}
+                <button key={id} type="button" className={buttonClass} onClick={() => props.onInsert(getComponentById(id)?.registry.snippet ?? '')}>
+                  <span aria-hidden className="tw:text-muted">
+                    {glyph}
+                  </span>
+                  {label}
                 </button>
               ))}
-              <button type="button" className="ctx-button" onClick={props.onOpenPalette}>
-                More <kbd>⌘K</kbd>
+              <button type="button" className={buttonClass} onClick={props.onOpenPalette}>
+                More <Kbd>⌘K</Kbd>
               </button>
             </>
           )}
           {context.type === 'component' && (
             <>
-              <span className="ctx-label">{context.name}</span>
+              <span className={labelClass}>{context.name}</span>
               {(getToolbarConfig(context.name) ?? []).map((editor) => {
                 const prop = String(editor.prop)
                 const value = context.props[prop]
@@ -122,46 +133,48 @@ export function ContextualToolbar(props: ContextualToolbarProps) {
                   const declared = getComponentByName(context.name)?.registry.props.find((p) => p.name === prop)?.default
                   const on = value === undefined ? declared === 'true' : value === '' || value === 'true'
                   return (
-                    <button key={prop} type="button" className={`ctx-toggle${on ? ' is-on' : ''}`} onClick={() => props.onComponentProp(prop, on ? 'false' : 'true')}>
+                    <button key={prop} type="button" aria-pressed={on} className={cn(buttonClass, on && 'tw:bg-field tw:text-fg')} onClick={() => props.onComponentProp(prop, on ? 'false' : 'true')}>
                       {prop}: {on ? 'On' : 'Off'}
                     </button>
                   )
                 }
                 if (editor.type === 'select') {
                   return (
-                    <label key={prop} className="ctx-field">
+                    <label key={prop} className={fieldClass}>
                       <span>{prop}</span>
-                      <select value={value ?? ''} onChange={(e) => props.onComponentProp(prop, e.target.value)}>
+                      <NativeSelect size="sm" value={value ?? ''} onChange={(e) => props.onComponentProp(prop, e.target.value)}>
                         <option value="">—</option>
                         {(editor.options ?? []).map((o) => (
                           <option key={o} value={o}>
                             {title(o)}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </label>
                   )
                 }
                 if (editor.type === 'number') {
                   return (
-                    <label key={prop} className="ctx-field">
+                    <label key={prop} className={fieldClass}>
                       <span>{prop}</span>
                       <NumberInput value={(value ?? '').replace(/^\{|\}$/g, '')} editor={editor} onCommit={(v) => props.onComponentProp(prop, v)} />
                     </label>
                   )
                 }
                 return (
-                  <button key={prop} type="button" className="ctx-button" onClick={() => props.onPickImage(prop)}>
+                  <button key={prop} type="button" className={buttonClass} onClick={() => props.onPickImage(prop)}>
                     {prop}: {value ? value.split('/').pop() : 'Select image'}
                   </button>
                 )
               })}
-              <button type="button" className="ctx-button is-danger ctx-right" onClick={props.onDeleteComponent}>
+              <span className="tw:flex-1" />
+              <button type="button" className={cn(buttonClass, 'tw:hover:text-removed tw:[&_svg]:size-3.5')} onClick={props.onDeleteComponent}>
+                <Trash2 aria-hidden />
                 Delete
               </button>
             </>
           )}
-          {context.type === 'none' && <span className="ctx-hint">Select a slide or put the cursor in the editor</span>}
+          {context.type === 'none' && <span className="tw:text-[12px] tw:text-muted">Select a slide or put the cursor in the editor</span>}
         </motion.div>
       </AnimatePresence>
     </div>
