@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
-import { motion } from 'motion/react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { FolderPlus, LayoutGrid, Monitor, Moon, Plus, Presentation, Search, Settings, Sun } from 'lucide-react'
+import type { AgentBackendInfo } from '@shared/agent.ts'
 import type { DeckRef, PresentationInfo, VaultInfo } from '@shared/decks.ts'
-import { appPath } from '../basePath'
 import { GlobalCommandPalette, type CommandItem } from '../components/editor/GlobalCommandPalette'
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal'
 import { displayName, filterDecks, filtersFromSearch, searchFromFilters, type DeckFilters, type DeckSort } from './filterDecks'
-import { PlusIcon } from './icons'
 import { PresentationCard } from './PresentationCard'
-import { VaultSwitcher } from './VaultSwitcher'
 import { AgentChat } from '../agent/AgentChat'
+import { fetchAgentSettings, fetchBackends } from '../agent/api'
 import { createPresentation } from '../api'
+import type { ThemeChoice } from '../appearance/appearance'
+import { useAppearance } from '../appearance/useAppearance'
+import { Button, cn, Dialog, Field, Input, Kbd, Logo, SegmentedControl, Select, StatusDot } from '../ui'
 
 export interface HomePageProps {
   /** The vault shown; `decks` are its decks only. */
@@ -32,30 +34,20 @@ export interface HomePageProps {
 }
 
 const SORTS: { value: DeckSort; label: string }[] = [
-  { value: 'updated', label: 'Update date' },
-  { value: 'created', label: 'Creation date' },
+  { value: 'updated', label: 'Recently updated' },
+  { value: 'created', label: 'Recently created' },
   { value: 'alphabetical', label: 'Alphabetical' },
 ]
 
 const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)
 
-function Logo({ size }: { size: number }) {
-  return (
-    <span className="home-logo" style={{ width: size, height: size }}>
-      <img src={appPath('/logo-on-dark.svg')} alt="" width={size} height={size} />
-      <motion.span className="home-logo__dot" animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity }} />
-    </span>
-  )
-}
-
-/** The deck browser (Part 3 §1.5). */
+/** The deck browser (Part 3 §1.5), in the redesigned chrome (ui-redesign-plan R3). */
 export function HomePage(props: HomePageProps) {
   const { vault, vaults, decks, canCreate, isStatic, error, defaultSource, loadDeck, onPresent, onEdit, onGallery, onSwitchVault, onSettings } = props
   const [filters, setFilters] = useState<DeckFilters>(() => filtersFromSearch(window.location.search))
-  const [scrollTop, setScrollTop] = useState(0)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
+  const [naming, setNaming] = useState(false)
 
   // The filters live in the URL so a reload or a shared link keeps them.
   useEffect(() => {
@@ -87,7 +79,7 @@ export function HomePage(props: HomePageProps) {
 
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {})
   keyHandler.current = (e) => {
-    if (paletteOpen || shortcutsOpen || isTyping(e.target)) return
+    if (paletteOpen || shortcutsOpen || naming || isTyping(e.target)) return
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault()
       setPaletteOpen(true)
@@ -102,168 +94,276 @@ export function HomePage(props: HomePageProps) {
   }, [])
 
   const loaders = useRef(new Map<string, () => Promise<ComponentType>>())
-  const loaderFor = useCallback((deck: PresentationInfo) => {
-    const key = `${deck.source}:${deck.path}`
-    let loader = loaders.current.get(key)
-    if (!loader) {
-      loader = () => loadDeck(deck)
-      loaders.current.set(key, loader)
-    }
-    return loader
-  }, [loadDeck])
+  const loaderFor = useCallback(
+    (deck: PresentationInfo) => {
+      const key = `${deck.source}:${deck.path}`
+      let loader = loaders.current.get(key)
+      if (!loader) {
+        loader = () => loadDeck(deck)
+        loaders.current.set(key, loader)
+      }
+      return loader
+    },
+    [loadDeck],
+  )
 
-  const showFilters = decks.length > 0
   const ownVaults = vaults.filter((v) => !v.builtIn && !v.temporary)
 
   return (
-    <div ref={rootRef} className="home" onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
-      <motion.nav className="home-nav" initial={false} animate={{ y: scrollTop > 200 ? 0 : -72 }} transition={{ duration: 0.25 }} aria-hidden={scrollTop <= 200}>
-        <Logo size={28} />
-        <span className="home-nav__name">Slidecraft</span>
-      </motion.nav>
+    <div className="sc-app tw:flex tw:h-full tw:flex-wrap tw:overflow-y-auto tw:bg-ground tw:lg:flex-nowrap tw:lg:overflow-hidden">
+      <Sidebar vault={vault} vaults={vaults} deckCount={decks.length} isStatic={isStatic} onGallery={onGallery} onSwitchVault={onSwitchVault} onSettings={onSettings} />
 
-      <header className="home-hero">
-        <motion.div
-          className="home-hero__art"
-          style={{ backgroundImage: `url(${appPath('/hero.svg')})`, backgroundPosition: `center ${scrollTop * 0.3}px` }}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 0.3, scale: 1 }}
-          transition={{ duration: 1.2 }}
-        />
-        <div className="home-hero__shade" />
-        <div className="home-topbar">
-          <VaultSwitcher vault={vault} vaults={vaults} onSwitch={onSwitchVault} />
-          {!isStatic && (
-            <button type="button" className="tool-button" onClick={() => onSettings()}>
-              Settings
-            </button>
-          )}
-        </div>
-        <div className="home-hero__content">
-          <Logo size={64} />
-          <h1 className="home-hero__name">Slidecraft</h1>
-          <p className="home-hero__tagline">Decks as MDX, rendered with React and motion.</p>
-          {canCreate ? (
-            <div className="home-agent">
-              <AgentChat compact vault={vault.id} onDeckWritten={onEdit} />
-            </div>
-          ) : (
-            <p className="home-hero__hint">Select a presentation to begin</p>
-          )}
-          <button type="button" className="tool-pill" onClick={onGallery}>
-            Browse component gallery →
-          </button>
-        </div>
-      </header>
-
-      <main className="home-main">
-        {error && <p className="home-error" role="alert">{error}</p>}
-        {!isStatic && !error && ownVaults.length === 0 && (
-          <div className="home-notice">
-            <div>
-              <strong>Keep your presentations in a vault</strong>
-              <span>
-                {vault.temporary
-                  ? `This folder is open for this run only. Save it as a vault to find it again, or add vaults for work and private decks.`
-                  : 'A vault is a folder of your own presentations, kept apart from the others: one for work, one for private talks.'}
-              </span>
-            </div>
-            <button type="button" className="tool-button is-primary" onClick={() => onSettings('vaults')}>
-              {vault.temporary ? 'Save as a vault' : 'Create a vault'}
-            </button>
-          </div>
-        )}
-        {showFilters && (
-          <div className="home-filters">
-            <label className="tool-field">
-              <span>Path</span>
-              <input value={filters.path} placeholder="presentations/" onChange={(e) => set('path', e.target.value)} />
-            </label>
-            <label className="tool-field is-grow">
-              <span>Filter</span>
-              <input value={filters.q} placeholder="Name or path" onChange={(e) => set('q', e.target.value)} />
-            </label>
-            <label className="tool-field">
-              <span>Sort</span>
-              <select value={filters.sort} onChange={(e) => set('sort', e.target.value as DeckSort)}>
-                {SORTS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <span className="home-filters__count">
-              {visible.length} of {decks.length} presentations
-            </span>
-          </div>
-        )}
-
-        {decks.length === 0 && (
-          <p className="home-empty">
-            No presentations in {vault.name} yet.{vault.path ? <> Each one is a folder in <code>{vault.path}</code> with an <code>index.mdx</code> file.</> : null}
-          </p>
-        )}
-        {(canCreate || decks.length > 0) && (
-          <div className="home-grid">
-            {canCreate && (
-              <NewDeckCard vault={vault.id} onCreated={onEdit} />
-            )}
-            {decks.length > 0 && visible.length === 0 && (
-              <div className="deck-card deck-card--empty">
-                <strong>No matches</strong>
-                <span>Try a different filter.</span>
-              </div>
-            )}
-            {visible.map((deck, i) => (
-              <PresentationCard
-                key={`${deck.source}:${deck.path}`}
-                deck={deck}
-                index={i}
-                defaultSource={defaultSource}
-                load={loaderFor(deck)}
-                onPresent={() => onPresent(deck, false)}
-                onDev={() => onPresent(deck, true)}
-                onEdit={deck.readOnly || isStatic ? undefined : () => onEdit(deck)}
-                canExport={!isStatic}
+      <main className="tw:m-2.5 tw:flex tw:min-w-0 tw:flex-[999_1_480px] tw:flex-col tw:rounded-2xl tw:bg-panel tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)] tw:lg:overflow-y-auto">
+        <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:border-b tw:border-line tw:px-5 tw:py-3.5">
+          <span className="tw:text-muted">{vault.name}</span>
+          <span className="tw:text-muted" aria-hidden>
+            /
+          </span>
+          <span className="tw:font-medium">Presentations</span>
+          <span className="tw:flex-1" />
+          {decks.length > 0 && (
+            <label className="tw:flex tw:h-9 tw:w-[280px] tw:max-w-full tw:items-center tw:gap-2 tw:rounded-[9px] tw:bg-field tw:px-2.5 tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus)]">
+              <Search className="tw:size-4 tw:shrink-0 tw:text-muted" aria-hidden />
+              <input
+                value={filters.q}
+                onChange={(e) => set('q', e.target.value)}
+                placeholder="Filter by name or path"
+                aria-label="Filter presentations"
+                className="tw:min-w-0 tw:flex-1 tw:border-0 tw:bg-transparent tw:text-fg tw:outline-none tw:placeholder:text-muted"
               />
-            ))}
-          </div>
-        )}
+              <button type="button" onClick={() => setPaletteOpen(true)} aria-label="Open the command palette" title="Command palette">
+                <Kbd>⌘K</Kbd>
+              </button>
+            </label>
+          )}
+          {canCreate && (
+            <Button variant="primary" onClick={() => setNaming(true)}>
+              <Plus aria-hidden />
+              New deck
+            </Button>
+          )}
+        </div>
+
+        <div className="tw:flex tw:flex-col tw:items-center tw:gap-5 tw:px-6 tw:pt-10 tw:pb-7 tw:md:px-10">
+          {canCreate ? (
+            <>
+              <h1 className="tw:text-center tw:font-display tw:text-[44px] tw:leading-[1.05] tw:font-semibold tw:tracking-[-0.015em]">
+                What are you presenting<span className="tw:text-accent">?</span>
+              </h1>
+              <div className="tw:w-full tw:max-w-[680px]">
+                <AgentChat compact vault={vault.id} onDeckWritten={onEdit} />
+              </div>
+            </>
+          ) : (
+            <div className="tw:flex tw:flex-col tw:items-center tw:gap-2 tw:text-center">
+              <h1 className="tw:font-display tw:text-[44px] tw:leading-[1.05] tw:font-semibold tw:tracking-[-0.015em]">{vault.name}</h1>
+              <p className="tw:text-muted">{vault.readOnly && !isStatic ? 'A read-only vault: present or open a deck to look at it.' : 'Select a presentation to begin.'}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="tw:flex tw:flex-col tw:gap-4 tw:px-6 tw:pb-10 tw:md:px-10">
+          {error && (
+            <p role="alert" className="tw:rounded-xl tw:bg-field tw:px-4 tw:py-3 tw:text-removed">
+              {error}
+            </p>
+          )}
+          {!isStatic && !error && ownVaults.length === 0 && (
+            <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-4 tw:rounded-xl tw:bg-accent-tint tw:px-4 tw:py-3.5">
+              <div className="tw:flex tw:min-w-[240px] tw:flex-1 tw:flex-col tw:gap-0.5 tw:text-on-accent-tint">
+                <strong className="tw:font-semibold">Keep your presentations in a vault</strong>
+                <span>
+                  {vault.temporary
+                    ? `This folder is open for this run only. Save it as a vault to find it again, or add vaults for work and private decks.`
+                    : 'A vault is a folder of your own presentations, kept apart from the others: one for work, one for private talks.'}
+                </span>
+              </div>
+              <Button variant="primary" onClick={() => onSettings('vaults')}>
+                {vault.temporary ? 'Save as a vault' : 'Create a vault'}
+              </Button>
+            </div>
+          )}
+
+          {decks.length > 0 && (
+            <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-3">
+              <h2 className="tw:text-[15px] tw:font-semibold">Presentations</h2>
+              <span className="tw:text-[13px] tw:text-muted">
+                {visible.length === decks.length ? decks.length : `${visible.length} of ${decks.length}`}
+              </span>
+              <span className="tw:flex-1" />
+              <Input
+                value={filters.path}
+                onChange={(e) => set('path', e.target.value)}
+                placeholder="Folder, e.g. talks/"
+                aria-label="Folder"
+                className="tw:h-8 tw:w-44 tw:text-[13px]"
+              />
+              <Select aria-label="Sort" className="tw:h-8 tw:text-[13px]" value={filters.sort} onValueChange={(v) => set('sort', v)} options={SORTS} />
+            </div>
+          )}
+
+          {decks.length === 0 && (
+            <p className="tw:rounded-xl tw:bg-field tw:px-4 tw:py-6 tw:text-center tw:text-muted">
+              No presentations in {vault.name} yet.
+              {vault.path ? (
+                <>
+                  {' '}
+                  Each one is a folder in <code className="tw:font-mono tw:text-[13px] tw:text-fg-2">{vault.path}</code> with an{' '}
+                  <code className="tw:font-mono tw:text-[13px] tw:text-fg-2">index.mdx</code> file.
+                </>
+              ) : null}
+            </p>
+          )}
+          {decks.length > 0 && visible.length === 0 && (
+            <p className="tw:rounded-xl tw:bg-field tw:px-4 tw:py-6 tw:text-center tw:text-muted">
+              <strong className="tw:text-fg">No matches.</strong> Try a different filter.
+            </p>
+          )}
+          {visible.length > 0 && (
+            <div className="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] tw:gap-x-[18px] tw:gap-y-6">
+              {visible.map((deck, i) => (
+                <PresentationCard
+                  key={`${deck.source}:${deck.path}`}
+                  deck={deck}
+                  index={i}
+                  defaultSource={defaultSource}
+                  load={loaderFor(deck)}
+                  onPresent={() => onPresent(deck, false)}
+                  onDev={() => onPresent(deck, true)}
+                  onEdit={deck.readOnly || isStatic ? undefined : () => onEdit(deck)}
+                  canExport={!isStatic}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
-      <footer className="home-footer">
-        <span className="home-footer__inner">
-          Powered by <img src={appPath('/logo-on-dark.svg')} alt="" width={14} height={14} /> Slidecraft
-        </span>
-      </footer>
-
+      {canCreate && <NewDeckDialog open={naming} onOpenChange={setNaming} vault={vault.id} onCreated={onEdit} />}
       <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode="Home" commands={commands} />
       <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="home" />
     </div>
   )
 }
 
+// ---------------------------------------------------------------------------------------------
+
+function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: ReactNode; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'tw:flex tw:h-9 tw:w-full tw:items-center tw:gap-2.5 tw:rounded-lg tw:px-2.5 tw:text-left tw:font-medium tw:[&_svg]:size-4 tw:[&_svg]:shrink-0',
+        active ? 'tw:bg-panel tw:text-fg tw:shadow-hairline' : 'tw:text-fg-2 tw:hover:bg-field',
+      )}
+    >
+      {icon}
+      <span className="tw:min-w-0 tw:flex-1 tw:truncate">{label}</span>
+    </button>
+  )
+}
+
+const THEME_SEGMENTS: { value: ThemeChoice; label: ReactNode; title: string }[] = [
+  { value: 'light', label: <Sun className="tw:size-3.5" aria-label="Light" />, title: 'Light' },
+  { value: 'dark', label: <Moon className="tw:size-3.5" aria-label="Dark" />, title: 'Dark' },
+  { value: 'system', label: <Monitor className="tw:size-3.5" aria-label="System" />, title: 'Follow the system' },
+]
+
+function Sidebar({
+  vault,
+  vaults,
+  deckCount,
+  isStatic,
+  onGallery,
+  onSwitchVault,
+  onSettings,
+}: {
+  vault: VaultInfo
+  vaults: VaultInfo[]
+  deckCount: number
+  isStatic: boolean
+  onGallery(): void
+  onSwitchVault(id: string): void
+  onSettings(section?: 'vaults'): void
+}) {
+  const { appearance, update } = useAppearance()
+  return (
+    <aside className="tw:flex tw:w-full tw:shrink-0 tw:flex-col tw:gap-5 tw:px-3.5 tw:py-5 tw:lg:h-full tw:lg:w-60 tw:lg:overflow-y-auto">
+      <Logo withName className="tw:px-2" />
+      <nav aria-label="Main" className="tw:flex tw:flex-col tw:gap-0.5">
+        <NavItem icon={<Presentation aria-hidden />} label="Presentations" active />
+        <NavItem icon={<LayoutGrid aria-hidden />} label="Component gallery" onClick={onGallery} />
+        {!isStatic && <NavItem icon={<Settings aria-hidden />} label="Settings" onClick={() => onSettings()} />}
+      </nav>
+      {vaults.length > 1 || !isStatic ? (
+        <nav aria-label="Vaults" className="tw:flex tw:flex-col tw:gap-0.5">
+          <span className="tw:px-2.5 tw:pb-1.5 tw:text-[12px] tw:font-medium tw:text-muted">Vaults</span>
+          {vaults.map((v) => (
+            <NavItem
+              key={v.id}
+              active={v.id === vault.id}
+              onClick={v.id === vault.id ? undefined : () => onSwitchVault(v.id)}
+              icon={<span aria-hidden className={cn('tw:size-2 tw:rounded-[3px]', v.builtIn ? 'tw:bg-brand' : v.temporary ? 'tw:bg-muted' : 'tw:bg-agent')} />}
+              label={
+                <span className="tw:flex tw:items-center tw:gap-2">
+                  <span className="tw:min-w-0 tw:flex-1 tw:truncate">{v.name}</span>
+                  {v.id === vault.id && <span className="tw:font-mono tw:text-[12px] tw:font-normal tw:text-muted">{deckCount}</span>}
+                </span>
+              }
+            />
+          ))}
+          {!isStatic && <NavItem icon={<FolderPlus aria-hidden />} label="Add vault" onClick={() => onSettings('vaults')} />}
+        </nav>
+      ) : null}
+      <span className="tw:hidden tw:flex-1 tw:lg:block" />
+      <SegmentedControl aria-label="Appearance" size="sm" className="tw:self-start" value={appearance.theme} onValueChange={(v) => update({ theme: v })} items={THEME_SEGMENTS} />
+      {!isStatic && <AgentStatus onSettings={onSettings} />}
+    </aside>
+  )
+}
+
+/** Which agent new conversations use and whether it is ready. */
+function AgentStatus({ onSettings }: { onSettings(): void }) {
+  const [backend, setBackend] = useState<AgentBackendInfo | null>(null)
+  useEffect(() => {
+    let live = true
+    void Promise.all([fetchBackends(), fetchAgentSettings()]).then(([b, s]) => {
+      if (!live || !b.data) return
+      setBackend(b.data.find((x) => x.id === s.data?.backend) ?? b.data.find((x) => x.available) ?? b.data[0] ?? null)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!backend) return null
+  return (
+    <button
+      type="button"
+      onClick={() => onSettings()}
+      title="Agent settings"
+      className="tw:flex tw:items-center tw:gap-2.5 tw:rounded-xl tw:bg-panel tw:p-2.5 tw:text-left tw:shadow-hairline tw:hover:bg-panel-alt"
+    >
+      <StatusDot tone={backend.available ? 'agent' : 'muted'} className="tw:ml-0.5" />
+      <span className="tw:flex tw:min-w-0 tw:flex-1 tw:flex-col">
+        <span className="tw:truncate tw:text-[13px] tw:font-medium">{backend.name}</span>
+        <span className="tw:text-[12px] tw:text-muted">{backend.available ? 'Ready' : 'Not available'}</span>
+      </span>
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------
+
 const DECK_NAME = /^[a-z0-9][a-z0-9-]*$/
 
-/** "New deck" for working by hand: a name, then the workspace. */
-function NewDeckCard({ vault, onCreated }: { vault: string; onCreated(deck: DeckRef): void }) {
-  const [naming, setNaming] = useState(false)
+/** "New deck" for working by hand: a folder name, then the workspace. */
+function NewDeckDialog({ open, onOpenChange, vault, onCreated }: { open: boolean; onOpenChange(open: boolean): void; vault: string; onCreated(deck: DeckRef): void }) {
   const [name, setName] = useState('')
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const valid = DECK_NAME.test(name)
-  if (!naming) {
-    return (
-      <button type="button" className="deck-card deck-card--create" onClick={() => setNaming(true)}>
-        <span className="deck-card__plus">
-          <PlusIcon size={28} />
-        </span>
-        <strong>New deck</strong>
-        <span>Start from a title slide and write it yourself</span>
-      </button>
-    )
-  }
   const create = async () => {
     if (!valid || busy) return
     setBusy(true)
@@ -273,26 +373,32 @@ function NewDeckCard({ vault, onCreated }: { vault: string; onCreated(deck: Deck
     else setError(result.error)
   }
   return (
-    <form
-      className="deck-card deck-card--create deck-card--naming"
-      onSubmit={(e) => {
-        e.preventDefault()
-        void create()
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        onOpenChange(o)
+        if (!o) setError(undefined)
       }}
+      title="New deck"
+      description="Starts from a title slide that you write yourself. To have the agent write it, describe the talk on the home page instead."
     >
-      <label className="tool-field">
-        <span>Folder name</span>
-        <input autoFocus value={name} placeholder="q4-review" onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} onKeyDown={(e) => e.key === 'Escape' && setNaming(false)} />
-      </label>
-      {error ? <span className="deck-card__error">{error}</span> : <span>Lower-case words joined by dashes</span>}
-      <div className="deck-card__form-actions">
-        <button type="submit" className="tool-button is-primary" disabled={!valid || busy}>
-          Create
-        </button>
-        <button type="button" className="tool-button" onClick={() => setNaming(false)}>
-          Cancel
-        </button>
-      </div>
-    </form>
+      <form
+        className="tw:flex tw:flex-col tw:gap-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void create()
+        }}
+      >
+        <Field label="Folder name" hint="Lower-case words joined by dashes" error={error}>
+          <Input autoFocus value={name} placeholder="q4-review" onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
+        </Field>
+        <div className="tw:flex tw:justify-end tw:gap-2">
+          <Button onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={!valid || busy}>
+            Create
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   )
 }

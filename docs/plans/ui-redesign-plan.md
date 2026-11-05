@@ -90,7 +90,7 @@ existing 150 / 300 / 500 ms scale.
   choice and the media query into `data-sc-theme` and `data-sc-accent` on `<html>`, and a
   `useAppearance()` hook. An inline script in `index.html` applies the stored choice before the
   app loads. Storage failures fall back to System and violet.
-- **Old CSS:** `tool.css`, `editor.css` and `chat.css` stay until the pages that use them are
+- **Old CSS:** `tool.css`, `editor.css` and `chat.css` (gone in R3) stay until the pages that use them are
   rebuilt, and are deleted in the last phase. `presentation.css` and the slide parts of
   `global.css` are not touched.
 - **Monaco:** a light and a dark editor theme, following the app (Phase R4).
@@ -134,23 +134,35 @@ a read-only switch and a confirmation dialog for removing, and the agent picker 
 The settings rules in `tool.css` are gone. The welcome deck has an Appearance slide after Vaults.
 Checked in the browser in light and dark: theme and accent apply at once and survive a reload.
 
-### Phase R3: Home
+### Phase R3: Home and the conversation
 
 The home page in the new layout: the app sidebar (sections, vaults with the vault switcher, agent
 status, the theme switch, settings), the deck grid with the new cards, filters and sorting, the
-new-deck card and the gallery link.
+new-deck card and the gallery link. The agent conversation moves here from R4, because the home
+page embeds it; until R4 the workspace shows it with a forced dark theme.
+
+**Status (2026-11-05): done.** `src/home/HomePage.tsx` and `PresentationCard.tsx` are rebuilt on
+`src/ui`: a sidebar (Presentations, the gallery, Settings, the vaults with the current one's deck
+count, Add vault, a Light/Dark/System switch, the agent's status), the question box under the
+heading, filters (name in the top bar with ⌘K, folder and sort above the grid), cards with a
+hover overlay for Present and Dev, and **New deck** as a dialog. `src/agent/AgentChat.tsx` keeps its
+logic with new markup (Radix selects for the thread and agent, badges for context chips, cards for
+tool steps, checkpoints, diffs, checks and approvals). `chat.css`, the home rules in `tool.css`,
+`home/icons.tsx` and `VaultSwitcher.tsx` are gone. The welcome deck's home screenshot and the
+guide are updated. Checked in the browser at 1440 px in light and dark, the new-deck dialog, and
+the conversation in the workspace.
 
 ### Phase R4: Workspace
 
 The deck workspace in the new layout: header with the deck name and save state, the view switch,
 the theme picker, present and save; the slide list; the code and preview panes on the dotted
-canvas; the agent panel on the right with the new message, step and checkpoint styles and the
-composer. Monaco follows the app theme.
+canvas; the agent panel (already restyled in R3) on the right, without its forced dark theme.
+Monaco follows the app theme.
 
 ### Phase R5: Gallery, presenter and the rest
 
 The gallery, the presenter window chrome, dialogs and pickers (image picker, insert palette,
-command palette, help), error and empty screens. Then `tool.css`, `editor.css` and `chat.css` are
+command palette, help), error and empty screens. Then `tool.css` and `editor.css` are
 removed, and `docs/slidecraft-styleguide.md` is rewritten for the new system.
 
 ### Phase R6: Design view (later)

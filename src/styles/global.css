@@ -16,7 +16,6 @@
 @import './presentation.css';
 @import './editor.css';
 @import './tool.css';
-@import './chat.css';
 
 /* The handwriting of Annotate's notes; every theme shares it. */
 @font-face {

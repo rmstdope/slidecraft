@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, ArrowUp, Check, PanelLeftClose, Paperclip, Plus, Square, X } from 'lucide-react'
 import type { AgentBackendId, AgentEvent, MessageContext, TurnDiff } from '@shared/agent.ts'
 import { fetchAgentSettings, fetchTurnDiff, undoTurn, uploadAttachment } from './api'
 import { deckName, type DeckRef } from '@shared/decks.ts'
+import type { DiffLine } from '@shared/lineDiff.ts'
+import { Badge, Button, cn, Select, StatusDot } from '../ui'
 import { Markdown } from './markdown'
-import { pendingApproval, toTurns, type Turn, type TurnItem } from './threadEvents'
+import { pendingApproval, toTurns, type ToolState, type Turn, type TurnItem } from './threadEvents'
 import { useAgentThread } from './useAgentThread'
 
 interface Props {
@@ -25,6 +28,13 @@ interface Props {
 }
 
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+/** Radix Select has no empty value; this stands for "a new conversation". */
+const NEW_THREAD = '__new__'
+
+/** Agent replies: the small Markdown subset, styled for the chrome. */
+const proseClass =
+  'tw:leading-relaxed tw:[&_p]:my-1.5 tw:[&_p:first-child]:mt-0 tw:[&_p:last-child]:mb-0 tw:[&_ul]:my-1.5 tw:[&_ul]:list-disc tw:[&_ul]:pl-5 tw:[&_ol]:my-1.5 tw:[&_ol]:list-decimal tw:[&_ol]:pl-5 tw:[&_li]:my-0.5 tw:[&_strong]:font-semibold tw:[&_code]:rounded tw:[&_code]:bg-field tw:[&_code]:px-1 tw:[&_code]:font-mono tw:[&_code]:text-[12.5px] tw:[&_pre]:my-2 tw:[&_pre]:overflow-x-auto tw:[&_pre]:rounded-lg tw:[&_pre]:bg-field tw:[&_pre]:p-3 tw:[&_pre]:font-mono tw:[&_pre]:text-[12.5px]'
 
 /** The agent conversation panel (UX overhaul U2): streamed text, tool calls, approvals, stop. */
 export function AgentChat({ vault, deck, context, beforeSend, compact, onCollapse, onDeckWritten, onRunningChange }: Props) {
@@ -93,9 +103,12 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
     inputRef.current?.focus()
   }
 
+  const chipClose = 'tw:-mr-1 tw:grid tw:size-4 tw:place-items-center tw:rounded tw:hover:bg-black/10 tw:[&_svg]:size-3'
+
   return (
+    // `agent-chat` is a hook, not a style: the workspace's paste handler checks for it.
     <section
-      className={`agent-chat${compact ? ' is-compact' : ''}${dropping ? ' is-dropping' : ''}`}
+      className={cn('agent-chat tw:flex tw:min-h-0 tw:flex-col tw:rounded-[inherit]', compact ? 'tw:w-full' : 'tw:h-full', dropping && 'tw:shadow-[inset_0_0_0_2px_var(--sc-focus)]')}
       aria-label="Agent conversation"
       onDragOver={(e) => {
         if (unavailable || ![...e.dataTransfer.types].includes('Files')) return
@@ -113,133 +126,121 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
       }}
     >
       {(!compact || threads.length > 0) && (
-      <div className="agent-chat__bar">
-        <select
-          className="agent-chat__threads"
-          aria-label="Conversation"
-          value={thread?.id ?? ''}
-          disabled={running}
-          onChange={(e) => state.select(e.target.value || null)}
-        >
-          <option value="">New conversation</option>
-          {threads.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title} · {when(t.updatedAt)}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="tool-button" disabled={running || !thread} onClick={() => state.select(null)}>
-          New
-        </button>
-        {!thread && ready.length > 1 && (
-          <select className="agent-chat__backend" aria-label="Agent for the new conversation" value={backendId} onChange={(e) => setChoice(e.target.value as AgentBackendId)}>
-            {ready.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {onCollapse && (
-          <button type="button" className="tool-button" onClick={onCollapse} aria-label="Hide the conversation" title="Hide the conversation">
-            ⟨
-          </button>
-        )}
-      </div>
+        <div className={cn('tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-2.5', !compact && 'tw:border-b tw:border-line')}>
+          <StatusDot tone={unavailable ? 'muted' : 'agent'} className="tw:ml-1" />
+          <Select
+            aria-label="Conversation"
+            className="tw:h-8 tw:min-w-0 tw:flex-1 tw:bg-transparent tw:px-2 tw:font-semibold tw:hover:bg-field"
+            value={thread?.id ?? NEW_THREAD}
+            disabled={running}
+            onValueChange={(v) => state.select(v === NEW_THREAD ? null : v)}
+            options={[{ value: NEW_THREAD, label: 'New conversation' }, ...threads.map((t) => ({ value: t.id, label: `${t.title} · ${when(t.updatedAt)}` }))]}
+          />
+          {!thread && ready.length > 1 && (
+            <Select
+              aria-label="Agent for the new conversation"
+              className="tw:h-8 tw:text-[13px]"
+              value={backendId}
+              onValueChange={(v) => setChoice(v)}
+              options={ready.map((b) => ({ value: b.id, label: b.name }))}
+            />
+          )}
+          <Button size="icon-sm" variant="ghost" disabled={running || !thread} onClick={() => state.select(null)} aria-label="New conversation" title="New conversation">
+            <Plus aria-hidden />
+          </Button>
+          {onCollapse && (
+            <Button size="icon-sm" variant="ghost" onClick={onCollapse} aria-label="Hide the conversation" title="Hide the conversation">
+              <PanelLeftClose aria-hidden />
+            </Button>
+          )}
+        </div>
       )}
 
-      <div ref={listRef} className="agent-chat__log" aria-live="polite">
+      <div
+        ref={listRef}
+        className={cn('tw:flex tw:flex-col tw:gap-3.5 tw:overflow-y-auto tw:px-4 tw:text-[14px] tw:empty:hidden', compact ? 'tw:max-h-[360px] tw:py-3' : 'tw:flex-1 tw:py-4')}
+        aria-live="polite"
+      >
         {unavailable && (
-          <div className="agent-setup">
-            <strong>Connect an agent</strong>
+          <div className="tw:flex tw:flex-col tw:gap-1 tw:rounded-xl tw:bg-accent-tint tw:px-4 tw:py-3 tw:text-on-accent-tint">
+            <strong className="tw:font-semibold">Connect an agent</strong>
             <p>{backend?.detail ?? 'Install Claude Code and sign in: run `claude` once in a terminal.'}</p>
             <p>Until then, edit the deck by hand in the code view.</p>
           </div>
         )}
         {!unavailable && turns.length === 0 && !compact && (
-          <div className="agent-empty">
-            <h2>{deck ? `Working on ${deckName(deck)}` : 'What do you want to present?'}</h2>
-            <p>{deck ? 'Ask for a change: a new slide, a shorter title, another theme. The agent edits the file and the preview follows.' : 'Describe the talk, paste your notes, or ask for a change across decks.'}</p>
+          <div className="tw:m-auto tw:flex tw:max-w-[300px] tw:flex-col tw:gap-2 tw:py-8 tw:text-center">
+            <h2 className="tw:font-display tw:text-[22px] tw:leading-tight tw:font-semibold">{deck ? `Working on ${deckName(deck)}` : 'What do you want to present?'}</h2>
+            <p className="tw:text-muted">
+              {deck ? 'Ask for a change: a new slide, a shorter title, another theme. The agent edits the file and the preview follows.' : 'Describe the talk, paste your notes, or ask for a change across decks.'}
+            </p>
           </div>
         )}
         {turns.map((turn) => (
           <TurnView key={turn.turn} turn={turn} vault={vault} threadId={thread?.id} running={running} onAnswer={state.answer} />
         ))}
         {running && !waiting && (
-          <div className="agent-working" role="status">
-            <span className="chat-dots" aria-hidden>
-              <span />
-              <span />
-              <span />
+          <div className="tw:flex tw:items-center tw:gap-2 tw:text-[13px] tw:text-muted" role="status">
+            <span className="tw:flex tw:gap-1" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="tw:size-1.5 tw:animate-pulse tw:rounded-full tw:bg-agent" style={{ animationDelay: `${i * 0.2}s` }} />
+              ))}
             </span>
             Working…
           </div>
         )}
         {error && (
-          <p className="agent-error" role="alert">
+          <p className="tw:text-[13px] tw:text-removed" role="alert">
             {error}
           </p>
         )}
       </div>
 
-      <div className="chat-input">
-        {(chips.slide !== undefined || chips.selection || attachments.length > 0 || uploading > 0) && (
-          <div className="agent-chips" aria-label="Sent with your message">
-            {attachments.map((a) => (
-              <span key={a.path} className="agent-chip" title={a.path}>
-                📎 {a.name}
-                <button type="button" aria-label={`Do not send ${a.name}`} onClick={() => setAttachments((list) => list.filter((x) => x !== a))}>
-                  ×
-                </button>
-              </span>
-            ))}
-            {uploading > 0 && <span className="agent-chip">Uploading…</span>}
-            {chips.slide !== undefined && (
-              <span className="agent-chip">
-                Slide {chips.slide + 1}
-                <button type="button" aria-label="Do not send the slide" onClick={() => setDismissed((d) => ({ ...d, slide: chips.slide }))}>
-                  ×
-                </button>
-              </span>
-            )}
-            {chips.selection && (
-              <span className="agent-chip" title={chips.selection}>
-                Selection: {chips.selection.length > 40 ? `${chips.selection.slice(0, 39).trim()}…` : chips.selection}
-                <button type="button" aria-label="Do not send the selection" onClick={() => setDismissed((d) => ({ ...d, selection: chips.selection }))}>
-                  ×
-                </button>
-              </span>
-            )}
-          </div>
-        )}
-        {attachError && (
-          <p className="agent-error" role="alert">
-            {attachError}
-          </p>
-        )}
-        <div className="chat-input__row">
-          <button type="button" className="agent-attach" disabled={unavailable} onClick={() => fileRef.current?.click()} aria-label="Attach files" title="Attach files (or drop them here)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-            </svg>
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            multiple
-            hidden
-            onChange={(e) => {
-              const files = [...(e.target.files ?? [])]
-              e.target.value = ''
-              if (files.length) void attach(files)
-            }}
-          />
+      <div className={cn(compact ? 'tw:p-0' : 'tw:p-3')}>
+        <div className="tw:flex tw:flex-col tw:gap-2 tw:rounded-[14px] tw:bg-raised tw:px-3 tw:py-2.5 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)] tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus),var(--sc-elev)]">
+          {(chips.slide !== undefined || chips.selection || attachments.length > 0 || uploading > 0) && (
+            <div className="tw:flex tw:flex-wrap tw:gap-1.5" aria-label="Sent with your message">
+              {attachments.map((a) => (
+                <Badge key={a.path} tone="accent" title={a.path}>
+                  <Paperclip className="tw:size-3" aria-hidden />
+                  {a.name}
+                  <button type="button" className={chipClose} aria-label={`Do not send ${a.name}`} onClick={() => setAttachments((list) => list.filter((x) => x !== a))}>
+                    <X aria-hidden />
+                  </button>
+                </Badge>
+              ))}
+              {uploading > 0 && <Badge>Uploading…</Badge>}
+              {chips.slide !== undefined && (
+                <Badge tone="accent">
+                  Slide {chips.slide + 1}
+                  <button type="button" className={chipClose} aria-label="Do not send the slide" onClick={() => setDismissed((d) => ({ ...d, slide: chips.slide }))}>
+                    <X aria-hidden />
+                  </button>
+                </Badge>
+              )}
+              {chips.selection && (
+                <Badge tone="accent" title={chips.selection}>
+                  Selection: {chips.selection.length > 40 ? `${chips.selection.slice(0, 39).trim()}…` : chips.selection}
+                  <button type="button" className={chipClose} aria-label="Do not send the selection" onClick={() => setDismissed((d) => ({ ...d, selection: chips.selection }))}>
+                    <X aria-hidden />
+                  </button>
+                </Badge>
+              )}
+            </div>
+          )}
+          {attachError && (
+            <p className="tw:text-[13px] tw:text-removed" role="alert">
+              {attachError}
+            </p>
+          )}
           <textarea
             ref={inputRef}
             rows={2}
             value={input}
             disabled={unavailable}
+            aria-label="Message the agent"
             placeholder={deck ? 'Ask for a change…' : 'What do you want to present? Describe the talk or paste your notes…'}
+            className="tw:max-h-[200px] tw:min-h-[44px] tw:w-full tw:resize-none tw:border-0 tw:bg-transparent tw:text-[14px] tw:text-fg tw:outline-none tw:placeholder:text-muted tw:disabled:opacity-60"
             onChange={(e) => setInput(e.target.value)}
             onPaste={(e) => {
               const files = [...e.clipboardData.files]
@@ -254,23 +255,35 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
               }
             }}
           />
-          {running ? (
-            <button type="button" className="chat-send is-stop" onClick={state.stop} aria-label="Stop the agent" title="Stop">
-              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-                <rect width="14" height="14" rx="2" fill="currentColor" />
-              </svg>
-            </button>
-          ) : (
-            <button type="button" className="chat-send" disabled={!input.trim() || unavailable || uploading > 0} onClick={() => void send()} aria-label="Send">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
-              </svg>
-            </button>
-          )}
+          <div className="tw:flex tw:items-center tw:gap-2">
+            <Button size="icon-sm" variant="quiet" disabled={unavailable} onClick={() => fileRef.current?.click()} aria-label="Attach files" title="Attach files (or drop them here)">
+              <Paperclip aria-hidden />
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                const files = [...(e.target.files ?? [])]
+                e.target.value = ''
+                if (files.length) void attach(files)
+              }}
+            />
+            <span className="tw:min-w-0 tw:flex-1 tw:truncate tw:text-[12px] tw:text-muted" title={backend && !backend.approvals ? backend.detail : undefined}>
+              {backend?.available ? `${backend.name} ${backend.version ?? ''}${backend.approvals ? '' : ' (cannot ask: edits in the vault only)'} · ` : ''}Enter to send, Shift+Enter for a new line
+            </span>
+            {running ? (
+              <Button size="icon-sm" variant="danger" className="tw:rounded-full" onClick={state.stop} aria-label="Stop the agent" title="Stop">
+                <Square className="tw:size-3! tw:fill-current" aria-hidden />
+              </Button>
+            ) : (
+              <Button size="icon-sm" variant="primary" className="tw:rounded-full" disabled={!input.trim() || unavailable || uploading > 0} onClick={() => void send()} aria-label="Send">
+                <ArrowUp aria-hidden />
+              </Button>
+            )}
+          </div>
         </div>
-        <p className="chat-input__hint" title={backend && !backend.approvals ? backend.detail : undefined}>
-          {backend?.available ? `${backend.name} ${backend.version ?? ''}${backend.approvals ? '' : ' (cannot ask: edits in the vault only)'} · ` : ''}Enter to send, Shift+Enter for a new line
-        </p>
       </div>
     </section>
   )
@@ -283,25 +296,30 @@ function TurnView({ turn, vault, threadId, running, onAnswer }: { turn: Turn; va
     turn.user.attachments?.length ? `${turn.user.attachments.length} file${turn.user.attachments.length === 1 ? '' : 's'}` : '',
   ].filter(Boolean)
   return (
-    <div className="agent-turn">
+    <div className="tw:flex tw:flex-col tw:gap-3">
       {turn.user && (
-        <div className="chat-row is-user">
-          <div className="chat-bubble is-user">
-            {turn.user.text}
-            {context && context.length > 0 && <span className="agent-turn__context">{context.join(' · ')}</span>}
-          </div>
+        <div className="tw:flex tw:max-w-[88%] tw:flex-col tw:gap-1 tw:self-end tw:rounded-[14px_14px_4px_14px] tw:bg-field tw:px-3 tw:py-2.5 tw:whitespace-pre-wrap">
+          {turn.user.text}
+          {context && context.length > 0 && <span className="tw:text-[12px] tw:text-muted">{context.join(' · ')}</span>}
         </div>
       )}
       {turn.items.map((item) => (
         <ItemView key={item.key} item={item} onAnswer={onAnswer} />
       ))}
-      {turn.done && !turn.done.ok && <div className="agent-done is-bad">{turn.done.stopped ? 'Stopped.' : `Failed: ${turn.done.error ?? 'unknown error'}.`}</div>}
+      {turn.done && !turn.done.ok && <div className="tw:text-[13px] tw:text-removed">{turn.done.stopped ? 'Stopped.' : `Failed: ${turn.done.error ?? 'unknown error'}.`}</div>}
       {turn.done && turn.changes.length > 0 && threadId && <TurnChanges turn={turn} vault={vault} threadId={threadId} running={running} />}
-      {turn.done && turn.changes.length === 0 && turn.files.length > 0 && <div className="agent-done">Changed {turn.files.join(', ')}</div>}
+      {turn.done && turn.changes.length === 0 && turn.files.length > 0 && <div className="tw:text-[13px] tw:text-muted">Changed {turn.files.join(', ')}</div>}
       {turn.checks.map((check) => (
-        <div key={check.path} className={`agent-check${check.ok ? '' : ' is-bad'}`} role={check.ok ? undefined : 'alert'}>
-          <strong>{check.ok ? `Worth a look in ${check.path}` : `${check.path} has problems`}</strong>
-          <ul>
+        <div
+          key={check.path}
+          className={cn('tw:flex tw:flex-col tw:gap-1 tw:rounded-xl tw:px-3.5 tw:py-2.5 tw:text-[13px]', check.ok ? 'tw:bg-accent-tint tw:text-on-accent-tint' : 'tw:bg-field tw:text-removed tw:shadow-[inset_0_0_0_1px_var(--sc-removed)]')}
+          role={check.ok ? undefined : 'alert'}
+        >
+          <strong className="tw:flex tw:items-center tw:gap-1.5 tw:font-semibold">
+            <AlertTriangle className="tw:size-3.5" aria-hidden />
+            {check.ok ? `Worth a look in ${check.path}` : `${check.path} has problems`}
+          </strong>
+          <ul className="tw:flex tw:flex-col tw:gap-0.5">
             {check.problems.map((p, i) => (
               <li key={i}>
                 {p.line ? `Line ${p.line}: ` : ''}
@@ -343,48 +361,51 @@ function TurnChanges({ turn, vault, threadId, running }: { turn: Turn; vault: st
   }
 
   return (
-    <div className={`agent-changes${turn.undone ? ' is-undone' : ''}`}>
-      <div className="agent-changes__bar">
-        <span className="agent-changes__what">
+    <div className={cn('tw:overflow-hidden tw:rounded-xl tw:shadow-hairline', turn.undone && 'tw:opacity-70')}>
+      <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:bg-panel-alt tw:px-3 tw:py-2">
+        <Check className={cn('tw:size-3.5 tw:shrink-0', turn.undone ? 'tw:text-muted' : 'tw:text-added')} aria-hidden />
+        <span className="tw:min-w-0 tw:flex-1 tw:text-[13px] tw:font-medium tw:break-words">
           {turn.undone ? 'Undone: ' : 'Changed '}
           {names.join(', ')}
         </span>
-        <button type="button" className="tool-button" aria-expanded={open} onClick={() => void showDiff()}>
+        <Button size="sm" variant="ghost" className="tw:h-7" aria-expanded={open} onClick={() => void showDiff()}>
           {open ? 'Hide diff' : 'Diff'}
-        </button>
+        </Button>
         {!turn.undone && (
-          <button type="button" className="tool-button" disabled={busy || running} onClick={() => void undo()} title={running ? 'Wait for the agent to finish' : 'Put these files back as they were before this turn'}>
+          <Button size="sm" className="tw:h-7" disabled={busy || running} onClick={() => void undo()} title={running ? 'Wait for the agent to finish' : 'Put these files back as they were before this turn'}>
             {busy ? 'Undoing…' : 'Undo this turn'}
-          </button>
+          </Button>
         )}
       </div>
       {error && (
-        <p className="agent-error" role="alert">
+        <p className="tw:px-3 tw:py-2 tw:text-[13px] tw:text-removed" role="alert">
           {error}
         </p>
       )}
-      {open && (diff ? <DiffView diff={diff} /> : !error && <p className="agent-changes__loading">Loading the diff…</p>)}
+      {open && (diff ? <DiffView diff={diff} /> : !error && <p className="tw:px-3 tw:py-2 tw:text-[13px] tw:text-muted">Loading the diff…</p>)}
     </div>
   )
 }
 
+const DIFF_LINE: Record<DiffLine['kind'], string> = { add: 'tw:bg-added/10 tw:text-added', remove: 'tw:bg-removed/10 tw:text-removed', same: 'tw:text-muted' }
+
 function DiffView({ diff }: { diff: TurnDiff }) {
   return (
-    <div className="agent-diff">
+    <div className="tw:flex tw:max-h-[420px] tw:flex-col tw:overflow-auto tw:border-t tw:border-line">
       {diff.files.map((file) => (
-        <section key={file.path} className="agent-diff__file">
-          <header>
-            {file.path} <span className={`agent-diff__status is-${file.status}`}>{file.status}</span>
+        <section key={file.path} className="tw:flex tw:flex-col">
+          <header className="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:py-1.5 tw:font-mono tw:text-[12px] tw:text-fg-2">
+            {file.path}
+            <Badge className="tw:h-5">{file.status}</Badge>
           </header>
-          {file.binary && <p className="agent-diff__note">A binary file: no line diff.</p>}
-          {file.tooLarge && <p className="agent-diff__note">Too large to show as a diff.</p>}
+          {file.binary && <p className="tw:px-3 tw:pb-2 tw:text-[12px] tw:text-muted">A binary file: no line diff.</p>}
+          {file.tooLarge && <p className="tw:px-3 tw:pb-2 tw:text-[12px] tw:text-muted">Too large to show as a diff.</p>}
           {file.hunks?.map((hunk, i) => (
-            <pre key={i} className="agent-diff__hunk">
+            <pre key={i} className="tw:m-0 tw:border-t tw:border-line tw:py-1 tw:font-mono tw:text-[12px] tw:leading-[1.6]">
               {hunk.lines.map((line, j) => (
-                <span key={j} className={`agent-diff__line is-${line.kind}`}>
+                <span key={j} className={cn('tw:block tw:px-3 tw:whitespace-pre-wrap', DIFF_LINE[line.kind])}>
                   {line.kind === 'add' ? '+ ' : line.kind === 'remove' ? '- ' : '  '}
                   {line.text}
-                  {'\n'}
                 </span>
               ))}
             </pre>
@@ -395,41 +416,55 @@ function DiffView({ diff }: { diff: TurnDiff }) {
   )
 }
 
+const TOOL_DOT: Record<ToolState, string> = {
+  running: 'tw:animate-pulse tw:bg-agent',
+  waiting: 'tw:animate-pulse tw:bg-accent',
+  ok: 'tw:bg-agent',
+  failed: 'tw:bg-removed',
+  denied: 'tw:bg-muted',
+}
+
 function ItemView({ item, onAnswer }: { item: TurnItem; onAnswer(id: string, allow: boolean): void }) {
   if (item.kind === 'text')
     return (
-      <div className="chat-bubble is-assistant agent-text">
+      <div className={cn('tw:text-fg', proseClass)}>
         <Markdown text={item.text} />
       </div>
     )
   if (item.kind === 'tools') {
     return (
-      <ul className="agent-tools">
+      <ul className="tw:flex tw:flex-col tw:gap-1 tw:rounded-xl tw:bg-panel-alt tw:px-3 tw:py-2 tw:shadow-hairline">
         {item.tools.map(({ call, state, error }) => (
-          <li key={call.id} className={`agent-tool is-${state}`} title={error}>
-            <span className="agent-tool__dot" aria-hidden />
-            <span className="agent-tool__summary">{call.summary}</span>
-            {state === 'failed' && <span className="agent-tool__state">failed</span>}
+          <li key={call.id} className="tw:flex tw:items-center tw:gap-2 tw:font-mono tw:text-[12px] tw:text-fg-2" title={error}>
+            <span aria-hidden className={cn('tw:size-1.5 tw:shrink-0 tw:rounded-full', TOOL_DOT[state])} />
+            <span className="tw:min-w-0 tw:truncate">{call.summary}</span>
+            {state === 'failed' && <span className="tw:text-removed">failed</span>}
+            {state === 'denied' && <span className="tw:text-muted">denied</span>}
           </li>
         ))}
       </ul>
     )
   }
+  const open = item.answer === undefined
   return (
-    <div className={`agent-approval${item.answer === undefined ? ' is-open' : ''}`} role={item.answer === undefined ? 'alertdialog' : undefined} aria-label="The agent asks for permission">
-      <div>
-        <strong>{item.answer === undefined ? 'Allow this?' : item.answer ? 'Allowed' : 'Not allowed'}</strong>
-        <code>{item.summary}</code>
-        {item.detail && <span className="agent-approval__detail">{item.detail}</span>}
+    <div
+      className={cn('tw:flex tw:flex-col tw:gap-2.5 tw:rounded-xl tw:px-3.5 tw:py-3', open ? 'tw:bg-accent-tint tw:shadow-[inset_0_0_0_1px_var(--sc-focus)]' : 'tw:bg-field')}
+      role={open ? 'alertdialog' : undefined}
+      aria-label="The agent asks for permission"
+    >
+      <div className="tw:flex tw:flex-col tw:gap-1">
+        <strong className={cn('tw:font-semibold', open && 'tw:text-on-accent-tint')}>{open ? 'Allow this?' : item.answer ? 'Allowed' : 'Not allowed'}</strong>
+        <code className="tw:font-mono tw:text-[12px] tw:break-all tw:text-fg">{item.summary}</code>
+        {item.detail && <span className="tw:text-[12px] tw:text-muted">{item.detail}</span>}
       </div>
-      {item.answer === undefined && (
-        <div className="agent-approval__actions">
-          <button type="button" className="tool-button is-primary" onClick={() => onAnswer(item.id, true)}>
+      {open && (
+        <div className="tw:flex tw:gap-2">
+          <Button size="sm" variant="primary" onClick={() => onAnswer(item.id, true)}>
             Allow
-          </button>
-          <button type="button" className="tool-button" onClick={() => onAnswer(item.id, false)}>
+          </Button>
+          <Button size="sm" onClick={() => onAnswer(item.id, false)}>
             Deny
-          </button>
+          </Button>
         </div>
       )}
     </div>
