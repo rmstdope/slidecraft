@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { RadioGroup } from 'radix-ui'
 import { Bot, ChevronLeft, FolderOpen, Palette } from 'lucide-react'
 import type { AgentBackendInfo } from '@shared/agent.ts'
@@ -41,10 +41,19 @@ export default function SettingsPage({ vaults, onChanged, onOpenVault, onExit }:
     setSectionState(next)
     window.history.replaceState(window.history.state, '', `#${next}`)
   }
+  // A hash typed into the address bar (or Back to another section) switches the section.
+  useEffect(() => {
+    const onHash = () => {
+      const hash = window.location.hash.slice(1)
+      if (isSection(hash)) setSectionState(hash)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   return (
     <div className="sc-app tw:flex tw:h-full tw:flex-wrap tw:overflow-y-auto tw:bg-ground">
-      <aside className="tw:flex tw:w-full tw:shrink-0 tw:flex-col tw:gap-5 tw:px-3.5 tw:py-5 tw:md:w-60">
+      <aside className="tw:flex tw:w-full tw:shrink-0 tw:flex-col tw:gap-5 tw:px-3.5 tw:py-5 tw:lg:w-60">
         <Logo withName className="tw:px-2" />
         <Button variant="ghost" className="tw:justify-start tw:px-2.5" onClick={onExit}>
           <ChevronLeft aria-hidden />
@@ -70,7 +79,7 @@ export default function SettingsPage({ vaults, onChanged, onOpenVault, onExit }:
         </nav>
       </aside>
 
-      <main className="tw:m-2.5 tw:min-w-0 tw:flex-[999_1_560px] tw:rounded-2xl tw:bg-panel tw:px-6 tw:py-10 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)] tw:md:px-12">
+      <main className="tw:m-2.5 tw:min-w-0 tw:flex-[999_1_480px] tw:rounded-2xl tw:bg-panel tw:px-6 tw:py-10 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)] tw:md:px-12">
         <div className="tw:flex tw:max-w-[760px] tw:flex-col tw:gap-9">
           {section === 'appearance' && <AppearanceSection />}
           {section === 'vaults' && <VaultsSection vaults={vaults} onChanged={onChanged} onOpenVault={onOpenVault} />}
@@ -224,6 +233,7 @@ function VaultsSection({ vaults, onChanged, onOpenVault }: { vaults: VaultInfo[]
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const temporary = vaults.find((v) => v.temporary)
+  const listRef = useRef<HTMLUListElement>(null)
 
   const run: Run = async (action) => {
     setBusy(true)
@@ -254,9 +264,10 @@ function VaultsSection({ vaults, onChanged, onOpenVault }: { vaults: VaultInfo[]
           {error}
         </p>
       )}
-      <ul className="tw:flex tw:flex-col tw:gap-2.5" aria-label="Vaults">
+      {/* Focus lands on the list after a removal: the row and its button are gone. */}
+      <ul ref={listRef} tabIndex={-1} className="tw:flex tw:flex-col tw:gap-2.5 tw:outline-none" aria-label="Vaults">
         {vaults.map((vault) => (
-          <VaultRow key={vault.id} vault={vault} busy={busy} run={run} onOpen={() => onOpenVault(vault.id)} />
+          <VaultRow key={vault.id} vault={vault} busy={busy} run={run} onOpen={() => onOpenVault(vault.id)} onRemoved={() => listRef.current?.focus()} />
         ))}
       </ul>
       <AddVault key={temporary?.id ?? 'new'} busy={busy} initial={temporary} run={run} onAdded={onOpenVault} />
@@ -264,7 +275,7 @@ function VaultsSection({ vaults, onChanged, onOpenVault }: { vaults: VaultInfo[]
   )
 }
 
-function VaultRow({ vault, busy, run, onOpen }: { vault: VaultInfo; busy: boolean; run: Run; onOpen(): void }) {
+function VaultRow({ vault, busy, run, onOpen, onRemoved }: { vault: VaultInfo; busy: boolean; run: Run; onOpen(): void; onRemoved(): void }) {
   const [name, setName] = useState(vault.name)
   const [confirming, setConfirming] = useState(false)
   const managed = !vault.builtIn && !vault.temporary
@@ -335,7 +346,7 @@ function VaultRow({ vault, busy, run, onOpen }: { vault: VaultInfo; busy: boolea
             disabled={busy}
             onClick={() => {
               setConfirming(false)
-              void run(() => removeVault(vault.id))
+              void run(() => removeVault(vault.id)).then((removed) => removed && onRemoved())
             }}
           >
             Remove from Slidecraft
@@ -458,11 +469,9 @@ function AgentSection() {
             <Button type="submit" variant="primary" disabled={!settings || model === (settings.model ?? '')}>
               Save model
             </Button>
-            {saved && (
-              <span role="status" className="tw:text-[13px] tw:text-muted">
-                {saved}
-              </span>
-            )}
+            <span role="status" className="tw:text-[13px] tw:text-muted">
+              {saved}
+            </span>
           </form>
         </Group>
       </div>
