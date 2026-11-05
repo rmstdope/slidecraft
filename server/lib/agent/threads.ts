@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import type { AgentBackendId, AgentEvent, AgentEventBody, MessageContext, ThreadDetail, ThreadInfo } from '../../../shared/agent.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
 import { buildAgentInstructions, buildDeckContext } from '../chat/prompt.ts'
-import { getContentSource, type ContentSource } from '../contentSources.ts'
+import { getAgentSettings, getContentSource, type ContentSource } from '../contentSources.ts'
 import { readDeckSource } from '../deckStore.ts'
 import { resolveDeckRefInSources } from '../decks.ts'
 import { broadcast } from '../events.ts'
@@ -22,6 +22,12 @@ const backends = new Map<AgentBackendId, AgentBackend>([[claudeCodeBackend.id, c
 export const getBackends = (): AgentBackend[] => [...backends.values()]
 export const getBackend = (id: AgentBackendId): AgentBackend | undefined => backends.get(id)
 export const DEFAULT_BACKEND: AgentBackendId = 'claude-code'
+
+/** The backend new conversations use: the setting when it names a known backend. */
+export function defaultBackend(): AgentBackendId {
+  const wanted = getAgentSettings().backend as AgentBackendId | undefined
+  return wanted && backends.has(wanted) ? wanted : DEFAULT_BACKEND
+}
 
 /** For tests: replace a backend with a scripted one. */
 export function setBackend(backend: AgentBackend): void {
@@ -108,6 +114,15 @@ function append(vault: ContentSource, thread: StoredThread, turn: number, body: 
     thread.events[thread.events.length - 1] = { ...last, text: last.text + event.text, seq: event.seq, at: event.at }
   } else thread.events.push(event)
   thread.info.updatedAt = event.at
+  // A vault conversation that writes a new deck becomes that deck's conversation.
+  if (event.type === 'file-changed' && !thread.info.deck) {
+    const match = /^([^/].*)\/index\.mdx$/.exec(event.path)
+    const deck = match ? { source: vault.id, path: match[1] } : undefined
+    if (deck && resolveDeckRefInSources(deck)) {
+      thread.info.deck = deck
+      queueMicrotask(() => announce(thread))
+    }
+  }
   broadcast({ type: 'agent-event', thread: thread.info.id, vault: vault.id, event, timestamp: event.at })
   return event
 }
@@ -137,7 +152,7 @@ export function getThread(vaultId: string, id: string): ThreadDetail {
 export function createThread(vaultId: string, options: { deck?: DeckRef; backend?: AgentBackendId } = {}): ThreadInfo {
   const vault = vaultOf(vaultId)
   if (vault.readOnly) throw new ThreadError(403, `The vault "${vault.name}" is read-only`)
-  const backend = options.backend ?? DEFAULT_BACKEND
+  const backend = options.backend ?? defaultBackend()
   if (!backends.has(backend)) throw new ThreadError(400, `Unknown agent "${backend}"`)
   if (options.deck && !resolveDeckRefInSources({ source: vault.id, path: options.deck.path })) throw new ThreadError(400, 'Invalid presentation reference')
   const now = Date.now()
@@ -211,6 +226,7 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
         prompt,
         instructions,
         sessionId: thread.sessionId,
+        model: getAgentSettings().model,
         signal: run.abort.signal,
         emit: (body) => append(vault, thread, turn, body),
         requestApproval: (request) =>

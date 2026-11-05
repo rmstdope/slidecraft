@@ -184,6 +184,28 @@ restart the thread reloads and the next turn still remembers the earlier ones. D
 **Done when:** an author can create a deck from the home page, refine it in chat, switch to Code
 and type, switch back and keep talking, all without leaving the page or losing the cursor.
 
+**Status (2026-11-05): done.** The workspace is the editor page grown (`src/editor/EditorPage.tsx`)
+at `/v/<vault>/edit/<deck>`; the conversation is `src/agent/AgentChat.tsx`, also on the home page;
+`src/chat/` is gone. Checked in the browser with Claude Code: a deck asked for on the home page
+opened in its workspace with the conversation carried over; changes asked in the workspace showed in
+the code and the preview; typing during a turn was refused ("Cannot edit in read-only editor"); the
+Preview/Code/Split switch, the slide chip, collapsing the panel, **New deck** by hand and the
+Agent section of the settings page all worked. Fixed on the way: an external reload marked the deck
+unsaved (Monaco reports a value set from outside as a change), which would have stopped later
+agent edits from showing; agent replies now render their Markdown. Deviations:
+
+- The slide rail stays a vertical column between the conversation and the work area, as in the
+  editor, rather than a strip under the preview; the overview (`M`) is the player's.
+- A vault conversation becomes a deck's conversation on the server when it writes a new
+  `<name>/index.mdx`, so it is still there when the deck's workspace opens.
+- The settings page checks `claude auth status` and reads only `loggedIn` from it. The default
+  backend can be chosen, but there is only one until Phase U6, so there is no per-conversation
+  override yet.
+- Until Phase U6 the AI API and Copilot have no UI: the old chat page is removed and
+  `/api/chat` remains only for its tests.
+- Switching to Preview unmounts the code editor, so its cursor is not kept across that switch;
+  Code ↔ Split keeps it.
+
 ### Phase U4 — Skills
 
 - `skills/slidecraft-presentations/`, `skills/slidecraft-components/` and `skills/slidecraft-dev/`

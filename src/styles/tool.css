@@ -994,3 +994,30 @@
 .vault-add__fields .tool-button {
   height: 44px;
 }
+.deck-card--naming {
+  cursor: default;
+  padding: 1.25rem;
+  align-items: stretch;
+}
+.deck-card__form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.deck-card__error {
+  color: var(--brand-red);
+  font-size: 0.8125rem;
+}
+.settings-heading {
+  font: 600 1.25rem var(--font-display);
+  color: var(--brand-yellow);
+}
+.settings-agent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.settings-saved {
+  align-self: center;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}

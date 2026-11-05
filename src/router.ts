@@ -25,7 +25,6 @@ export type ViewState =
   | { type: 'presentation'; deck: DeckRef; content: ComponentType }
   | { type: 'presentation-error'; deck: DeckRef; error: string }
   | { type: 'editor'; deck: DeckRef }
-  | { type: 'chat'; vault: string; deck?: DeckRef }
   | { type: 'presenter'; deck: DeckRef; content: ComponentType }
   | { type: 'gallery'; vault: string }
 

@@ -307,8 +307,10 @@ camera scale on a slide you stay on; more than four steps; animating for interes
 4. To create one, write `<name>/index.mdx` (lower-case words joined by dashes) or call
    `create_presentation` with every initial slide.
 5. Every write is compile-checked; fix the reported line before continuing.
-6. The running app reloads the deck on every save: open `http://localhost:<port>/<name>`. Reuse a
-   running server; never restart it. The editor (`/edit/<name>`) shows each slide as you change it.
+6. The running app reloads the deck on every save. In Slidecraft's own conversation panel the
+   person already sees the deck: do not give them a URL. From a terminal, the deck is at
+   `http://localhost:<port>/v/<vault>/<name>` and its workspace at `/v/<vault>/edit/<name>`. Reuse
+   a running server; never restart it.
 
 ## Files
 

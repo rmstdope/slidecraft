@@ -2,6 +2,7 @@
 import type { ContentSourceInfo } from '../../shared/decks.ts'
 import { addVault, configFilePath, getContentSources, getDefaultContentSource, removeVault, rememberVault, updateVault, VaultError } from '../lib/contentSources.ts'
 import { discoverPresentations } from '../lib/decks.ts'
+import { executeTool } from '../lib/tools.ts'
 import { restartFileWatcher } from '../lib/fileWatcher.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
 import { PORT } from '../lib/paths.ts'
@@ -85,4 +86,14 @@ export function handleThemes(url: URL): Response {
   const wanted = url.searchParams.get('source')
   const sources = getContentSources().filter((s) => !wanted || s.id === wanted)
   return json(sources.flatMap(discoverThemes))
+}
+
+/** POST /api/presentations {vault, name}: a new deck with a title slide, written by hand afterwards. */
+export async function handleCreatePresentation(request: Request): Promise<Response> {
+  const body = await readJson<{ vault?: unknown; name?: unknown }>(request)
+  if (!body || typeof body.vault !== 'string' || typeof body.name !== 'string') return errorJson(400, 'Body must be JSON with "vault" and "name" strings')
+  const title = body.name.replace(/-+/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
+  const result = await executeTool('create_presentation', { name: body.name, slides: [`<Slide>\n  <Title>${title}</Title>\n</Slide>`] }, { vault: body.vault })
+  if (!result.success) return errorJson(400, result.error ?? 'Could not create the presentation')
+  return json({ source: body.vault, path: body.name }, 201)
 }

@@ -260,3 +260,23 @@ export function rememberVault(id: string): void {
 }
 
 export const configFilePath = (): string => configFile
+
+// ---- Agent settings (UX overhaul U3) -------------------------------------------------------
+
+export interface AgentSettings {
+  backend?: string
+  model?: string
+}
+
+export const getAgentSettings = (): AgentSettings => readConfig(configFile).agent ?? {}
+
+/** Save the agent settings; an empty model means the CLI's own default. */
+export function setAgentSettings(change: AgentSettings): AgentSettings {
+  const config = migrateConfig(readConfig(configFile)).config
+  const next: AgentSettings = { ...config.agent }
+  if (change.backend !== undefined) next.backend = change.backend
+  if (change.model !== undefined) next.model = change.model.trim()
+  if (!next.model) delete next.model
+  writeConfig({ ...config, agent: next }, configFile)
+  return next
+}

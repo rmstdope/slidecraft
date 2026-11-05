@@ -8,6 +8,8 @@ import { displayName, filterDecks, filtersFromSearch, searchFromFilters, type De
 import { PlusIcon } from './icons'
 import { PresentationCard } from './PresentationCard'
 import { VaultSwitcher } from './VaultSwitcher'
+import { AgentChat } from '../agent/AgentChat'
+import { createPresentation } from '../api'
 
 export interface HomePageProps {
   /** The vault shown; `decks` are its decks only. */
@@ -23,7 +25,6 @@ export interface HomePageProps {
   loadDeck(deck: DeckRef): Promise<ComponentType>
   onPresent(deck: DeckRef, dev: boolean): void
   onEdit(deck: DeckRef): void
-  onChat(deck?: DeckRef): void
   onGallery(): void
   onSwitchVault(id: string): void
   onSettings(): void
@@ -48,7 +49,7 @@ function Logo({ size }: { size: number }) {
 
 /** The deck browser (Part 3 §1.5). */
 export function HomePage(props: HomePageProps) {
-  const { vault, vaults, decks, canCreate, isStatic, error, defaultSource, loadDeck, onPresent, onEdit, onChat, onGallery, onSwitchVault, onSettings } = props
+  const { vault, vaults, decks, canCreate, isStatic, error, defaultSource, loadDeck, onPresent, onEdit, onGallery, onSwitchVault, onSettings } = props
   const [filters, setFilters] = useState<DeckFilters>(() => filtersFromSearch(window.location.search))
   const [scrollTop, setScrollTop] = useState(0)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -67,7 +68,6 @@ export function HomePage(props: HomePageProps) {
   const commands = useMemo<CommandItem[]>(
     () => [
       { id: 'shortcuts', name: 'Keyboard Shortcuts', category: 'action', shortcut: ['?'], action: () => setShortcutsOpen(true) },
-      ...(isStatic ? [] : [{ id: 'chat', name: 'Chat', description: 'Create or change decks with an AI assistant', category: 'action' as const, action: () => onChat() }]),
       { id: 'gallery', name: 'Component Gallery', description: 'Every component and template with a live preview', category: 'action', action: onGallery },
       ...(isStatic ? [] : [{ id: 'settings', name: 'Manage Vaults', description: 'Add, rename or remove vaults', category: 'action' as const, action: onSettings }]),
       ...vaults
@@ -81,7 +81,7 @@ export function HomePage(props: HomePageProps) {
           : [{ id: `edit:${d.source}:${d.path}`, name: `Edit: ${displayName(d.path)}`, description: d.path, category: 'navigation' as const, action: () => onEdit(d) }]),
       ]),
     ],
-    [decks, isStatic, onChat, onGallery, onPresent, onEdit, onSettings, onSwitchVault, vault.id, vaults],
+    [decks, isStatic, onGallery, onPresent, onEdit, onSettings, onSwitchVault, vault.id, vaults],
   )
 
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {})
@@ -134,7 +134,7 @@ export function HomePage(props: HomePageProps) {
           <VaultSwitcher vault={vault} vaults={vaults} onSwitch={onSwitchVault} />
           {!isStatic && (
             <button type="button" className="tool-button" onClick={onSettings}>
-              Vaults…
+              Settings
             </button>
           )}
         </div>
@@ -142,7 +142,13 @@ export function HomePage(props: HomePageProps) {
           <Logo size={64} />
           <h1 className="home-hero__name">Slidecraft</h1>
           <p className="home-hero__tagline">Decks as MDX, rendered with React and motion.</p>
-          <p className="home-hero__hint">Select a presentation to begin</p>
+          {canCreate ? (
+            <div className="home-agent">
+              <AgentChat compact vault={vault.id} onDeckWritten={onEdit} />
+            </div>
+          ) : (
+            <p className="home-hero__hint">Select a presentation to begin</p>
+          )}
           <button type="button" className="tool-pill" onClick={onGallery}>
             Browse component gallery →
           </button>
@@ -200,13 +206,7 @@ export function HomePage(props: HomePageProps) {
         {(canCreate || decks.length > 0) && (
           <div className="home-grid">
             {canCreate && (
-              <button type="button" className="deck-card deck-card--create" onClick={() => onChat()}>
-                <span className="deck-card__plus">
-                  <PlusIcon size={28} />
-                </span>
-                <strong>Create New</strong>
-                <span>Start with AI assistant</span>
-              </button>
+              <NewDeckCard vault={vault.id} onCreated={onEdit} />
             )}
             {decks.length > 0 && visible.length === 0 && (
               <div className="deck-card deck-card--empty">
@@ -224,7 +224,6 @@ export function HomePage(props: HomePageProps) {
                 onPresent={() => onPresent(deck, false)}
                 onDev={() => onPresent(deck, true)}
                 onEdit={deck.readOnly || isStatic ? undefined : () => onEdit(deck)}
-                onChat={deck.readOnly || isStatic ? undefined : () => onChat(deck)}
                 canExport={!isStatic}
               />
             ))}
@@ -241,5 +240,58 @@ export function HomePage(props: HomePageProps) {
       <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode="Home" commands={commands} />
       <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="home" />
     </div>
+  )
+}
+
+const DECK_NAME = /^[a-z0-9][a-z0-9-]*$/
+
+/** "New deck" for working by hand: a name, then the workspace. */
+function NewDeckCard({ vault, onCreated }: { vault: string; onCreated(deck: DeckRef): void }) {
+  const [naming, setNaming] = useState(false)
+  const [name, setName] = useState('')
+  const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  const valid = DECK_NAME.test(name)
+  if (!naming) {
+    return (
+      <button type="button" className="deck-card deck-card--create" onClick={() => setNaming(true)}>
+        <span className="deck-card__plus">
+          <PlusIcon size={28} />
+        </span>
+        <strong>New deck</strong>
+        <span>Start from a title slide and write it yourself</span>
+      </button>
+    )
+  }
+  const create = async () => {
+    if (!valid || busy) return
+    setBusy(true)
+    const result = await createPresentation(vault, name)
+    setBusy(false)
+    if (result.data) onCreated(result.data)
+    else setError(result.error)
+  }
+  return (
+    <form
+      className="deck-card deck-card--create deck-card--naming"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void create()
+      }}
+    >
+      <label className="tool-field">
+        <span>Folder name</span>
+        <input autoFocus value={name} placeholder="q4-review" onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} onKeyDown={(e) => e.key === 'Escape' && setNaming(false)} />
+      </label>
+      {error ? <span className="deck-card__error">{error}</span> : <span>Lower-case words joined by dashes</span>}
+      <div className="deck-card__form-actions">
+        <button type="submit" className="tool-button is-primary" disabled={!valid || busy}>
+          Create
+        </button>
+        <button type="button" className="tool-button" onClick={() => setNaming(false)}>
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }

@@ -72,10 +72,14 @@ imports for you when you save.
 ## The home page
 
 The home page lists the decks of one **vault** as cards showing their first slide. Switch vaults
-at the top right; **Vaults…** adds, renames or removes them (a removed vault's files stay where they
-are). Sort by update date, creation date or name, or filter by path and name. Each card opens the deck,
-the editor or the AI chat, and exports HTML or PDF. **Create New** starts a new deck with the AI assistant; you can also simply create a folder
-with an `index.mdx` in it, and it appears on the home page.
+at the top right; **Settings** adds, renames or removes them (a removed vault's files stay where they
+are). Sort by update date, creation date or name, or filter by path and name. Each card presents the deck,
+opens its workspace, or exports HTML or PDF.
+
+The box at the top asks the agent for something: describe a talk or paste your notes, and when it
+writes the new deck, the deck's workspace opens with the conversation. **New deck** starts from a
+title slide when you would rather write it yourself; a folder with an `index.mdx` that you create
+any other way appears on the home page too.
 
 ## The editor
 
@@ -96,7 +100,8 @@ marked; leaving asks first. When the file changes on disk (another editor or an 
 editor reloads it unless you have unsaved changes.
 
 **Help** opens a panel listing every component with its props and an example. **Present**
-(`⌘⇧Enter`) presents from the selected slide. **Chat** opens the AI assistant on this deck.
+(`⌘⇧Enter`) presents from the selected slide. **Preview**, **Code** and **Split** choose what
+the work area shows; the agent's conversation sits on the left (hide it with **⟨**).
 
 If a deck cannot be split into slides (a syntax error between slides), the editor opens the
 whole file in one code editor until it parses again.
@@ -232,22 +237,21 @@ per slide in this browser and show in both windows; the laser never persists.
 Export from the deck's card, or from a terminal with `bun run export --name <deck> [--pdf]`.
 Files are written to `<content folder>/exports/`.
 
-## The AI assistant
+## The agent
 
-**Chat** on a card or in the editor opens the assistant. It reads and edits the deck slide by
-slide and can create new decks; every change is compile-checked, and the preview follows along.
-Three providers:
+The workspace and the home page carry a conversation with **Claude Code**, your installed
+`claude`, signed in. Ask for a slide, a shorter title, another theme or a whole new deck; the agent
+edits the file and the preview follows.
 
-- **An OpenAI-compatible API:** set `AI_API_KEY` (and optionally `SLIDECRAFT_AI_URL` and
-  `SLIDECRAFT_AI_MODEL`).
-- **Claude Code:** your installed `claude`, signed in. Its work streams into the chat as it
-  happens: text, each tool call, each changed file. It edits decks in the vault without asking; a
-  shell command or a file outside the vault shows **Allow** and **Deny** first. **Stop** ends the
-  turn. Each deck keeps its conversations, and they resume after a restart.
-- **GitHub Copilot CLI:** an installed command-line agent; it edits the files directly and keeps
-  its own sessions.
+- Its work streams in as it happens: text, each tool call, each changed file.
+- It edits decks in the vault without asking; a shell command or a file outside the vault shows
+  **Allow** and **Deny** first. **Stop** ends the turn.
+- The slide on screen and any code you selected go with your message, shown as chips above the
+  box; remove one with ×.
+- While it works, the code is read-only (**Agent is editing**); unsaved edits are saved before a
+  message goes out.
+- Each deck keeps its conversations (pick one at the top, or **New**); they resume after a restart.
 
-If the assistant leaves a slide that does not compile, a repair editor opens with the error.
 [Getting started with agents](getting-started-with-agents.md) shows other ways to use a coding
 agent with your decks.
 

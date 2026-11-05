@@ -48,3 +48,23 @@ describe('toTurns', () => {
     expect(answered[0].done).toEqual({ ok: false, error: undefined, costUsd: undefined, stopped: true })
   })
 })
+
+describe('agent markdown', () => {
+  test('paragraphs, lists and code blocks', async () => {
+    const { parseBlocks } = await import('../src/agent/markdown')
+    expect(parseBlocks('I made three slides:\n\n1. **Title**: Team offsite\n2. Agenda\n- a\n- b\n\n```mdx\n<Slide />\n```\nDone.')).toEqual([
+      { kind: 'p', text: 'I made three slides:' },
+      { kind: 'ol', items: ['**Title**: Team offsite', 'Agenda'] },
+      { kind: 'ul', items: ['a', 'b'] },
+      { kind: 'code', text: '<Slide />' },
+      { kind: 'p', text: 'Done.' },
+    ])
+  })
+  test('bold and code become elements, never HTML', async () => {
+    const { inline } = await import('../src/agent/markdown')
+    const parts = inline('Edit **`q3`** and `<script>`')
+    expect(parts).toHaveLength(4)
+    expect(parts[0]).toBe('Edit ')
+    expect(typeof parts[3]).toBe('object') // the <script> text sits inside a <code> element
+  })
+})

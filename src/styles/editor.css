@@ -693,3 +693,62 @@
   border-radius: 8px;
   overflow: hidden;
 }
+
+/* The deck workspace (UX overhaul U3): conversation, rail, preview/code. */
+.workspace-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.workspace-body > .editor-body,
+.workspace-body > .editor-raw {
+  flex: 1;
+  min-width: 0;
+}
+.workspace-chat {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+}
+.workspace-chat-tab {
+  flex: 0 0 auto;
+  writing-mode: vertical-rl;
+  padding: 1rem 0.4rem;
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dark-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.workspace-chat-tab:hover {
+  color: var(--brand-yellow);
+}
+.workspace-views {
+  display: flex;
+  padding: 2px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.workspace-views button {
+  border: 0;
+  border-radius: 5px;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: var(--dark-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.workspace-views button.is-active {
+  background: var(--brand-yellow);
+  color: var(--ink);
+  font-weight: 700;
+}

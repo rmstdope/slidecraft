@@ -44,10 +44,9 @@ works.
 
 ## 4. Four ways to drive an agent
 
-1. **The chat panel in Slidecraft.** Click **Create New** on the home page, or **Chat** on a deck.
-   Pick a provider: Claude Code or GitHub Copilot CLI if one is installed on this computer, or an
-   API key (`AI_API_KEY`) for an OpenAI-compatible service. Type your request; the preview
-   follows along.
+1. **The agent inside Slidecraft.** With Claude Code installed and signed in, type into the box
+   at the top of the home page, or open a deck's workspace and use the conversation on the left.
+   The preview follows along, and anything beyond editing decks asks first.
 2. **A command-line agent in a terminal.** Open a terminal in the decks folder and start the
    agent (for example `claude` or `copilot`). It reads `AGENTS.md` and edits the files directly.
 3. **The chat in your code editor.** Open the decks folder in VS Code, Cursor or another editor

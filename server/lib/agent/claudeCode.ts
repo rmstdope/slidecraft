@@ -119,13 +119,25 @@ export function mapClaudeMessage(state: MapState, message: SDKMessage, emit: (ev
   }
 }
 
-async function version(binary: string): Promise<string | undefined> {
+/** Run a short CLI command and return its stdout, or undefined when it fails or hangs. */
+async function output(args: string[]): Promise<string | undefined> {
   try {
-    const proc = Bun.spawn([binary, '--version'], { stdout: 'pipe', stderr: 'ignore' })
-    const timer = setTimeout(() => proc.kill(), 5000)
+    const proc = Bun.spawn(args, { stdout: 'pipe', stderr: 'ignore' })
+    const timer = setTimeout(() => proc.kill(), 8000)
     const text = await new Response(proc.stdout).text()
     clearTimeout(timer)
-    return text.trim().split(/\s+/)[0] || undefined
+    return (await proc.exited) === 0 || text.trim() ? text : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Signed in? Only `loggedIn` is read from `claude auth status`; nothing about the account. */
+export function parseAuthStatus(text: string | undefined): boolean | undefined {
+  if (!text) return undefined
+  try {
+    const parsed = JSON.parse(text) as { loggedIn?: unknown }
+    return typeof parsed.loggedIn === 'boolean' ? parsed.loggedIn : undefined
   } catch {
     return undefined
   }
@@ -136,12 +148,15 @@ export const claudeCodeBackend: AgentBackend = {
   name: 'Claude Code',
 
   async detect(): Promise<AgentBackendInfo> {
+    const base = { id: 'claude-code' as const, name: 'Claude Code' }
     const binary = claudeBinary()
-    if (!binary) return { id: 'claude-code', name: 'Claude Code', available: false, detail: 'Install Claude Code and sign in: run `claude` once in a terminal.' }
-    const found = await version(binary)
-    return found
-      ? { id: 'claude-code', name: 'Claude Code', available: true, version: found }
-      : { id: 'claude-code', name: 'Claude Code', available: false, detail: `${binary} did not answer --version.` }
+    if (!binary) return { ...base, available: false, detail: 'Install Claude Code, then run `claude` once in a terminal to sign in.' }
+    const [versionText, authText] = await Promise.all([output([binary, '--version']), output([binary, 'auth', 'status'])])
+    const version = versionText?.trim().split(/\s+/)[0] || undefined
+    if (!version) return { ...base, available: false, detail: `${binary} did not answer --version.` }
+    const loggedIn = parseAuthStatus(authText)
+    if (loggedIn === false) return { ...base, available: false, version, detail: 'Claude Code is installed but not signed in: run `claude auth login` in a terminal.' }
+    return { ...base, available: true, version }
   },
 
   async runTurn(input: TurnInput): Promise<TurnResult> {

@@ -21,7 +21,7 @@ import errorShot from './images/error.png'
 import presenterShot from './images/presenter.png'
 import drawingShot from './images/drawing.png'
 import readerShot from './images/reader.png'
-import chatShot from './images/chat.png'
+import workspaceShot from './images/workspace.png'
 import docsShot from './images/docs.png'
 
 {/*
@@ -697,32 +697,28 @@ import docsShot from './images/docs.png'
 </Slide>
 
 <Slide scheme="dark" accent="navy" gradient="radial-accent">
-  <Subtitle>Chat</Subtitle>
-  <Title>Describe the deck, an assistant writes it</Title>
-  <Text muted>Connect any OpenAI-compatible API, Claude Code or the Copilot CLI.</Text>
-  <Notes>11:20-11:40. Section opener for the chat assistant. Open it from the home page or with Chat in the editor.</Notes>
+  <Subtitle>Agent</Subtitle>
+  <Title>Describe the deck, the agent writes it</Title>
+  <Text muted>Claude Code works in your vault, next to the slides, the code and the preview.</Text>
+  <Notes>11:20-11:40. Section opener for the agent. It uses your own Claude Code and its login; nothing else to set up.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="navy" layout="document">
-  <Subtitle>Chat</Subtitle>
-  <Title>Every change is checked before it lands</Title>
-  <ContentImage src={chatShot} alt="The chat page: a conversation with a validation error and its repair editor, next to the live preview" width={1150} />
-  <Notes>A slide that does not compile is refused. The assistant sees the error and retries; if it gives up, the slide opens in an editor with Apply Fix.</Notes>
+  <Subtitle>Workspace</Subtitle>
+  <Title>Agent, code and preview on one page</Title>
+  <ContentImage src={workspaceShot} alt="The deck workspace: the agent conversation on the left, the slide rail, the code and the live preview" width={1100} />
+  <Notes>Preview, Code and Split switch the right side. The slide on screen and any selected code go with each message as chips you can remove. While the agent edits, the code is read-only; unsaved changes are saved before a message goes out.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="navy" layout="document">
-  <Subtitle>Providers</Subtitle>
-  <Title>Three ways to connect a model</Title>
-  <ComparisonTable
-    headers={["Provider", "Who edits the file", "Setup"]}
-    align={["left", "left", "left"]}
-    rows={[
-      ["AI API", "Slidecraft, through its deck tools", "AI_API_KEY, optional SLIDECRAFT_AI_URL and _MODEL"],
-      ["Claude Code", "The claude CLI, in the content folder", "claude on PATH, signed in"],
-      ["Copilot CLI", "The copilot CLI, in the content folder", "copilot on PATH, signed in"],
-    ]}
-  />
-  <Notes>All three get the same context: the components, the templates, the themes, the author guide and the folder's own AGENTS.md.</Notes>
+  <Subtitle>Home</Subtitle>
+  <Title>New decks start from the home page</Title>
+  <List>
+    <ListItem>The question box at the top starts a conversation about the whole vault.</ListItem>
+    <ListItem>When the agent writes a new deck, its workspace opens and the conversation follows.</ListItem>
+    <ListItem>New deck starts from a title slide for writing by hand.</ListItem>
+  </List>
+  <Notes>The conversation moves with the deck: the next time you open the deck, it is there to continue.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="teal" layout="document">

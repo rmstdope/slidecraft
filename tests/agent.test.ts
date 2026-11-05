@@ -168,6 +168,22 @@ describe('threads', () => {
   })
 })
 
+describe('vault conversations', () => {
+  test('a vault conversation that writes a new deck becomes that deck\'s conversation', async () => {
+    const thread = createThread('work')
+    script = async (input) => {
+      mkdirSync(join(work, 'launch'), { recursive: true })
+      writeFileSync(join(work, 'launch', 'index.mdx'), '<Presentation>\n\n<Slide>\n  <Title>Launch</Title>\n</Slide>\n\n</Presentation>\n')
+      input.emit({ type: 'file-changed', path: 'launch/index.mdx' })
+      return { ok: true }
+    }
+    await sendMessage('work', thread.id, 'Make a launch deck')
+    await settled('work', thread.id)
+    expect(getThread('work', thread.id).deck).toEqual({ source: 'work', path: 'launch' })
+    expect(listThreads('work', { source: 'work', path: 'launch' }).map((t) => t.id)).toEqual([thread.id])
+  })
+})
+
 describe('agent routes', () => {
   const call = (path: string, init?: RequestInit) => router(new Request(`http://localhost:6110${path}`, init))
   test('create, send, read, and errors as JSON', async () => {
@@ -189,5 +205,25 @@ describe('agent routes', () => {
     expect((await call('/api/agent/threads', { method: 'POST', body: JSON.stringify({ vault: 'team' }) })).status).toBe(403)
     expect((await call(`/api/agent/threads/work/${id}/approvals/nope`, { method: 'POST', body: JSON.stringify({ allow: true }) })).status).toBe(404)
     expect((await call('/api/agent/threads?vault=nope')).status).toBe(404)
+  })
+
+  test('agent settings keep the backend when only the model changes', async () => {
+    const put = (body: unknown) => call('/api/agent/settings', { method: 'PUT', body: JSON.stringify(body) })
+    expect(await (await put({ backend: 'claude-code' })).json()).toEqual({ backend: 'claude-code' })
+    expect(await (await put({ model: ' opus ' })).json()).toEqual({ backend: 'claude-code', model: 'opus' })
+    expect(await (await put({ model: '' })).json()).toEqual({ backend: 'claude-code' })
+    expect((await put({ backend: 'nope' })).status).toBe(400)
+    expect(JSON.parse(readFileSync(join(root, 'config.json'), 'utf8')).agent).toEqual({ backend: 'claude-code' })
+  })
+
+  test('a deck can be created by hand with a title slide', async () => {
+    const create = (name: string, vault = 'work') => call('/api/presentations', { method: 'POST', body: JSON.stringify({ vault, name }) })
+    const res = await create('by-hand')
+    expect(res.status).toBe(201)
+    expect(await res.json()).toEqual({ source: 'work', path: 'by-hand' })
+    expect(readFileSync(join(work, 'by-hand', 'index.mdx'), 'utf8')).toContain('<Title>By hand</Title>')
+    expect((await create('by-hand')).status).toBe(400)
+    expect((await create('Bad Name')).status).toBe(400)
+    expect((await create('fresh', 'team')).status).toBe(400)
   })
 })

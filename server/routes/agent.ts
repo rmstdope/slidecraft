@@ -3,6 +3,7 @@
  * `agent-event`; these routes start and steer turns.
  *
  * GET  /api/agent/backends
+ * GET  /api/agent/settings · PUT /api/agent/settings {backend?, model?}
  * GET  /api/agent/threads?vault=<id>[&path=<deck>]
  * POST /api/agent/threads {vault, path?, backend?}
  * GET  /api/agent/threads/<vault>/<id>
@@ -11,7 +12,8 @@
  * POST /api/agent/threads/<vault>/<id>/approvals/<approvalId> {allow}
  */
 import type { AgentBackendId, MessageContext } from '../../shared/agent.ts'
-import { createThread, getBackends, getThread, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError } from '../lib/agent/threads.ts'
+import { getAgentSettings, setAgentSettings } from '../lib/contentSources.ts'
+import { createThread, defaultBackend, getBackends, getThread, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError } from '../lib/agent/threads.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
 
 const decode = (segment: string | undefined): string | null => {
@@ -37,6 +39,17 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
   try {
     if (parts[0] === 'backends' && parts.length === 1 && method === 'GET') {
       return json(await Promise.all(getBackends().map((b) => b.detect())))
+    }
+    if (parts[0] === 'settings' && parts.length === 1) {
+      if (method === 'GET') return json({ ...getAgentSettings(), backend: defaultBackend() })
+      if (method === 'PUT') {
+        const body = await readJson<{ backend?: unknown; model?: unknown }>(request)
+        if (!body) return errorJson(400, 'Body must be JSON')
+        if (body.backend !== undefined && !getBackends().some((b) => b.id === body.backend)) return errorJson(400, `Unknown agent "${String(body.backend)}"`)
+        setAgentSettings({ backend: typeof body.backend === 'string' ? body.backend : undefined, model: typeof body.model === 'string' ? body.model : undefined })
+        return json({ ...getAgentSettings(), backend: defaultBackend() })
+      }
+      return errorJson(405, 'Method not allowed')
     }
     if (parts[0] !== 'threads') return errorJson(404, 'Not found')
 

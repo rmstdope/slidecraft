@@ -87,10 +87,10 @@ src/animations/ springs and variant tables
 src/presenter/  presenter window, cross-window sync, navigation hook
 src/drawing/    annotations: canvas, toolbar, history, persistence
 src/home/       home page: deck cards, filters, vault switcher, home commands
-src/settings/   vault management page
 src/gallery/    component gallery: search, lazy preview scheduler
-src/chat/       chat page: providers, tool calls, repair editor
-src/editor/     deck editor: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
+src/agent/      agent conversation: panel, thread hook, event folding, markdown
+src/settings/   settings page: vaults and the agent
+src/editor/     deck workspace: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
 src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
 src/language-service-monaco/ Monaco adapter for the language service
 shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, deckModel, tagAttrs, themes, mdxImports

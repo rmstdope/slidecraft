@@ -13,7 +13,7 @@ import { handleApplyFix } from './routes/applyFix.ts'
 import { handleAgent } from './routes/agent.ts'
 import { handleChat } from './routes/chat.ts'
 import { handleExport } from './routes/export.ts'
-import { handlePresentations, handleThemes, handleVaults } from './routes/content.ts'
+import { handleCreatePresentation, handlePresentations, handleThemes, handleVaults } from './routes/content.ts'
 import { handleDeleteImage, handleListImages, handleUpload } from './routes/images.ts'
 import { handleMdx } from './routes/mdx.ts'
 import { existsSync } from 'node:fs'
@@ -35,6 +35,7 @@ export async function router(request: Request): Promise<Response> {
     return json({ app: APP_ID, version: VERSION, port: PORT, contentDir: source.path, contentName: source.builtIn ? null : source.id, vault: source.id, pid: process.pid })
   }
   if (method === 'GET' && pathname === '/api/presentations') return handlePresentations(url)
+  if (method === 'POST' && pathname === '/api/presentations') return handleCreatePresentation(request)
   if (pathname === '/api/vaults' || pathname.startsWith('/api/vaults/')) return handleVaults(request, url)
   if (method === 'GET' && pathname === '/api/themes') return handleThemes(url)
   if (pathname.startsWith('/api/agent/')) return handleAgent(request, url)
