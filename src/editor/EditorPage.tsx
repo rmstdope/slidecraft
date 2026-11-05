@@ -371,7 +371,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
           <div className="workspace-body" ref={containerRef}>
           {chatShown ? (
             <>
-              <div className="workspace-chat" style={{ width: chatWidth }}>
+              {/* The conversation is already on the new chrome; the workspace stays dark until it moves too (ui-redesign-plan R4). */}
+              <div className="workspace-chat sc-app" data-sc-theme="dark" style={{ width: chatWidth }}>
                 <AgentChat
                   vault={deck.source}
                   deck={deck}
