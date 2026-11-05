@@ -317,7 +317,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     ]
     if (exported) list.push({ id: 'read', name: 'Read Mode', description: 'Every slide with its notes; prints as a handout', category: 'view', action: () => setViewerMode('read') })
     if (!exported) {
-      list.push({ id: 'home', name: 'Go to Home', category: 'navigation', action: () => navigateTo(homeUrl()) })
+      list.push({ id: 'home', name: 'Go to Home', category: 'navigation', action: () => navigateTo(homeUrl(deck?.source)) })
       if (deck) {
         list.push({ id: 'edit', name: 'Edit Presentation', description: `Open slide ${nav.current + 1} in the editor`, category: 'navigation', shortcut: ['Esc'], action: editSlide })
         list.push({ id: 'chat', name: 'Chat', description: 'Edit with AI assistant', category: 'navigation', action: () => navigateTo(chatUrl(deck)) })

@@ -20,6 +20,8 @@ import { discoverThemes } from './themes.ts'
 export interface ToolContext {
   /** The deck the conversation is about; names resolve next to it. */
   deck?: DeckRef
+  /** The vault the conversation is in, when it is about no deck in particular. */
+  vault?: string
 }
 
 export interface ToolResult {
@@ -105,7 +107,7 @@ export function toolDeckRef(name: string, context: ToolContext): DeckRef {
     const parent = dirname(context.deck.path)
     return { source: context.deck.source, path: parent === '.' ? name : `${parent}/${name}` }
   }
-  return { source: getDefaultContentSource().id, path: name }
+  return { source: context.vault ?? getDefaultContentSource().id, path: name }
 }
 
 const fail = (error: string): ToolResult => ({ success: false, error })
@@ -156,8 +158,9 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
   try {
     switch (name) {
       case 'list_presentations': {
-        const source = context.deck?.source
-        const decks = await discoverPresentations(source ? { source } : {})
+        // One vault only: the deck's, the conversation's, or the default one (MCP --vault).
+        const source = context.deck?.source ?? context.vault ?? getDefaultContentSource().id
+        const decks = await discoverPresentations({ source })
         return { success: true, data: decks.map((d) => ({ name: d.name, path: d.path, source: d.source, readOnly: d.readOnly, updatedAt: d.updatedAt })) }
       }
       case 'read_presentation': {
@@ -241,7 +244,7 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
         return { success: true, data: { name: deckName(loaded.ref), theme: theme || 'slidecraft' } }
       }
       case 'list_themes':
-        return { success: true, data: themesFor(context.deck?.source ?? getDefaultContentSource().id) }
+        return { success: true, data: themesFor(context.deck?.source ?? context.vault ?? getDefaultContentSource().id) }
       case 'list_images': {
         if (typeof args.presentation === 'string' && args.presentation) {
           const resolved = resolveDeckRefInSources(toolDeckRef(args.presentation, context))

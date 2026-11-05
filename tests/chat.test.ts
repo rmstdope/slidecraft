@@ -67,7 +67,7 @@ describe('HTTP provider tool loop', () => {
     const res = await runHttpChat({ systemPrompt: 'sys', history: [{ role: 'user', content: 'Make a deck' }], callModel: model.call, onIteration: (i) => iterations.push(i), onToolCall: (c) => calls.push(`${c.tool}:${c.result}`) })
     expect(res.message).toBe('Created fresh-deck with one slide.')
     expect(res.modifiedPresentation).toBe('fresh-deck')
-    expect(res.modifiedDeck).toEqual({ source: 'default', path: 'fresh-deck' })
+    expect(res.modifiedDeck).toEqual({ source: 'content', path: 'fresh-deck' })
     expect(existsSync(join(content, 'fresh-deck', 'index.mdx'))).toBe(true)
     expect(iterations).toEqual([1, 2])
     expect(calls).toEqual(['create_presentation:success'])
@@ -79,7 +79,7 @@ describe('HTTP provider tool loop', () => {
   test('a refused slide is reported with its content; a later fix on the same slide clears it', async () => {
     const bad = '<Slide>\n  <Title>Broken</Tittle>\n</Slide>'
     const model = scripted([toolCall('a', 'update_slide', { name: 'talk', index: 1, content: bad }), { role: 'assistant', content: 'I could not fix it.' }])
-    const res = await runHttpChat({ systemPrompt: 's', history: [{ role: 'user', content: 'edit' }], deck: { source: 'default', path: 'talk' }, callModel: model.call })
+    const res = await runHttpChat({ systemPrompt: 's', history: [{ role: 'user', content: 'edit' }], deck: { source: 'content', path: 'talk' }, callModel: model.call })
     expect(res.validationErrors).toHaveLength(1)
     expect(res.validationErrors![0]).toMatchObject({ tool: 'update_slide', slideIndex: 1, failedContent: bad })
     expect(res.validationErrors![0].error).toContain('Validation failed')
@@ -90,7 +90,7 @@ describe('HTTP provider tool loop', () => {
       toolCall('b', 'update_slide', { name: 'talk', index: 1, content: '<Slide accent="teal">\n  <Title>Middle, fixed</Title>\n</Slide>' }),
       { role: 'assistant', content: 'Fixed.' },
     ])
-    const res2 = await runHttpChat({ systemPrompt: 's', history: [{ role: 'user', content: 'edit' }], deck: { source: 'default', path: 'talk' }, callModel: fixed.call })
+    const res2 = await runHttpChat({ systemPrompt: 's', history: [{ role: 'user', content: 'edit' }], deck: { source: 'content', path: 'talk' }, callModel: fixed.call })
     expect(res2.validationErrors).toBeUndefined()
     expect(res2.toolCalls?.map((c) => c.result)).toEqual(['error', 'success'])
     writeFileSync(join(content, 'talk', 'index.mdx'), DECK)
@@ -122,7 +122,7 @@ describe('HTTP provider tool loop', () => {
 
 describe('prompts', () => {
   test('the system prompt has the guide, components, guidelines and the slides near the view', async () => {
-    const prompt = await buildSystemPrompt({ ref: { source: 'default', path: 'talk' }, source: DECK, currentSlideIndex: 1, contentDir: content }, content)
+    const prompt = await buildSystemPrompt({ ref: { source: 'content', path: 'talk' }, source: DECK, currentSlideIndex: 1, contentDir: content }, content)
     expect(prompt).toContain('# AI Presentation Assistant')
     expect(prompt).toContain('# Presentation author guide')
     expect(prompt).toContain('## Available components')
@@ -142,7 +142,7 @@ describe('prompts', () => {
   })
 
   test('the CLI context names the file to edit and marks the current slide', async () => {
-    const context = await buildAgentContext({ ref: { source: 'default', path: 'talk' }, source: DECK, currentSlideIndex: 2, contentDir: content }, content)
+    const context = await buildAgentContext({ ref: { source: 'content', path: 'talk' }, source: DECK, currentSlideIndex: 2, contentDir: content }, content)
     expect(context).toContain('File path: talk/index.mdx')
     expect(context).toContain('2: "End" [dark/yellow]  <-- viewing')
     expect(context).toContain('### Current slide (index 2)')
@@ -160,7 +160,7 @@ describe('Claude Code provider', () => {
       expect(opts.cwd).toBe(content)
       return proc(JSON.stringify({ type: 'result', result: 'Edited slide 2.', session_id: 'sess-1', is_error: false }))
     }
-    const input = { message: 'Fix slide 2', conversationId: 'conv', cwd: content, contextPrompt: 'CTX', deck: { source: 'default', path: 'talk' }, run }
+    const input = { message: 'Fix slide 2', conversationId: 'conv', cwd: content, contextPrompt: 'CTX', deck: { source: 'content', path: 'talk' }, run }
     const first = await runClaudeCode(input)
     expect(first).toMatchObject({ message: 'Edited slide 2.', modifiedPresentation: 'talk' })
     await runClaudeCode(input)
@@ -201,9 +201,9 @@ describe('Copilot CLI provider', () => {
   test('the reply joins assistant messages; a created deck is found from the modified files', async () => {
     const out = jsonl({ type: 'session.tools_updated' }, { type: 'assistant.message', data: { content: 'One.' } }, 'not json', { type: 'assistant.message', data: { content: 'Two.' } }, result([join(content, 'new-one', 'index.mdx')]))
     expect(parseCopilotOutput(out)).toEqual({ text: 'One.\n\nTwo.', exitCode: 0, filesModified: [join(content, 'new-one', 'index.mdx')] })
-    const res = await runCopilot({ message: 'Create', conversationId: 'conv-d', cwd: content, contextPrompt: '', sourceId: 'default', run: async () => proc(out) })
-    expect(res.modifiedDeck).toEqual({ source: 'default', path: 'new-one' })
-    expect(deckFromFiles(['/elsewhere/x/index.mdx'], content, 'default')).toBeUndefined()
+    const res = await runCopilot({ message: 'Create', conversationId: 'conv-d', cwd: content, contextPrompt: '', sourceId: 'content', run: async () => proc(out) })
+    expect(res.modifiedDeck).toEqual({ source: 'content', path: 'new-one' })
+    expect(deckFromFiles(['/elsewhere/x/index.mdx'], content, 'content')).toBeUndefined()
   })
 
   test('retries once when the session is still being disposed; reports failures', async () => {

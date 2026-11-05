@@ -22,7 +22,7 @@ bun install
 bun run dev           # http://localhost:6100
 ```
 
-The [README](../README.md) covers several content folders, the config file and the MCP server.
+The [README](../README.md) covers vaults, the config file and the MCP server.
 
 ## Files
 
@@ -71,8 +71,9 @@ imports for you when you save.
 
 ## The home page
 
-The home page lists every deck as a card showing its first slide. Sort by update date, creation
-date or name; filter by content folder when several are mounted. Each card opens the deck,
+The home page lists the decks of one **vault** as cards showing their first slide. Switch vaults
+at the top right; **Vaults…** adds, renames or removes them (a removed vault's files stay where they
+are). Sort by update date, creation date or name, or filter by path and name. Each card opens the deck,
 the editor or the AI chat, and exports HTML or PDF. **Create New** starts a new deck with the AI assistant; you can also simply create a folder
 with an `index.mdx` in it, and it appears on the home page.
 

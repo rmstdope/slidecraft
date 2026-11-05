@@ -1,12 +1,12 @@
-/** Presentations, content sources and themes (Part 4 §5; themes from plan Phase 4b). */
+/** Presentations, vaults and themes (Part 4 §5; themes from plan Phase 4b). */
 import type { ContentSourceInfo } from '../../shared/decks.ts'
-import { getContentSources, getDefaultContentSource, setContentByName } from '../lib/contentSources.ts'
+import { addVault, configFilePath, getContentSources, getDefaultContentSource, removeVault, rememberVault, updateVault, VaultError } from '../lib/contentSources.ts'
 import { discoverPresentations } from '../lib/decks.ts'
 import { restartFileWatcher } from '../lib/fileWatcher.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
-import { CONFIG_FILE, PORT } from '../lib/paths.ts'
+import { PORT } from '../lib/paths.ts'
 import { discoverThemes } from '../lib/themes.ts'
-import { syncFolderInstructions } from '../lib/agentContext.ts'
+import { syncAllFolderInstructions } from '../lib/agentContext.ts'
 
 export async function handlePresentations(url: URL): Promise<Response> {
   try {
@@ -18,30 +18,66 @@ export async function handlePresentations(url: URL): Promise<Response> {
   }
 }
 
-const info = ({ id, path, include, readOnly, builtIn }: ContentSourceInfo): ContentSourceInfo => ({ id, path, include, readOnly, builtIn })
+const info = ({ id, name, path, include, readOnly, builtIn, temporary }: ContentSourceInfo): ContentSourceInfo => ({ id, name, path, include, readOnly, builtIn, temporary })
 
-function contentsState() {
-  const current = getDefaultContentSource()
-  const sources = getContentSources()
-  return {
-    current: { ...info(current), name: current.builtIn ? null : current.id, dir: current.path },
-    sources: sources.map(info),
-    options: sources.map((s) => ({ name: s.id, dir: s.path })),
-    configFile: CONFIG_FILE,
-  }
+function vaultsState() {
+  return { vaults: getContentSources().map(info), defaultVault: getDefaultContentSource().id, configFile: configFilePath() }
 }
 
-export async function handleContents(request: Request): Promise<Response> {
-  if (request.method === 'GET') return json(contentsState())
-  if (request.method === 'POST') {
-    const body = await readJson<{ name?: unknown }>(request)
-    if (!body || typeof body.name !== 'string') return errorJson(400, 'Body must be JSON with a "name" string')
-    if (!setContentByName(body.name)) return errorJson(404, `No content directory named "${body.name}"`)
-    await restartFileWatcher()
-    await syncFolderInstructions(PORT)
-    return json(contentsState())
+async function afterVaultChange(): Promise<void> {
+  await restartFileWatcher()
+  await syncAllFolderInstructions(PORT)
+}
+
+/**
+ * Vaults (UX overhaul U1):
+ * GET /api/vaults · POST /api/vaults {name, path, readOnly?, create?} ·
+ * PATCH /api/vaults/<id> {name?, readOnly?} · DELETE /api/vaults/<id> (files stay) ·
+ * POST /api/vaults/<id>/open (remember it as the last vault).
+ */
+export async function handleVaults(request: Request, url: URL): Promise<Response> {
+  const rest = url.pathname.slice('/api/vaults'.length).replace(/^\/+/, '')
+  const [rawId, action] = rest.split('/')
+  let id: string
+  try {
+    id = decodeURIComponent(rawId ?? '')
+  } catch {
+    return errorJson(400, 'Invalid vault id')
   }
-  return errorJson(405, 'Method not allowed')
+  try {
+    if (!id) {
+      if (request.method === 'GET') return json(vaultsState())
+      if (request.method === 'POST') {
+        const body = await readJson<{ name?: unknown; path?: unknown; readOnly?: unknown; create?: unknown }>(request)
+        if (!body || typeof body.name !== 'string' || typeof body.path !== 'string') return errorJson(400, 'Body must be JSON with "name" and "path" strings')
+        const vault = addVault({ name: body.name, path: body.path, readOnly: body.readOnly === true, create: body.create === true })
+        await afterVaultChange()
+        return json({ ...vaultsState(), vault: info(vault) }, 201)
+      }
+      return errorJson(405, 'Method not allowed')
+    }
+    if (action === 'open' && request.method === 'POST') {
+      rememberVault(id)
+      return json(vaultsState())
+    }
+    if (action) return errorJson(404, 'Not found')
+    if (request.method === 'PATCH') {
+      const body = await readJson<{ name?: unknown; readOnly?: unknown }>(request)
+      if (!body) return errorJson(400, 'Body must be JSON')
+      const vault = updateVault(id, { name: typeof body.name === 'string' ? body.name : undefined, readOnly: typeof body.readOnly === 'boolean' ? body.readOnly : undefined })
+      await afterVaultChange()
+      return json({ ...vaultsState(), vault: info(vault) })
+    }
+    if (request.method === 'DELETE') {
+      removeVault(id)
+      await afterVaultChange()
+      return json(vaultsState())
+    }
+    return errorJson(405, 'Method not allowed')
+  } catch (error) {
+    if (error instanceof VaultError) return errorJson(error.status, error.message)
+    return errorJson(500, 'Vault change failed', (error as Error).message)
+  }
 }
 
 /** GET /api/themes[?source=]: theme folders found in content directories, with validation errors. */

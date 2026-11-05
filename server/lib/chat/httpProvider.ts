@@ -63,6 +63,7 @@ export interface HttpChatInput {
   systemPrompt: string
   history: ChatMessage[]
   deck?: DeckRef
+  vault?: string
   conversationId?: string
   callModel: CallModel
   runTool?: (name: string, args: Record<string, unknown>) => Promise<ToolResult>
@@ -74,7 +75,7 @@ export interface HttpChatInput {
 /** The agentic loop: call the model, run its tool calls, feed results back, until it answers. */
 export async function runHttpChat(input: HttpChatInput): Promise<ChatResponse> {
   const max = input.maxIterations ?? MAX_ITERATIONS
-  const runTool = input.runTool ?? ((name, args) => executeTool(name, args, { deck: input.deck }))
+  const runTool = input.runTool ?? ((name, args) => executeTool(name, args, { deck: input.deck, vault: input.vault }))
   const messages: ApiMessage[] = [{ role: 'system', content: input.systemPrompt }, ...input.history.map((m) => ({ role: m.role, content: m.content }))]
   const tools = apiTools()
   const log: ChatToolCall[] = []
@@ -113,7 +114,7 @@ export async function runHttpChat(input: HttpChatInput): Promise<ChatResponse> {
 
       const slideKey = typeof args.index === 'number' ? String(args.index) : 'unknown'
       if (result.success) {
-        if (MUTATING.has(name) && typeof args.name === 'string') modified = toolDeckRef(args.name, { deck: input.deck })
+        if (MUTATING.has(name) && typeof args.name === 'string') modified = toolDeckRef(args.name, { deck: input.deck, vault: input.vault })
         failures.delete(slideKey)
       } else if (result.error?.includes('Validation failed')) {
         failures.set(slideKey, {

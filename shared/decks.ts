@@ -1,4 +1,7 @@
-/** Deck identity (Part 4 §3.6): a mounted content source id plus a folder path inside it. */
+/**
+ * Deck identity (Part 4 §3.6): a vault id plus a folder path inside it. The field is still
+ * called `source` (a vault is a content source with a name).
+ */
 export interface DeckRef {
   source: string
   path: string
@@ -12,19 +15,40 @@ export interface PresentationInfo extends DeckRef {
   builtIn: boolean
 }
 
+/** A vault as the server reports it. */
 export interface ContentSourceInfo {
   id: string
+  /** Shown in the app ("Work", "Private"). */
+  name: string
   path: string
   include: string[]
   readOnly: boolean
+  /** The repository's example decks. */
   builtIn: boolean
+  /** Opened with --content for this run only; not in the config file. */
+  temporary: boolean
 }
 
-export const BUILT_IN_SOURCE_ID = 'built-in'
+export type VaultInfo = ContentSourceInfo
+
+/** The vault id of the repository's example decks (also in the static docs site). */
+export const BUILT_IN_SOURCE_ID = 'examples'
+export const BUILT_IN_VAULT_NAME = 'Examples'
+
+/** A vault id from a name: lower-case words joined by dashes. */
+export const vaultIdFromName = (name: string): string =>
+  name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'vault'
 
 /** First path segments that belong to the app and can never be a deck slug. */
 export const RESERVED_DECK_NAMES = new Set([
   'api',
+  'v',
+  'settings',
   'chat',
   'content',
   'content-source',

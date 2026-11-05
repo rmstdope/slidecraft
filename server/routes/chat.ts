@@ -4,7 +4,7 @@ import type { DeckRef } from '../../shared/decks.ts'
 import { buildAgentContext, buildSystemPrompt, type DeckContext } from '../lib/chat/prompt.ts'
 import { runClaudeCode, runCopilot } from '../lib/chat/cliProviders.ts'
 import { httpConfig, openAiCaller, runHttpChat } from '../lib/chat/httpProvider.ts'
-import { getDefaultContentSource } from '../lib/contentSources.ts'
+import { getContentSource, getDefaultContentSource } from '../lib/contentSources.ts'
 import { legacyDeckRef, resolveDeckRefInSources } from '../lib/decks.ts'
 import { readDeckSource } from '../lib/deckStore.ts'
 import { broadcast } from '../lib/events.ts'
@@ -25,7 +25,7 @@ export async function handleChat(request: Request): Promise<Response> {
   else if (typeof body.presentationName === 'string' && body.presentationName) ref = legacyDeckRef(body.presentationName)
   const resolved = ref ? resolveDeckRefInSources(ref) : null
   if (ref && !resolved) return errorJson(400, 'Invalid presentation reference', 'invalid_presentation')
-  const source = resolved?.source ?? getDefaultContentSource()
+  const source = resolved?.source ?? (typeof body.vault === 'string' ? getContentSource(body.vault) : undefined) ?? getDefaultContentSource()
   if (source.readOnly) return readOnlyError(source.id)
   const deck: DeckContext | null =
     ref && resolved
@@ -57,6 +57,7 @@ export async function handleChat(request: Request): Promise<Response> {
         systemPrompt: await buildSystemPrompt(deck, source.path),
         history: messages,
         deck: ref,
+        vault: source.id,
         conversationId,
         callModel: openAiCaller(httpConfig()),
         onIteration: (iteration, maxIterations) =>

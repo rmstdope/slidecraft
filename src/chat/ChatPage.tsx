@@ -21,7 +21,7 @@ function initialProvider(): ChatProvider {
 const newConversationId = () => (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`)
 
 /** The chat assistant (Part 5 §A.2): conversation on the left, the deck's live preview on the right. */
-export default function ChatPage({ deck: initialDeck, onExit }: { deck?: DeckRef; onExit(): void }) {
+export default function ChatPage({ vault, deck: initialDeck, onExit }: { vault: string; deck?: DeckRef; onExit(): void }) {
   const [deck, setDeck] = useState<DeckRef | undefined>(initialDeck)
   const [provider, setProvider] = useState<ChatProvider>(initialProvider)
   const [conversationId, setConversationId] = useState(newConversationId)
@@ -119,7 +119,7 @@ export default function ChatPage({ deck: initialDeck, onExit }: { deck?: DeckRef
     setLiveCalls([])
     setLiveIteration(null)
     try {
-      const res = await sendChat({ messages: history, deck, currentSlideIndex: deck ? currentSlideIndex() : undefined, provider, conversationId })
+      const res = await sendChat({ messages: history, deck, vault, currentSlideIndex: deck ? currentSlideIndex() : undefined, provider, conversationId })
       setMessages((m) => [...m, { role: 'assistant', content: res.message || (res.error ? `Error: ${res.error}` : 'Done') }])
       if (res.toolCalls?.length) setToolCalls((map) => new Map(map).set(userIndex, res.toolCalls!))
       if (res.validationErrors?.length) setValidation((map) => new Map(map).set(userIndex, res.validationErrors!))

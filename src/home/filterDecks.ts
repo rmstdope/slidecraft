@@ -5,14 +5,12 @@ export type DeckSort = 'updated' | 'created' | 'alphabetical'
 export interface DeckFilters {
   /** Free text over name, path and display name. */
   q: string
-  /** Exact source id, or '' for all. */
-  source: string
   /** Case-insensitive substring of the path. */
   path: string
   sort: DeckSort
 }
 
-export const DEFAULT_FILTERS: DeckFilters = { q: '', source: '', path: '', sort: 'updated' }
+export const DEFAULT_FILTERS: DeckFilters = { q: '', path: '', sort: 'updated' }
 
 /** "quarterly-review" → "Quarterly Review" (the last path segment of nested decks). */
 export function displayName(nameOrPath: string): string {
@@ -32,7 +30,6 @@ export function filterDecks(decks: readonly PresentationInfo[], f: DeckFilters):
   const path = f.path.trim().toLowerCase()
   const visible = decks.filter(
     (d) =>
-      (!f.source || d.source === f.source) &&
       (!path || d.path.toLowerCase().includes(path)) &&
       (!q || [d.name, d.path, displayName(d.path)].some((s) => s.toLowerCase().includes(q))),
   )
@@ -41,13 +38,12 @@ export function filterDecks(decks: readonly PresentationInfo[], f: DeckFilters):
   return visible.sort((a, b) => b[key] - a[key] || byName(a, b))
 }
 
-/** Filters from the home URL (`?q=&filterSource=&filterPath=&sort=`). */
+/** Filters from the home URL (`?q=&filterPath=&sort=`). */
 export function filtersFromSearch(search: string): DeckFilters {
   const p = new URLSearchParams(search)
   const sort = p.get('sort')
   return {
     q: p.get('q') ?? '',
-    source: p.get('filterSource') ?? '',
     path: p.get('filterPath') ?? '',
     sort: sort === 'created' || sort === 'alphabetical' ? sort : 'updated',
   }
@@ -57,7 +53,6 @@ export function filtersFromSearch(search: string): DeckFilters {
 export function searchFromFilters(f: DeckFilters): string {
   const p = new URLSearchParams()
   if (f.q) p.set('q', f.q)
-  if (f.source) p.set('filterSource', f.source)
   if (f.path) p.set('filterPath', f.path)
   if (f.sort !== 'updated') p.set('sort', f.sort)
   const s = p.toString()

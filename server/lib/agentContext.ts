@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { getAllTemplates, getParts, getTopLevelComponents, type RegistryConfig } from '../../src/components/slides/defineComponent.ts'
 import '../../src/components/slides/index.ts'
 import { readAuthorGuide } from './appFiles.ts'
-import { getDefaultContentSource } from './contentSources.ts'
+import { getContentSources, getDefaultContentSource, type ContentSource } from './contentSources.ts'
 import { VERSION } from './paths.ts'
 import { executeTool } from './tools.ts'
 
@@ -101,9 +101,8 @@ export function readContentInstructions(dir = getDefaultContentSource().path): s
 
 export type SyncResult = 'written' | 'unchanged' | 'hand-written' | 'read-only' | 'missing-dir'
 
-/** Generate or refresh AGENTS.md in the default content folder. */
-export async function syncFolderInstructions(port: number): Promise<SyncResult> {
-  const source = getDefaultContentSource()
+/** Generate or refresh AGENTS.md in one vault (the default one when none is given). */
+export async function syncFolderInstructions(port: number, source: ContentSource = getDefaultContentSource()): Promise<SyncResult> {
   if (source.readOnly) return 'read-only'
   if (!existsSync(source.path)) return 'missing-dir'
   const file = join(source.path, CONTENT_INSTRUCTIONS_FILE)
@@ -118,4 +117,11 @@ export async function syncFolderInstructions(port: number): Promise<SyncResult> 
     console.warn(`Could not write ${file}: ${(error as Error).message}`)
     return 'unchanged'
   }
+}
+
+/** Refresh AGENTS.md in every vault; a hand-written file is never touched. */
+export async function syncAllFolderInstructions(port: number): Promise<Map<ContentSource, SyncResult>> {
+  const results = new Map<ContentSource, SyncResult>()
+  for (const source of getContentSources()) results.set(source, await syncFolderInstructions(port, source))
+  return results
 }

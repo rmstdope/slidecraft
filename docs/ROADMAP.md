@@ -9,7 +9,7 @@ What Slidecraft does today, and what may come next. The detailed build history i
 - Semantic motion: build steps, shared-element morphs, canvas and camera, count-up, drawn connectors.
 - Themes with schemes and frames (slidecraft, paper, folio, ion), per-folder themes with `extends` and optional `effects`.
 - Browser editor with live preview, insert palette, contextual toolbar, language service, image picker.
-- Several content folders at once, with read-only mounts and live reload.
+- Vaults: named content folders shown one at a time, with read-only vaults and live reload.
 - Presenter view with notes, next slide and timer; drawing and annotations in both windows.
 - Single-file HTML export with reader mode; PDF export through headless Chrome.
 - AI chat with an OpenAI-compatible API, Claude Code or Copilot CLI; MCP server for any agent.

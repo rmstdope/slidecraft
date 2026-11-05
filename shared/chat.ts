@@ -32,6 +32,8 @@ export interface ChatValidationError {
 export interface ChatRequest {
   messages: ChatMessage[]
   deck?: DeckRef
+  /** The vault of a conversation that is about no deck yet. */
+  vault?: string
   presentationName?: string
   /** 0-based slide the user is looking at. */
   currentSlideIndex?: number

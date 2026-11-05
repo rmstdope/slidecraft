@@ -813,3 +813,184 @@
   display: flex;
   gap: 0.75rem;
 }
+
+/* Vaults (UX overhaul U1): the switcher on the home page and the settings page. */
+.home-topbar {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.vault-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+.vault-switcher__label {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+.vault-switcher select {
+  height: 34px;
+  padding: 0 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--dark-text);
+  font: inherit;
+  font-weight: 600;
+}
+.vault-switcher select:focus {
+  outline: none;
+  border-color: var(--brand-yellow);
+}
+.vault-switcher--single {
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.home-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(245, 180, 0, 0.3);
+  background: rgba(245, 180, 0, 0.06);
+}
+.home-notice > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.home-notice span {
+  color: var(--dark-muted);
+  font-size: 0.875rem;
+}
+.tool-button.is-danger {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+}
+.tool-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.settings {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--dark-bg);
+  color: var(--dark-text);
+}
+.settings-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 2rem 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.settings-intro {
+  color: var(--dark-muted);
+  line-height: 1.5;
+}
+.vault-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.vault-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.vault-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.vault-row__name {
+  font: 600 1.125rem var(--font-display);
+}
+.vault-row__name input {
+  font: 600 1.125rem var(--font-display);
+  color: var(--dark-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  margin-left: -0.4rem;
+}
+.vault-row__name input:hover,
+.vault-row__name input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.vault-row__path {
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+  overflow-wrap: anywhere;
+}
+.vault-row__tags {
+  display: flex;
+  gap: 0.4rem;
+}
+.vault-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--dark-muted);
+}
+.vault-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.vault-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--dark-muted);
+}
+.vault-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+.vault-add h2 {
+  font: 600 1.125rem var(--font-display);
+  color: var(--brand-yellow);
+}
+.vault-add__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+.vault-add__fields .tool-button {
+  height: 44px;
+}
