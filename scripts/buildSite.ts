@@ -41,6 +41,7 @@ export const PAGES: Page[] = [
   { file: 'docs/ROADMAP.md', slug: 'roadmap', title: 'Roadmap', group: 'Framework' },
   { file: 'docs/plans/implementation-plan.md', slug: 'implementation-plan', title: 'Implementation plan', group: 'Framework' },
   { file: 'docs/plans/ux-overhaul-plan.md', slug: 'ux-overhaul-plan', title: 'UX overhaul plan', group: 'Framework' },
+  { file: 'docs/plans/ui-redesign-plan.md', slug: 'ui-redesign-plan', title: 'UI redesign plan', group: 'Framework' },
 ]
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string; repository?: { url?: string } }
