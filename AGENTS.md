@@ -5,6 +5,8 @@ by React components with motion animation at a fixed 1920 × 1080 design size, a
 on decks from inside the app. The decisions behind it are in
 [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md) and
 [`docs/plans/ux-overhaul-plan.md`](docs/plans/ux-overhaul-plan.md), which wins where they disagree.
+The look of the app itself is being redesigned per
+[`docs/plans/ui-redesign-plan.md`](docs/plans/ui-redesign-plan.md).
 
 ## Pick a skill
 
