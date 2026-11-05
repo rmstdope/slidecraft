@@ -11,7 +11,7 @@ const twMerge = extendTailwindMerge({
         'accent', 'accent-tint', 'on-accent-tint', 'focus', 'brand', 'agent', 'agent-glow', 'added', 'removed',
         'canvas', 'canvas-dot',
       ],
-      shadow: ['elev', 'line'],
+      shadow: ['elev', 'hairline'],
     },
   },
 })

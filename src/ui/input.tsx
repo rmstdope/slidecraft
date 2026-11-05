@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type LabelHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { cloneElement, forwardRef, isValidElement, useId, type InputHTMLAttributes, type LabelHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { cn } from './cn'
 
 const fieldClass =
@@ -27,16 +27,24 @@ export function Field({
   children,
   ...props
 }: LabelHTMLAttributes<HTMLLabelElement> & { label: ReactNode; hint?: ReactNode; error?: ReactNode }) {
+  const noteId = useId()
+  const note = error ?? hint
+  // The hint or error describes the control (the label already names it).
+  const control = note && isValidElement<{ 'aria-describedby'?: string }>(children) ? cloneElement(children, { 'aria-describedby': noteId }) : children
   return (
     <label className={cn('tw:flex tw:flex-col tw:gap-1.5', className)} {...props}>
       <span className="tw:text-[13px] tw:font-semibold tw:text-fg">{label}</span>
-      {children}
+      {control}
       {error ? (
-        <span className="tw:text-[12px] tw:text-removed" role="alert">
+        <span id={noteId} className="tw:text-[12px] tw:text-removed" role="alert">
           {error}
         </span>
       ) : (
-        hint && <span className="tw:text-[12px] tw:text-muted">{hint}</span>
+        hint && (
+          <span id={noteId} className="tw:text-[12px] tw:text-muted">
+            {hint}
+          </span>
+        )
       )}
     </label>
   )

@@ -26,9 +26,14 @@ let started = false
 const media = (): MediaQueryList | undefined =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(DARK_QUERY) : undefined
 
-function refresh(appearance: Appearance = readAppearance()): void {
+function compute(appearance: Appearance = readAppearance()): Snapshot {
   const theme = applyAppearance(document.documentElement, appearance, media()?.matches ?? false)
   snapshot = { appearance, theme }
+  return snapshot
+}
+
+function refresh(appearance?: Appearance): void {
+  compute(appearance)
   for (const l of listeners) l()
 }
 
@@ -47,9 +52,9 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener)
 }
 
+/** Computes the first snapshot without notifying, so it is safe to call during render. */
 function getSnapshot(): Snapshot {
-  if (!snapshot) refresh()
-  return snapshot!
+  return snapshot ?? compute()
 }
 
 /** Applies a new appearance at once and remembers it in this browser. */

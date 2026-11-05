@@ -5,7 +5,7 @@ import { cn } from './cn'
 
 /** A raised surface: the main card, the agent panel, a settings group. */
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('tw:rounded-2xl tw:bg-panel tw:shadow-line', className)} {...props} />
+  return <div className={cn('tw:rounded-2xl tw:bg-panel tw:shadow-hairline', className)} {...props} />
 }
 
 const badgeVariants = cva('tw:inline-flex tw:h-6 tw:items-center tw:gap-1.5 tw:rounded-md tw:px-2 tw:text-[12px] tw:font-medium tw:whitespace-nowrap', {
@@ -33,7 +33,7 @@ export function StatusDot({ tone = 'agent', className }: { tone?: 'agent' | 'acc
 export function Kbd({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
     <kbd
-      className={cn('tw:inline-flex tw:h-5 tw:items-center tw:rounded-[5px] tw:bg-panel tw:px-1.5 tw:font-mono tw:text-[11px] tw:text-fg-2 tw:shadow-line', className)}
+      className={cn('tw:inline-flex tw:h-5 tw:min-w-0 tw:items-center tw:rounded-[5px] tw:border-0 tw:bg-panel tw:py-0 tw:px-1.5 tw:font-mono tw:text-[11px] tw:text-fg-2 tw:shadow-hairline', className)}
       {...props}
     />
   )
@@ -66,22 +66,22 @@ export function Switch({
   )
 }
 
-/** A hover and focus hint. Wrap the app once in TooltipProvider. */
+/** A hover and focus hint. Carries its own provider, so it works anywhere. */
 export function Tooltip({ content, children, side = 'bottom' }: { content: ReactNode; children: ReactNode; side?: 'top' | 'bottom' | 'left' | 'right' }) {
   return (
-    <TooltipPrimitive.Root>
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-      <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Content
-          side={side}
-          sideOffset={6}
-          className="sc-app tw:z-50 tw:rounded-md tw:bg-primary tw:px-2 tw:py-1 tw:text-[12px] tw:text-on-primary"
-        >
-          {content}
-        </TooltipPrimitive.Content>
-      </TooltipPrimitive.Portal>
-    </TooltipPrimitive.Root>
+    <TooltipPrimitive.Provider delayDuration={400}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            side={side}
+            sideOffset={6}
+            className="sc-app tw:z-50 tw:rounded-md tw:bg-primary tw:px-2 tw:py-1 tw:text-[12px] tw:text-on-primary"
+          >
+            {content}
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   )
 }
-
-export const TooltipProvider = TooltipPrimitive.Provider

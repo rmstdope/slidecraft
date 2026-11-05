@@ -54,7 +54,7 @@
   --font-mono: var(--sc-font-mono);
 
   --shadow-elev: var(--sc-elev);
-  --shadow-line: 0 0 0 1px var(--sc-line);
+  --shadow-hairline: 0 0 0 1px var(--sc-line);
 }
 
 /* The dark-mode accent the person picked (src/appearance); light mode always uses brand yellow. */
@@ -154,6 +154,9 @@
   }
   .sc-app :where(button:disabled) {
     cursor: default;
+  }
+  .sc-app :where(ul, ol) {
+    list-style: none;
   }
   .sc-app :where(a) {
     color: inherit;
