@@ -39,7 +39,11 @@ const SORTS: { value: DeckSort; label: string }[] = [
   { value: 'alphabetical', label: 'Alphabetical' },
 ]
 
-const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)
+const isTyping = (el: EventTarget | null) =>
+  el instanceof HTMLElement &&
+  (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable || !!el.closest('[role=combobox],[role=listbox],[role=option],[role=menu],[role=menuitem]'))
+
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 /** The deck browser (Part 3 §1.5), in the redesigned chrome (ui-redesign-plan R3). */
 export function HomePage(props: HomePageProps) {
@@ -122,7 +126,7 @@ export function HomePage(props: HomePageProps) {
           <span className="tw:font-medium">Presentations</span>
           <span className="tw:flex-1" />
           {decks.length > 0 && (
-            <label className="tw:flex tw:h-9 tw:w-[280px] tw:max-w-full tw:items-center tw:gap-2 tw:rounded-[9px] tw:bg-field tw:px-2.5 tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus)]">
+            <div className="tw:flex tw:h-9 tw:w-[280px] tw:max-w-full tw:items-center tw:gap-2 tw:rounded-[9px] tw:bg-field tw:px-2.5 tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus)]">
               <Search className="tw:size-4 tw:shrink-0 tw:text-muted" aria-hidden />
               <input
                 value={filters.q}
@@ -132,9 +136,9 @@ export function HomePage(props: HomePageProps) {
                 className="tw:min-w-0 tw:flex-1 tw:border-0 tw:bg-transparent tw:text-fg tw:outline-none tw:placeholder:text-muted"
               />
               <button type="button" onClick={() => setPaletteOpen(true)} aria-label="Open the command palette" title="Command palette">
-                <Kbd>⌘K</Kbd>
+                <Kbd>{IS_MAC ? '⌘K' : 'Ctrl K'}</Kbd>
               </button>
-            </label>
+            </div>
           )}
           {canCreate && (
             <Button variant="primary" onClick={() => setNaming(true)}>
@@ -308,7 +312,10 @@ function Sidebar({
               icon={<span aria-hidden className={cn('tw:size-2 tw:rounded-[3px]', v.builtIn ? 'tw:bg-brand' : v.temporary ? 'tw:bg-muted' : 'tw:bg-agent')} />}
               label={
                 <span className="tw:flex tw:items-center tw:gap-2">
-                  <span className="tw:min-w-0 tw:flex-1 tw:truncate">{v.name}</span>
+                  <span className="tw:min-w-0 tw:flex-1 tw:truncate" title={v.readOnly || v.temporary ? `${v.name} (${v.temporary ? 'this run only' : 'read-only'})` : undefined}>
+                    {v.name}
+                    {(v.readOnly || v.temporary) && <span className="tw:ml-1.5 tw:text-[11px] tw:font-normal tw:text-muted">{v.temporary ? 'this run' : 'read-only'}</span>}
+                  </span>
                   {v.id === vault.id && <span className="tw:font-mono tw:text-[12px] tw:font-normal tw:text-muted">{deckCount}</span>}
                 </span>
               }
@@ -372,13 +379,14 @@ function NewDeckDialog({ open, onOpenChange, vault, onCreated }: { open: boolean
     if (result.data) onCreated(result.data)
     else setError(result.error)
   }
+  const change = (o: boolean) => {
+    onOpenChange(o)
+    if (!o) setError(undefined)
+  }
   return (
     <Dialog
       open={open}
-      onOpenChange={(o) => {
-        onOpenChange(o)
-        if (!o) setError(undefined)
-      }}
+      onOpenChange={change}
       title="New deck"
       description="Starts from a title slide that you write yourself. To have the agent write it, describe the talk on the home page instead."
     >
@@ -393,7 +401,7 @@ function NewDeckDialog({ open, onOpenChange, vault, onCreated }: { open: boolean
           <Input autoFocus value={name} placeholder="q4-review" onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
         </Field>
         <div className="tw:flex tw:justify-end tw:gap-2">
-          <Button onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => change(false)}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={!valid || busy}>
             Create
           </Button>
