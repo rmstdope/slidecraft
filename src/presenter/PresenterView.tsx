@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { SlideThumbnail } from '../components/editor/SlideThumbnail'
+import { Button, cn, Kbd, Logo } from '../ui'
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal'
 import type { DeckAnalysis } from '../components/slides/analyzeDeck'
 import type { NavState } from '../components/slides/navigation'
@@ -150,37 +151,41 @@ export function PresenterView({ analysis, nav, actions, deckKey, deckLabel, chan
   const atEnd = current >= total - 1 && nav.step >= stepsOnSlide
   const note: ReactNode = notes[current]
 
+  // Class names such as presenter__position stay as hooks for the tests; the look is all utilities.
+  const label = 'tw:text-[11px] tw:font-semibold tw:tracking-[0.12em] tw:text-accent tw:uppercase'
   return (
-    <div className="presenter">
-      <header className="presenter__header">
-        <div>
-          <h1>Presenter View</h1>
-          <span className="presenter__deck">{deckLabel}</span>
+    <div data-sc-theme="dark" className="presenter sc-app tw:absolute tw:inset-0 tw:flex tw:flex-col tw:gap-5 tw:overflow-hidden tw:bg-ground tw:px-6 tw:pt-5 tw:pb-8">
+      <header className="tw:flex tw:items-center tw:justify-between tw:gap-4">
+        <div className="tw:flex tw:items-center tw:gap-3">
+          <Logo size={26} />
+          <div className="tw:flex tw:flex-col">
+            <h1 className="tw:font-display tw:text-[22px] tw:leading-tight tw:font-semibold">Presenter View</h1>
+            <span className="tw:text-[13px] tw:text-muted">{deckLabel}</span>
+          </div>
         </div>
-        <div className="presenter__timer">
-          <span className={`presenter__time${timer.running ? ' is-running' : ''}`}>{formatTime(timer.elapsed)}</span>
+        <div className="tw:flex tw:items-center tw:gap-4">
+          <span className={cn('presenter__time tw:font-mono tw:text-[40px] tw:font-medium tw:tabular-nums', timer.running ? 'is-running tw:text-accent' : 'tw:text-muted')}>{formatTime(timer.elapsed)}</span>
           {timer.running ? (
-            <button type="button" className="tool-button" onClick={timer.reset}>
-              Reset
-            </button>
+            <Button onClick={timer.reset}>Reset</Button>
           ) : (
-            <button type="button" className="tool-button is-primary" onClick={timer.start}>
+            <Button variant="primary" onClick={timer.start}>
               Start Timer
-            </button>
+            </Button>
           )}
         </div>
       </header>
 
-      <div className="presenter__progress" aria-hidden>
-        <div style={{ width: `${((current + 1) / Math.max(1, total)) * 100}%` }} />
+      <div className="tw:h-1 tw:overflow-hidden tw:rounded-full tw:bg-field" aria-hidden>
+        <div className="tw:h-full tw:bg-accent tw:transition-[width] tw:duration-300" style={{ width: `${((current + 1) / Math.max(1, total)) * 100}%` }} />
       </div>
 
-      <main className="presenter__main">
-        <section className="presenter__slides">
-          <span className="presenter__label">Current slide</span>
+      <main className="tw:grid tw:min-h-0 tw:flex-1 tw:grid-cols-[1.5fr_1fr] tw:gap-6">
+        <section className="tw:flex tw:min-h-0 tw:flex-col tw:gap-2.5">
+          <span className={label}>Current slide</span>
           <div
             ref={previewRef}
-            className="presenter__current"
+            // The largest 16:9 box that leaves room for the header, "up next" and the controls.
+            className="tw:relative tw:aspect-video tw:w-[min(100%,calc((100vh-500px)*16/9))] tw:flex-none tw:overflow-hidden tw:rounded-lg tw:bg-black tw:shadow-[0_0_0_2px_var(--sc-accent),0_0_30px_color-mix(in_srgb,var(--sc-accent)_20%,transparent)]"
             onPointerMove={(e) => {
               const point = clientPointToSlide(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect())
               lastPoint.current = point
@@ -188,64 +193,62 @@ export function PresenterView({ analysis, nav, actions, deckKey, deckLabel, chan
             }}
             onPointerLeave={clearPointer}
           >
-            {slides[current] && (
-              <SlideThumbnail>
-                {slides[current]}
-              </SlideThumbnail>
-            )}
+            {slides[current] && <SlideThumbnail>{slides[current]}</SlideThumbnail>}
             <DrawingOverlay slideIndex={current} onPreviewChange={publishPreview} />
           </div>
-          <span className="presenter__label">Up next</span>
-          <div className="presenter__next">
+          <span className={cn(label, 'tw:mt-2')}>Up next</span>
+          <div className="tw:h-[200px] tw:flex-none">
             {slides[current + 1] ? (
-              <div className="presenter__next-frame">
+              <div className="presenter__next-frame tw:relative tw:aspect-video tw:h-full tw:overflow-hidden tw:rounded-md tw:bg-black tw:shadow-hairline">
                 <SlideThumbnail>{slides[current + 1]}</SlideThumbnail>
               </div>
             ) : (
-              <div className="presenter__end">End of presentation</div>
+              <div className="presenter__end tw:flex tw:aspect-video tw:h-full tw:items-center tw:justify-center tw:rounded-md tw:border-2 tw:border-dashed tw:border-line tw:text-muted">End of presentation</div>
             )}
           </div>
         </section>
-        <section className="presenter__notes">
-          <span className="presenter__label">Speaker notes</span>
+        <section className="tw:flex tw:min-h-0 tw:flex-col tw:gap-3 tw:overflow-y-auto tw:rounded-2xl tw:bg-panel tw:p-5 tw:shadow-hairline">
+          <span className={label}>Speaker notes</span>
           {note ? (
-            <div className="presenter__note-body">{note}</div>
+            <div className="presenter__note-body tw:text-[24px] tw:leading-[1.6] tw:[&_code]:rounded tw:[&_code]:bg-field tw:[&_code]:px-1.5 tw:[&_code]:font-mono tw:[&_code]:text-[0.85em] tw:[&_ol]:list-decimal tw:[&_ol]:pl-[1.4em] tw:[&_p+p]:mt-[0.6em] tw:[&_strong]:text-accent tw:[&_ul]:list-disc tw:[&_ul]:pl-[1.4em]">
+              {note}
+            </div>
           ) : (
-            <p className="presenter__no-notes">
-              No notes for this slide. Add notes using the <code>{'<Notes>'}</code> component inside your Slide.
+            <p className="presenter__no-notes tw:text-muted tw:italic">
+              No notes for this slide. Add notes using the <code className="tw:font-mono">{'<Notes>'}</code> component inside your Slide.
             </p>
           )}
         </section>
       </main>
 
-      <footer className="presenter__controls">
-        <button type="button" className="tool-button" disabled={current === 0 && nav.step === 0} onClick={actions.retreat}>
+      <footer className="presenter__controls tw:flex tw:items-center tw:justify-between tw:border-t tw:border-line tw:pt-4">
+        <Button size="lg" className="tw:min-w-36" disabled={current === 0 && nav.step === 0} onClick={actions.retreat}>
           ← Previous
-        </button>
-        <div className="presenter__position">
+        </Button>
+        <div className="presenter__position tw:flex tw:flex-col tw:items-center tw:text-[15px] tw:text-fg-2">
           <span>
-            <strong>{current + 1}</strong> / {total}
+            <strong className="tw:text-[22px] tw:text-fg">{current + 1}</strong> / {total}
           </span>
           {stepsOnSlide > 0 && (
-            <small>
+            <small className="tw:text-[12px] tw:text-muted">
               step {nav.step} / {stepsOnSlide}
             </small>
           )}
         </div>
-        <button type="button" className="tool-button is-primary" disabled={atEnd} onClick={actions.advance}>
+        <Button size="lg" variant="primary" className="is-primary tw:min-w-36" disabled={atEnd} onClick={actions.advance}>
           Next →
-        </button>
+        </Button>
       </footer>
 
-      <div className="presenter__hints" aria-hidden>
-        <span>
-          <kbd>R</kbd> Timer
+      <div className="tw:absolute tw:right-6 tw:bottom-2 tw:flex tw:gap-4 tw:text-[11px] tw:text-muted" aria-hidden>
+        <span className="tw:flex tw:items-center tw:gap-1.5">
+          <Kbd>R</Kbd> Timer
         </span>
-        <span>
-          <kbd>A</kbd> Draw
+        <span className="tw:flex tw:items-center tw:gap-1.5">
+          <Kbd>A</Kbd> Draw
         </span>
-        <span>
-          <kbd>Esc</kbd> Close
+        <span className="tw:flex tw:items-center tw:gap-1.5">
+          <Kbd>Esc</Kbd> Close
         </span>
       </div>
       <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="presenter" theme="dark" />

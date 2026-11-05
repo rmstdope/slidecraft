@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
-import { AnimatePresence, motion, MotionConfig } from 'motion/react'
+import { AnimatePresence, MotionConfig } from 'motion/react'
+import { ArrowLeft, Copy, RotateCcw, Search } from 'lucide-react'
 import { BUILT_IN_SOURCE_ID } from '@shared/decks.ts'
 import { StepContext } from '../animations/stepContext'
 import { SlideThumbnail } from '../components/editor/SlideThumbnail'
@@ -27,6 +28,11 @@ import {
 import { countPreviewSteps } from './previewSteps'
 import { searchItems } from './search'
 import { useLazyPreview } from './useLazyPreview'
+import { Badge, Button, cn, NativeSelect, SegmentedControl, Sheet } from '../ui'
+
+/** A preview's frame: black behind the slide, rounded, a hairline in either theme. */
+const frameClass = 'tw:relative tw:shrink-0 tw:overflow-hidden tw:rounded-md tw:bg-black tw:shadow-hairline'
+const h3Class = 'tw:text-[13px] tw:font-semibold tw:tracking-wide tw:text-muted tw:uppercase'
 
 type Tab = 'all' | 'component' | 'template'
 
@@ -84,7 +90,7 @@ function PreviewFrame({ source, width, theme, eager = false }: { source: string;
   const [ref, inView] = useInView<HTMLDivElement>()
   const { Component, error, isCompiling } = useLazyPreview(source, eager || inView)
   return (
-    <div ref={ref} className="preview-frame" style={{ width, height: Math.round((width * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
+    <div ref={ref} className={frameClass} style={{ width, height: Math.round((width * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
       {Component ? (
         <Themed theme={theme}>
           <SlideThumbnail scale={width / DESIGN_WIDTH}>
@@ -100,7 +106,7 @@ function PreviewFrame({ source, width, theme, eager = false }: { source: string;
 
 function PreviewStatus({ error, isCompiling }: { error: string | null; isCompiling: boolean }) {
   return (
-    <span className={error ? 'preview-frame__error' : 'preview-frame__wait'} title={error ?? undefined}>
+    <span className={cn('tw:absolute tw:inset-0 tw:grid tw:place-items-center tw:text-[12px]', error ? 'tw:text-removed' : 'tw:text-white/60')} title={error ?? undefined}>
       {error ? 'Preview error' : isCompiling ? 'Rendering…' : ''}
     </span>
   )
@@ -110,7 +116,7 @@ function PreviewStatus({ error, isCompiling }: { error: string | null; isCompili
 function LiveStage({ Component, width, theme, step, total, replay }: { Component: ComponentType; width: number; theme?: ResolvedTheme; step: number; total: number; replay: number }) {
   const scale = width / DESIGN_WIDTH
   return (
-    <div className="preview-frame" style={{ width, height: Math.round(DESIGN_HEIGHT * scale) }}>
+    <div className={frameClass} style={{ width, height: Math.round(DESIGN_HEIGHT * scale) }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: DESIGN_WIDTH, height: DESIGN_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
         <Themed theme={theme}>
           <StageScaleContext.Provider value={1}>
@@ -131,12 +137,14 @@ function LiveStage({ Component, width, theme, step, total, replay }: { Component
 function GalleryCard({ item, settings, theme, onOpen }: { item: RegistryConfig; settings: GallerySettings; theme?: ResolvedTheme; onOpen(): void }) {
   const source = useMemo(() => applySettings(item.previewCode, settings), [item.previewCode, settings])
   return (
-    <button type="button" className="gallery-card" onClick={onOpen}>
+    <button type="button" className="tw:group tw:flex tw:w-[380px] tw:max-w-full tw:flex-col tw:gap-2.5 tw:rounded-xl tw:bg-field tw:p-2.5 tw:text-left tw:transition-shadow tw:hover:shadow-[0_0_0_2px_var(--sc-focus)]" onClick={onOpen}>
       <PreviewFrame source={source} width={360} theme={theme} />
-      <span className="gallery-card__caption">
-        <span className="gallery-card__name">{item.name}</span>
-        <span className="gallery-card__category">{item.category}</span>
-        <span className="gallery-card__description">{item.description}</span>
+      <span className="tw:flex tw:flex-col tw:gap-0.5 tw:px-1 tw:pb-1">
+        <span className="tw:flex tw:items-center tw:gap-2">
+          <span className="tw:font-semibold">{item.name}</span>
+          <Badge className="tw:h-5 tw:bg-panel">{item.category}</Badge>
+        </span>
+        <span className="tw:line-clamp-2 tw:text-[13px] tw:text-muted">{item.description}</span>
       </span>
     </button>
   )
@@ -148,7 +156,7 @@ function CommitInput({ value, type, min, max, step, placeholder, onCommit }: { v
   useEffect(() => setLocal(value), [value])
   return (
     <input
-      className="gallery-prop__input"
+      className="tw:h-8 tw:w-full tw:min-w-0 tw:rounded-md tw:border-0 tw:bg-field tw:px-2.5 tw:text-[13px] tw:text-fg tw:outline-none tw:placeholder:text-muted tw:focus-visible:shadow-[0_0_0_2px_var(--sc-focus)]"
       type={type}
       value={local}
       min={min}
@@ -168,15 +176,20 @@ function CommitInput({ value, type, min, max, step, placeholder, onCommit }: { v
 function PropField({ control, value, onChange }: { control: PropControl; value: ReturnType<typeof controlInput>; onChange(input: string | boolean): void }) {
   const { prop } = control
   const label = (
-    <span className="gallery-prop__name" title={prop.description}>
+    <span className="tw:truncate tw:font-mono tw:text-[12px] tw:text-fg-2" title={prop.description}>
       {prop.name}
     </span>
   )
   if (control.kind === 'boolean') {
     return (
-      <div className="gallery-prop">
+      <div className="tw:flex tw:flex-col tw:gap-1">
         {label}
-        <button type="button" className={`gallery-toggle${value ? ' is-on' : ''}`} aria-pressed={value === true} onClick={() => onChange(!value)}>
+        <button
+          type="button"
+          className={cn('tw:h-8 tw:rounded-md tw:text-[13px] tw:font-medium', value ? 'tw:bg-primary tw:text-on-primary' : 'tw:bg-field tw:text-fg-2')}
+          aria-pressed={value === true}
+          onClick={() => onChange(!value)}
+        >
           {value ? 'On' : 'Off'}
         </button>
       </div>
@@ -184,21 +197,21 @@ function PropField({ control, value, onChange }: { control: PropControl; value: 
   }
   if (control.kind === 'select') {
     return (
-      <label className="gallery-prop">
+      <label className="tw:flex tw:flex-col tw:gap-1">
         {label}
-        <select className="gallery-prop__input" value={String(value)} onChange={(e) => onChange(e.target.value)}>
+        <NativeSelect className="tw:w-full" value={String(value)} onChange={(e) => onChange(e.target.value)}>
           <option value="">{prop.default ? `Default (${prop.default.replace(/"/g, '')})` : '—'}</option>
           {control.options.map((o) => (
             <option key={o} value={o}>
               {o}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
     )
   }
   return (
-    <label className="gallery-prop">
+    <label className="tw:flex tw:flex-col tw:gap-1">
       {label}
       <CommitInput
         type={control.kind === 'number' ? 'number' : 'text'}
@@ -214,26 +227,26 @@ function PropField({ control, value, onChange }: { control: PropControl; value: 
 }
 
 function PropsTable({ props }: { props: RegistryProp[] }) {
-  if (props.length === 0) return <p className="muted">No props.</p>
+  if (props.length === 0) return <p className="tw:text-muted">No props.</p>
   return (
-    <table className="gallery-detail__props">
-      <thead>
+    <table className="tw:w-full tw:border-collapse tw:text-left tw:text-[13px] tw:[&_td]:border-t tw:[&_td]:border-line tw:[&_td]:py-1.5 tw:[&_td]:pr-3 tw:[&_td]:align-top tw:[&_code]:font-mono tw:[&_code]:text-[12px]">
+      <thead className="tw:text-[12px] tw:text-muted">
         <tr>
-          <th>Prop</th>
-          <th>Type</th>
-          <th>Default</th>
+          <th className="tw:py-1.5 tw:font-medium">Prop</th>
+          <th className="tw:py-1.5 tw:font-medium">Type</th>
+          <th className="tw:py-1.5 tw:font-medium">Default</th>
         </tr>
       </thead>
       <tbody>
         {props.map((p) => (
           <tr key={p.name} title={p.description}>
             <td>
-              <code>{p.name}</code>
+              <code className="tw:text-fg">{p.name}</code>
             </td>
             <td>
-              <code>{p.type}</code>
+              <code className="tw:break-all tw:text-fg-2">{p.type}</code>
             </td>
-            <td>{p.default ? <code>{p.default}</code> : '—'}</td>
+            <td className="tw:text-fg-2">{p.default ? <code>{p.default}</code> : '—'}</td>
           </tr>
         ))}
       </tbody>
@@ -294,119 +307,112 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
   const changed = Object.values(values).some((v) => Object.keys(v).length > 0)
 
   return (
-    <motion.div className="tool-scrim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-      <motion.section
-        className="gallery-detail"
-        role="dialog"
-        aria-label={item.name}
-        onClick={(e) => e.stopPropagation()}
-        initial={{ scale: 0.97 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.97 }}
-        transition={{ duration: 0.15 }}
-      >
-        <header className="gallery-detail__header">
-          <div>
-            <h2>{item.name}</h2>
-            <p>{item.description}</p>
-          </div>
-          <button type="button" className="tool-button" onClick={onClose}>
-            Close (Esc)
-          </button>
-        </header>
-        {Component ? (
-          <LiveStage Component={Component} width={760} theme={theme} step={step} total={total} replay={replay} />
-        ) : (
-          <div className="preview-frame" style={{ width: 760, height: Math.round((760 * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
-            <PreviewStatus error={error} isCompiling={isCompiling} />
+    <Sheet label={item.name} onClose={onClose} className="tw:max-w-[840px] tw:gap-5 tw:p-6">
+      <header className="tw:flex tw:items-start tw:gap-4">
+        <div className="tw:flex tw:flex-1 tw:flex-col tw:gap-1">
+          <h2 className="tw:font-display tw:text-[28px] tw:leading-tight tw:font-semibold">{item.name}</h2>
+          <p className="tw:text-fg-2">{item.description}</p>
+        </div>
+        <Button size="sm" onClick={onClose}>
+          Close (Esc)
+        </Button>
+      </header>
+      {Component ? (
+        <LiveStage Component={Component} width={760} theme={theme} step={step} total={total} replay={replay} />
+      ) : (
+        <div className={frameClass} style={{ width: 760, maxWidth: '100%', height: Math.round((760 * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
+          <PreviewStatus error={error} isCompiling={isCompiling} />
+        </div>
+      )}
+      <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-3">
+        <Button size="sm" onClick={restart}>
+          <RotateCcw aria-hidden />
+          Replay
+        </Button>
+        {total > 0 && (
+          <div className="tw:flex tw:items-center tw:gap-2" role="group" aria-label="Build steps">
+            <Button size="icon-sm" disabled={step === 0} onClick={() => setStep(step - 1)} aria-label="Previous step">
+              ←
+            </Button>
+            <span className="tw:text-[13px] tw:text-fg-2">
+              Step {step} of {total}
+            </span>
+            <Button size="icon-sm" disabled={step >= total} onClick={() => setStep(step + 1)} aria-label="Next step">
+              →
+            </Button>
           </div>
         )}
-        <div className="gallery-stage-bar">
-          <button type="button" className="tool-button" onClick={restart}>
-            Replay
-          </button>
-          {total > 0 && (
-            <div className="gallery-steps" role="group" aria-label="Build steps">
-              <button type="button" className="tool-button" disabled={step === 0} onClick={() => setStep(step - 1)} aria-label="Previous step">
-                ←
-              </button>
-              <span>
-                Step {step} of {total}
-              </span>
-              <button type="button" className="tool-button" disabled={step >= total} onClick={() => setStep(step + 1)} aria-label="Next step">
-                →
-              </button>
-            </div>
-          )}
-          {error && Component && <span className="preview-frame__error-inline">{error}</span>}
-        </div>
-        {groups.length > 0 && (
-          <>
-            <div className="gallery-detail__snippet-head">
-              <h3>Settings</h3>
-              <button type="button" className="tool-button" disabled={!changed} onClick={() => setValues({})}>
-                Reset
-              </button>
-            </div>
-            {groups.map(({ registry, controls, written }) => {
-              const own = values[registry.name] ?? {}
-              return (
-                <div key={registry.name} className="gallery-props-group">
-                  {/* A part's settings change its first element in the example. */}
-                  {registry.parent && <h4 className="gallery-props-group__name">{registry.name} (first in the example)</h4>}
-                  <div className="gallery-props">
-                    {controls.map((control) => {
-                      const name = control.prop.name
-                      const current = name in own ? (own[name] ?? undefined) : written[name]
-                      return (
-                        <PropField
-                          key={name}
-                          control={control}
-                          value={controlInput(control, current)}
-                          onChange={(input) => setValues((v) => ({ ...v, [registry.name]: { ...(v[registry.name] ?? {}), [name]: controlValue(control, input) } }))}
-                        />
-                      )
-                    })}
-                  </div>
+        {error && Component && <span className="tw:text-[12px] tw:text-removed">{error}</span>}
+      </div>
+      {groups.length > 0 && (
+        <section className="tw:flex tw:flex-col tw:gap-3">
+          <div className="tw:flex tw:items-center tw:justify-between">
+            <h3 className={h3Class}>Settings</h3>
+            <Button size="sm" variant="ghost" disabled={!changed} onClick={() => setValues({})}>
+              Reset
+            </Button>
+          </div>
+          {groups.map(({ registry, controls, written }) => {
+            const own = values[registry.name] ?? {}
+            return (
+              <div key={registry.name} className="tw:flex tw:flex-col tw:gap-2">
+                {/* A part's settings change its first element in the example. */}
+                {registry.parent && <h4 className="tw:text-[13px] tw:font-semibold">{registry.name} (first in the example)</h4>}
+                <div className="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] tw:gap-3">
+                  {controls.map((control) => {
+                    const name = control.prop.name
+                    const current = name in own ? (own[name] ?? undefined) : written[name]
+                    return (
+                      <PropField
+                        key={name}
+                        control={control}
+                        value={controlInput(control, current)}
+                        onChange={(input) => setValues((v) => ({ ...v, [registry.name]: { ...(v[registry.name] ?? {}), [name]: controlValue(control, input) } }))}
+                      />
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </>
-        )}
-        {item.useCases && item.useCases.length > 0 && (
-          <>
-            <h3>Use it for</h3>
-            <ul className="gallery-detail__uses">
-              {item.useCases.map((u) => (
-                <li key={u}>{u}</li>
-              ))}
-            </ul>
-          </>
-        )}
-        {isComponent && (
-          <>
-            <h3>Props</h3>
-            <PropsTable props={item.props} />
-            {getParts(item.name).map(({ registry: part }) => (
-              <div key={part.id} className="gallery-part">
-                <h3>
-                  Part: <code>{part.name}</code>
-                </h3>
-                <p className="gallery-part__description">{part.description}</p>
-                <PropsTable props={part.props} />
               </div>
+            )
+          })}
+        </section>
+      )}
+      {item.useCases && item.useCases.length > 0 && (
+        <section className="tw:flex tw:flex-col tw:gap-2">
+          <h3 className={h3Class}>Use it for</h3>
+          <ul className="tw:list-disc tw:pl-5 tw:text-fg-2">
+            {item.useCases.map((u) => (
+              <li key={u}>{u}</li>
             ))}
-          </>
-        )}
-        <div className="gallery-detail__snippet-head">
-          <h3>Snippet</h3>
-          <button type="button" className="tool-button" onClick={copy}>
+          </ul>
+        </section>
+      )}
+      {isComponent && (
+        <section className="tw:flex tw:flex-col tw:gap-2">
+          <h3 className={h3Class}>Props</h3>
+          <PropsTable props={item.props} />
+          {getParts(item.name).map(({ registry: part }) => (
+            <div key={part.id} className="tw:mt-3 tw:flex tw:flex-col tw:gap-2">
+              <h3 className="tw:font-semibold">
+                Part: <code className="tw:font-mono">{part.name}</code>
+              </h3>
+              <p className="tw:text-[13px] tw:text-muted">{part.description}</p>
+              <PropsTable props={part.props} />
+            </div>
+          ))}
+        </section>
+      )}
+      <section className="tw:flex tw:flex-col tw:gap-2">
+        <div className="tw:flex tw:items-center tw:justify-between">
+          <h3 className={h3Class}>Snippet</h3>
+          <Button size="sm" variant="ghost" onClick={copy}>
+            <Copy aria-hidden />
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
         </div>
-        <pre className="gallery-detail__snippet">{snippet}</pre>
-      </motion.section>
-    </motion.div>
+        <pre className="tw:m-0 tw:overflow-x-auto tw:rounded-lg tw:bg-field tw:p-3.5 tw:font-mono tw:text-[12.5px] tw:text-fg-2">{snippet}</pre>
+      </section>
+    </Sheet>
   )
 }
 
@@ -420,11 +426,14 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
   const sources = [...new Set(themes.map((t) => t.source))]
   const set = (patch: Partial<GallerySettings>) => onChange({ ...settings, ...patch })
   const changed = !sameSettings(settings, DEFAULT_SETTINGS)
+  const seg = (on: boolean) => cn('tw:inline-flex tw:h-7 tw:items-center tw:gap-1.5 tw:rounded-md tw:px-2.5 tw:text-[12px] tw:font-medium tw:text-fg-2 tw:disabled:opacity-40', on && 'tw:bg-panel tw:text-fg tw:shadow-hairline')
+  const fieldClass = 'tw:flex tw:items-center tw:gap-2 tw:text-[12px] tw:text-muted'
   return (
-    <div className="gallery-settings" role="group" aria-label="Preview settings">
-      <label className="gallery-settings__field">
+    <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-x-5 tw:gap-y-2.5" role="group" aria-label="Preview settings">
+      <label className={fieldClass}>
         <span>Theme</span>
-        <select
+        <NativeSelect
+          size="sm"
           value={settings.theme}
           onChange={(e) => {
             const next = chosenTheme(e.target.value, themes)
@@ -451,48 +460,49 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
                 ))}
             </optgroup>
           ))}
-        </select>
+        </NativeSelect>
       </label>
-      <div className="gallery-settings__field">
+      <div className={fieldClass}>
         <span>Scheme</span>
-        <div className="gallery-seg">
-          {(['', 'dark', 'light'] as const).map((s) => (
+        <div className="tw:inline-flex tw:rounded-lg tw:bg-field tw:p-0.5">
+          {(['', 'dark', 'light'] as const).map((sch) => (
             <button
-              key={s || 'own'}
+              key={sch || 'own'}
               type="button"
-              aria-pressed={settings.scheme === s}
-              title={s ? undefined : OWN_TIP}
-              disabled={!!s && !!allowed?.length && !allowed.includes(s)}
-              onClick={() => set({ scheme: s })}
+              className={seg(settings.scheme === sch)}
+              aria-pressed={settings.scheme === sch}
+              title={sch ? undefined : OWN_TIP}
+              disabled={!!sch && !!allowed?.length && !allowed.includes(sch)}
+              onClick={() => set({ scheme: sch })}
             >
-              {s ? title(s) : OWN}
+              {sch ? title(sch) : OWN}
             </button>
           ))}
         </div>
         {theme && allowed?.length === 1 && (
-          <span className="gallery-settings__note">
+          <span>
             {spec.name} is {allowed[0]} only
           </span>
         )}
       </div>
-      <div className="gallery-settings__field">
+      <div className={fieldClass}>
         <span>Accent</span>
-        <div className="gallery-seg">
-          <button type="button" aria-pressed={settings.accent === ''} title={OWN_TIP} onClick={() => set({ accent: '' })}>
+        <div className="tw:inline-flex tw:flex-wrap tw:rounded-lg tw:bg-field tw:p-0.5">
+          <button type="button" className={seg(settings.accent === '')} aria-pressed={settings.accent === ''} title={OWN_TIP} onClick={() => set({ accent: '' })}>
             {OWN}
           </button>
           {SLIDE_ACCENTS.map((a) => (
-            <button key={a} type="button" aria-pressed={settings.accent === a} onClick={() => set({ accent: a })} title={a}>
-              <i className="gallery-chip" style={{ background: swatch(a) }} aria-hidden />
+            <button key={a} type="button" className={seg(settings.accent === a)} aria-pressed={settings.accent === a} onClick={() => set({ accent: a })} title={a}>
+              <i className="tw:size-2.5 tw:rounded-full" style={{ background: swatch(a) }} aria-hidden />
               {title(a)}
             </button>
           ))}
         </div>
       </div>
       {frames.length > 0 && (
-        <label className="gallery-settings__field">
+        <label className={fieldClass}>
           <span>Frame</span>
-          <select value={settings.frame} onChange={(e) => set({ frame: e.target.value })}>
+          <NativeSelect size="sm" value={settings.frame} onChange={(e) => set({ frame: e.target.value })}>
             <option value="" title={OWN_TIP}>
               {OWN}
             </option>
@@ -502,12 +512,12 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
                 {title(f)}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
       )}
-      <button type="button" className="tool-button gallery-settings__reset" disabled={!changed} onClick={() => onChange(DEFAULT_SETTINGS)}>
+      <Button size="sm" variant="ghost" disabled={!changed} onClick={() => onChange(DEFAULT_SETTINGS)}>
         Reset
-      </button>
+      </Button>
     </div>
   )
 }
@@ -554,33 +564,41 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
   }, [open, onExit])
 
   return (
-    <div className="gallery">
-      <header className="gallery-header">
-        <button type="button" className="tool-button" onClick={onExit}>
-          ← Home
-        </button>
-        <h1>Component Gallery</h1>
-        <input className="gallery-header__search" type="search" placeholder="Search components and templates…" value={query} autoFocus onChange={(e) => setQuery(e.target.value)} />
-        <nav className="gallery-tabs">
-          {TABS.map((t) => (
-            <button key={t.value} type="button" className={tab === t.value ? 'is-active' : ''} onClick={() => setTab(t.value)}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
-        <span className="gallery-header__count">
-          {visible.length} of {items.length}
-        </span>
+    <div className="sc-app tw:h-full tw:overflow-y-auto tw:bg-ground">
+      <header className="tw:sticky tw:top-0 tw:z-10 tw:flex tw:flex-col tw:gap-3 tw:border-b tw:border-line tw:bg-ground/90 tw:px-6 tw:py-4 tw:backdrop-blur-md">
+        <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-3">
+          <Button size="icon" onClick={onExit} aria-label="Back to presentations" title="Back to presentations">
+            <ArrowLeft aria-hidden />
+          </Button>
+          <h1 className="tw:font-display tw:text-[28px] tw:leading-none tw:font-semibold">Component Gallery</h1>
+          <span className="tw:flex-1" />
+          <label className="tw:flex tw:h-9 tw:w-[300px] tw:max-w-full tw:items-center tw:gap-2 tw:rounded-[9px] tw:bg-field tw:px-2.5 tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus)]">
+            <Search className="tw:size-4 tw:shrink-0 tw:text-muted" aria-hidden />
+            <input
+              className="tw:min-w-0 tw:flex-1 tw:border-0 tw:bg-transparent tw:text-fg tw:outline-none tw:placeholder:text-muted"
+              type="search"
+              aria-label="Search components and templates"
+              placeholder="Search components and templates…"
+              value={query}
+              autoFocus
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <SegmentedControl aria-label="Show" value={tab} onValueChange={setTab} items={TABS} />
+          <span className="tw:text-[13px] tw:text-muted">
+            {visible.length} of {items.length}
+          </span>
+        </div>
         <SettingsBar settings={effective} themes={themes} theme={theme} onChange={changeSettings} />
       </header>
-      <main className="gallery-main">
-        {groups.length === 0 && <p className="home-empty">Nothing matches “{query}”.</p>}
+      <main className="tw:flex tw:flex-col tw:gap-8 tw:px-6 tw:py-6">
+        {groups.length === 0 && <p className="tw:py-10 tw:text-center tw:text-muted">Nothing matches “{query}”.</p>}
         {groups.map((g) => (
-          <section key={g.label}>
-            <h2 className="gallery-section">
-              {g.label} ({g.items.length})
+          <section key={g.label} className="tw:flex tw:flex-col tw:gap-4">
+            <h2 className="tw:font-display tw:text-[22px] tw:font-semibold">
+              {g.label} <span className="tw:font-sans tw:text-[15px] tw:font-normal tw:text-muted">{g.items.length}</span>
             </h2>
-            <div className="gallery-grid">
+            <div className="tw:flex tw:flex-wrap tw:gap-5">
               {g.items.map((item) => (
                 <GalleryCard key={item.id} item={item} settings={effective} theme={theme} onOpen={() => setOpen(item)} />
               ))}
