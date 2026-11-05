@@ -54,17 +54,27 @@ export function usePresentation(deck: DeckRef) {
   }, [])
 
   const load = useCallback(
-    async (keepIndex?: number) => {
-      update((s) => ({ ...s, isLoading: true, error: null }))
+    async (keepIndex?: number, reloading = false) => {
+      if (!reloading) update((s) => ({ ...s, isLoading: true, error: null }))
       const result = await loadMdx(deck)
-      if (!result.data) return update((s) => ({ ...s, isLoading: false, error: result.error ?? 'Could not load the presentation' }))
+      if (!result.data) {
+        if (reloading) return
+        return update((s) => ({ ...s, isLoading: false, error: result.error ?? 'Could not load the presentation' }))
+      }
       const { content, readOnly } = result.data
+      if (reloading) {
+        // A reload never overwrites edits made meanwhile, and skips the echo of our own save
+        // (the file-changed event after every save, or autosave): same text, nothing to do.
+        const s = stateRef.current
+        if (s.isDirty || s.isSaving) return
+        if (content === (s.model ? serializeModel(s.model) : s.raw?.text)) return
+      }
       try {
         const model = modelFromSource(content)
         const index = Math.min(keepIndex ?? initialSlideIndex(), Math.max(0, model.slides.length - 1))
-        update((s) => ({ ...s, readOnly, model, raw: null, selectedId: model.slides[index]?.id ?? null, isDirty: false, isLoading: false }))
+        update((s) => ({ ...s, readOnly, model, raw: null, selectedId: model.slides[index]?.id ?? null, isDirty: false, isLoading: false, error: null }))
       } catch (error) {
-        update((s) => ({ ...s, readOnly, model: null, raw: { text: content, error: (error as Error).message }, selectedId: null, isDirty: false, isLoading: false }))
+        update((s) => ({ ...s, readOnly, model: null, raw: { text: content, error: (error as Error).message }, selectedId: null, isDirty: false, isLoading: false, error: null }))
       }
     },
     [deck, update],
@@ -152,7 +162,7 @@ export function usePresentation(deck: DeckRef) {
       update((x) => ({ ...x, isSaving: false, isDirty: result.error ? x.isDirty : false, error: result.error ?? null }))
       return !result.error
     },
-    reload: () => load(Math.max(0, stateRef.current.model?.slides.findIndex((x) => x.id === stateRef.current.selectedId) ?? 0)),
+    reload: () => load(Math.max(0, stateRef.current.model?.slides.findIndex((x) => x.id === stateRef.current.selectedId) ?? 0), true),
   }
 
   const selected = state.model?.slides.find((s) => s.id === state.selectedId) ?? null
