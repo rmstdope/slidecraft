@@ -379,3 +379,106 @@
   background: rgba(0, 0, 0, 0.35);
   overflow-x: auto;
 }
+
+/* Attachments, per-turn changes and the diff (UX overhaul U5). */
+.agent-chat.is-dropping {
+  outline: 2px dashed var(--brand-yellow);
+  outline-offset: -6px;
+}
+.agent-attach {
+  flex: none;
+  align-self: flex-end;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--dark-muted);
+  cursor: pointer;
+}
+.agent-attach:hover:not(:disabled) {
+  color: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+}
+.agent-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+.agent-changes__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.agent-changes__what {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--dark-muted);
+  overflow-wrap: anywhere;
+}
+.agent-changes.is-undone .agent-changes__what {
+  color: var(--brand-yellow);
+}
+.agent-changes .tool-button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+}
+.agent-changes__loading,
+.agent-diff__note {
+  font-size: 0.75rem;
+  color: var(--dark-muted);
+}
+.agent-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 420px;
+  overflow: auto;
+}
+.agent-diff__file header {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--dark-text);
+  margin-bottom: 0.25rem;
+}
+.agent-diff__status {
+  margin-left: 0.4rem;
+  font-family: var(--font-body);
+  color: var(--dark-muted);
+}
+.agent-diff__status.is-added {
+  color: var(--accent-teal);
+}
+.agent-diff__status.is-deleted {
+  color: var(--brand-red);
+}
+.agent-diff__hunk {
+  margin: 0 0 0.4rem;
+  padding: 0.4rem 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+.agent-diff__line {
+  display: block;
+  padding: 0 0.6rem;
+  white-space: pre;
+}
+.agent-diff__line.is-add {
+  background: rgba(31, 158, 137, 0.18);
+}
+.agent-diff__line.is-remove {
+  background: rgba(224, 69, 43, 0.18);
+}

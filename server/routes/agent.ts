@@ -10,11 +10,15 @@
  * POST /api/agent/threads/<vault>/<id>/messages {text, context?}
  * POST /api/agent/threads/<vault>/<id>/stop
  * POST /api/agent/threads/<vault>/<id>/approvals/<approvalId> {allow}
+ * GET  /api/agent/threads/<vault>/<id>/turns/<n>/diff · POST …/turns/<n>/undo
+ * POST /api/agent/attachments (multipart: vault, path?, file)
  */
 import type { AgentBackendId, MessageContext } from '../../shared/agent.ts'
+import { AttachmentError, MAX_ATTACHMENT_BYTES, storeAttachment } from '../lib/agent/attachments.ts'
 import { localOrigin } from '../lib/agent/claudeCode.ts'
-import { getAgentSettings, setAgentSettings } from '../lib/contentSources.ts'
-import { createThread, defaultBackend, getBackends, getThread, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError } from '../lib/agent/threads.ts'
+import { boundaryOf, parseMultipart } from '../lib/multipart.ts'
+import { getAgentSettings, getContentSource, setAgentSettings } from '../lib/contentSources.ts'
+import { createThread, defaultBackend, getBackends, getThread, getTurnDiff, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError, undoAgentTurn } from '../lib/agent/threads.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
 
 const decode = (segment: string | undefined): string | null => {
@@ -31,6 +35,7 @@ function contextOf(value: unknown): MessageContext | undefined {
   return {
     slide: typeof v.slide === 'number' && Number.isInteger(v.slide) ? v.slide : undefined,
     selection: typeof v.selection === 'string' ? v.selection : undefined,
+    attachments: Array.isArray(v.attachments) ? v.attachments.filter((a): a is string => typeof a === 'string' && !a.includes('..') && !a.startsWith('/')).slice(0, 20) : undefined,
   }
 }
 
@@ -52,6 +57,7 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
       }
       return errorJson(405, 'Method not allowed')
     }
+    if (parts[0] === 'attachments' && parts.length === 1 && method === 'POST') return await handleAttachment(request)
     if (parts[0] !== 'threads') return errorJson(404, 'Not found')
 
     if (parts.length === 1) {
@@ -83,6 +89,11 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
       return json(await sendMessage(vault, id, body.text, contextOf(body.context), { appOrigin: localOrigin(request.headers.get('origin')) }), 202)
     }
     if (action === 'stop' && method === 'POST') return json({ stopped: stopTurn(vault, id) })
+    if (action === 'turns' && parts[4] && /^\d+$/.test(parts[4])) {
+      const turn = Number(parts[4])
+      if (parts[5] === 'diff' && method === 'GET') return json(getTurnDiff(vault, id, turn))
+      if (parts[5] === 'undo' && method === 'POST') return json({ files: undoAgentTurn(vault, id, turn) })
+    }
     if (action === 'approvals' && parts[4] && method === 'POST') {
       const body = await readJson<{ allow?: unknown }>(request)
       if (!body || typeof body.allow !== 'boolean') return errorJson(400, 'Body must be JSON with an "allow" boolean')
@@ -92,7 +103,18 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
     }
     return errorJson(404, 'Not found')
   } catch (error) {
-    if (error instanceof ThreadError) return errorJson(error.status, error.message)
+    if (error instanceof ThreadError || error instanceof AttachmentError) return errorJson(error.status, error.message)
     return errorJson(500, 'Agent request failed', (error as Error).message)
   }
+}
+
+async function handleAttachment(request: Request): Promise<Response> {
+  const boundary = boundaryOf(request.headers.get('content-type'))
+  if (!boundary) return errorJson(400, 'Expected multipart/form-data')
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_ATTACHMENT_BYTES + 64 * 1024) return errorJson(413, 'The file is larger than 20 MB')
+  const { fields, files } = parseMultipart(new Uint8Array(await request.arrayBuffer()), boundary)
+  const vault = fields.vault ? getContentSource(fields.vault) : undefined
+  if (!vault) return errorJson(404, 'No such vault')
+  if (!files.file) return errorJson(400, 'Missing file')
+  return json(await storeAttachment(vault, fields.path || undefined, files.file), 201)
 }

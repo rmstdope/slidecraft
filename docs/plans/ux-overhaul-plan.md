@@ -260,6 +260,26 @@ Deviations:
 **Done when:** a bad agent turn can be seen as a diff and undone in one click, and a dropped image
 ends up on a slide.
 
+**Status (2026-11-05): done.** `server/lib/agent/checkpoints.ts` (hash-addressed blobs and turn
+records in `.slidecraft/checkpoints/`), `shared/lineDiff.ts` (the line diff and hunks),
+`server/lib/agent/attachments.ts`; the panel shows the changes, the diff and the undo
+(`src/agent/AgentChat.tsx`). Checked in the browser with Claude Code: a notes file attached with
+the paper clip was read by the agent and used for an agenda slide; the turn's changes row showed
+the diff and **Undo this turn** put the slide back. A refused undo, the note to the agent and the
+image upload into a deck's `images/` are covered by `tests/agent.test.ts`. Deviations:
+
+- Checkpoints store every file of the scope once by content hash before and after a turn,
+  instead of "the files the turn might touch": nobody knows those in advance, and the hashes make
+  the copies cheap (an unchanged image is stored once for all turns). A turn that changes nothing
+  keeps no checkpoint. Files over 25 MB, and `.slidecraft`, `.claude`, `.git`, `node_modules` and
+  `exports/`, are left out.
+- After an undo the agent's own session still remembers its edit, so the next message carries a
+  note ("The person undid your changes from turn N…").
+- An image dropped into a vault-level conversation (no deck yet) goes to
+  `.slidecraft/attachments/` like any other file; the agent moves it into the deck it makes.
+- The workspace's own paste-an-image-into-the-code still works; a paste inside the conversation
+  panel attaches instead.
+
 ### Phase U6 — Copilot, HTTP removal, docs
 
 - Copilot CLI backend behind `AgentBackend`; verify where it reads skills (see §1).

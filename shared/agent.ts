@@ -4,6 +4,7 @@
  * events on the server; the browser never sees a CLI's own format.
  */
 import type { DeckRef } from './decks.ts'
+import type { DiffHunk } from './lineDiff.ts'
 
 export type AgentBackendId = 'claude-code' | 'copilot'
 
@@ -36,6 +37,21 @@ export interface MessageContext {
   slide?: number
   /** Text selected in the code editor. */
   selection?: string
+  /** Files dropped into the conversation, as vault-relative paths. */
+  attachments?: string[]
+}
+
+/** A file an agent turn added, changed or deleted, as a vault-relative path. */
+export interface FileChange {
+  path: string
+  status: 'added' | 'modified' | 'deleted'
+}
+
+/** GET …/turns/<n>/diff: what one turn changed, file by file. */
+export interface TurnDiff {
+  turn: number
+  undone: boolean
+  files: (FileChange & { binary?: boolean; tooLarge?: boolean; hunks?: DiffHunk[] })[]
 }
 
 /** A tool call, summarised for display ("Edit q3/index.mdx"). */
@@ -53,6 +69,8 @@ export type AgentEventBody =
   | { type: 'file-changed'; path: string }
   | { type: 'approval-request'; id: string; tool: string; summary: string; detail?: string }
   | { type: 'approval-resolved'; id: string; allowed: boolean }
+  | { type: 'changes'; files: FileChange[] }
+  | { type: 'turn-undone'; files: string[] }
   | { type: 'turn-done'; ok: boolean; error?: string; costUsd?: number; stopped?: boolean }
 
 /** One event of a thread. `seq` orders them; a turn starts with `user-message` and ends with `turn-done`. */

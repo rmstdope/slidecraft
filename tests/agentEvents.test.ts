@@ -49,6 +49,22 @@ describe('toTurns', () => {
   })
 })
 
+describe('turn changes', () => {
+  test('a turn carries its changes and is marked undone; attachments show on the message', () => {
+    const turns = toTurns([
+      ev(1, { type: 'user-message', text: 'Use the chart', context: { attachments: ['q/images/chart.png', '.slidecraft/attachments/2026-11-05/notes.md'] } }),
+      ev(1, { type: 'changes', files: [{ path: 'q/index.mdx', status: 'modified' }] }),
+      ev(1, { type: 'turn-done', ok: true }),
+      ev(2, { type: 'user-message', text: 'Next' }),
+      ev(1, { type: 'turn-undone', files: ['q/index.mdx'] }),
+    ])
+    expect(turns[0]).toMatchObject({ changes: [{ path: 'q/index.mdx', status: 'modified' }], undone: true })
+    expect(turns[0].user?.attachments).toHaveLength(2)
+    expect(turns[1].changes).toEqual([])
+    expect(turns[1].undone).toBeUndefined()
+  })
+})
+
 describe('agent markdown', () => {
   test('paragraphs, lists and code blocks', async () => {
     const { parseBlocks } = await import('../src/agent/markdown')

@@ -250,6 +250,10 @@ edits the file and the preview follows.
   box; remove one with ×.
 - While it works, the code is read-only (**Agent is editing**); unsaved edits are saved before a
   message goes out.
+- After each turn you see the files it changed. **Diff** shows every line; **Undo this turn** puts
+  the files back as they were, unless they have changed since (then it says which).
+- Drop images, PDFs or notes into the conversation, paste them, or use the paper clip. An image
+  dropped into a deck's conversation lands in the deck's `images/` folder, ready for a slide.
 - Each deck keeps its conversations (pick one at the top, or **New**); they resume after a restart.
 
 [Getting started with agents](getting-started-with-agents.md) shows other ways to use a coding

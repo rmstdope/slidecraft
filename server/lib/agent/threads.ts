@@ -5,7 +5,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AgentBackendId, AgentEvent, AgentEventBody, MessageContext, ThreadDetail, ThreadInfo } from '../../../shared/agent.ts'
+import type { AgentBackendId, AgentEvent, AgentEventBody, MessageContext, ThreadDetail, ThreadInfo, TurnDiff } from '../../../shared/agent.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
 import { buildAgentInstructions, buildDeckContext } from '../chat/prompt.ts'
 import { getAgentSettings, getContentSource, type ContentSource } from '../contentSources.ts'
@@ -13,6 +13,7 @@ import { readDeckSource } from '../deckStore.ts'
 import { resolveDeckRefInSources } from '../decks.ts'
 import { broadcast } from '../events.ts'
 import type { AgentBackend } from './backend.ts'
+import { beginCheckpoint, CheckpointError, finishCheckpoint, turnDiff, undoTurn } from './checkpoints.ts'
 import { claudeCodeBackend } from './claudeCode.ts'
 
 // ---- Backends ------------------------------------------------------------------------------
@@ -41,6 +42,8 @@ interface StoredThread {
   info: Omit<ThreadInfo, 'running'>
   sessionId?: string
   events: AgentEvent[]
+  /** Told to the agent with the next message: what changed behind its back (an undo). */
+  notes?: string[]
 }
 
 export class ThreadError extends Error {
@@ -190,7 +193,11 @@ async function promptFor(vault: ContentSource, thread: StoredThread, text: strin
     }
   }
   const selection = context?.selection?.trim() ? `\n\n### Selected in the code editor\n\n\`\`\`mdx\n${context.selection.slice(0, 8000)}\n\`\`\`` : ''
-  return `<slidecraft-context>\n${deckContext}${selection}\n</slidecraft-context>\n\n${text}`
+  const attachments = context?.attachments?.length
+    ? `\n\n### Files the person attached\n\n${context.attachments.map((a) => `- \`${a}\``).join('\n')}\n\nRead them with your tools (paths are relative to the working directory). Images already in a deck's \`images/\` folder can be used on a slide directly.`
+    : ''
+  const notes = thread.notes?.length ? `\n\n### Since your last turn\n\n${thread.notes.map((n) => `- ${n}`).join('\n')}` : ''
+  return `<slidecraft-context>\n${deckContext}${selection}${attachments}${notes}\n</slidecraft-context>\n\n${text}`
 }
 
 /** Start a turn; it runs in the background and reports through events. */
@@ -216,7 +223,14 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
   announce(thread)
 
   const prompt = await promptFor(vault, thread, text, context)
+  thread.notes = undefined
   const instructions = await buildAgentInstructions(vault.path)
+  const scope = thread.info.deck?.path ?? ''
+  try {
+    beginCheckpoint(vault.path, id, turn, scope)
+  } catch (error) {
+    console.warn(`No checkpoint for this turn: ${(error as Error).message}`)
+  }
   void (async () => {
     let result
     try {
@@ -249,6 +263,12 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
     }
     for (const decide of [...run.approvals.values()]) decide(false)
     if (result.sessionId) thread.sessionId = result.sessionId
+    try {
+      const files = finishCheckpoint(vault.path, id, turn)
+      if (files.length) append(vault, thread, turn, { type: 'changes', files })
+    } catch (error) {
+      console.warn(`Could not finish the checkpoint: ${(error as Error).message}`)
+    }
     const stopped = run.abort.signal.aborted
     append(vault, thread, turn, { type: 'turn-done', ok: result.ok && !stopped, error: stopped ? undefined : result.error, costUsd: result.costUsd, stopped: stopped || undefined })
     active.delete(key)
@@ -256,6 +276,36 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
     announce(thread)
   })()
   return infoOf(thread)
+}
+
+/** What one turn changed, file by file. */
+export function getTurnDiff(vaultId: string, id: string, turn: number): TurnDiff {
+  const vault = vaultOf(vaultId)
+  if (!load(vault, id)) throw new ThreadError(404, 'No such conversation')
+  return withCheckpointErrors(() => turnDiff(vault.path, id, turn))
+}
+
+/** Put back what a turn changed, and tell the agent with the next message. */
+export function undoAgentTurn(vaultId: string, id: string, turn: number): string[] {
+  const vault = vaultOf(vaultId)
+  const thread = load(vault, id)
+  if (!thread) throw new ThreadError(404, 'No such conversation')
+  if (vault.readOnly) throw new ThreadError(403, `The vault "${vault.name}" is read-only`)
+  if (active.has(keyOf(vault.id, id))) throw new ThreadError(409, 'Wait for the agent to finish, or stop it, before undoing')
+  const files = withCheckpointErrors(() => undoTurn(vault.path, id, turn)).map((c) => c.path)
+  append(vault, thread, turn, { type: 'turn-undone', files })
+  thread.notes = [...(thread.notes ?? []), `The person undid your changes from turn ${turn}; these files are back as they were before it: ${files.join(', ')}.`]
+  save(vault, thread)
+  return files
+}
+
+function withCheckpointErrors<T>(run: () => T): T {
+  try {
+    return run()
+  } catch (error) {
+    if (error instanceof CheckpointError) throw new ThreadError(error.status, error.message)
+    throw error
+  }
 }
 
 export function stopTurn(vaultId: string, id: string): boolean {
