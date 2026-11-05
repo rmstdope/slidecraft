@@ -1,0 +1,65 @@
+import {
+  Presentation, Slide, Notes, Title,
+  Punchline, LowerThird, Chapter, NumberPunch, Annotate, Ring, Scribble,
+} from '@components'
+import dashboard from './images/dashboard.svg'
+
+<Presentation theme="slidecraft" scheme="dark">
+
+<Slide accent="yellow">
+  <Punchline highlight="41%" sub="after one change to the cache" steps>Builds got 41% faster</Punchline>
+  <Notes>
+    0:00-0:40. The words land as I say them. Right arrow: the highlight on 41%. Right arrow again:
+    the line underneath. Every cut in this deck is a right arrow, so I set the pace.
+  </Notes>
+</Slide>
+
+<Slide accent="yellow">
+  <Chapter number={1} of={3} title="Where the time went" />
+  <Notes>0:40-0:50. Chapter one of three; the ticks show where we are.</Notes>
+</Slide>
+
+<Slide accent="red" layout="document">
+  <Annotate src={dashboard} alt="Build minutes per week; week 36 is twice the others" zoom={{ x: 754, y: 420, scale: 1.6 }} steps>
+    <Ring x={754} y={330} rx={80} ry={110} />
+    <Scribble x={860} y={560} arrowTo={[815, 410]}>cache miss</Scribble>
+  </Annotate>
+  <Notes>
+    0:50-2:00. Three beats: push in on week 36, ring the spike, then name it. That week every
+    branch started from an empty cache.
+  </Notes>
+</Slide>
+
+<Slide accent="teal">
+  <Chapter number={2} of={3} title="One change" steps />
+  <Notes>2:00-2:10. The title waits for the right arrow, so I can say the chapter name first.</Notes>
+</Slide>
+
+<Slide accent="teal" gradient="spotlight">
+  <Title>Rebuild only what changed</Title>
+  <LowerThird name="Jordan Lee" role="Platform lead" quote="We stopped rebuilding what had not changed. That was the whole trick." steps />
+  <Notes>
+    2:10-3:00. Name first, then the role on the next beat, then the quote. Jordan ran the
+    migration; let the quote sit for a moment.
+  </Notes>
+</Slide>
+
+<Slide accent="yellow">
+  <Chapter number={3} of={3} title="The result" />
+  <Notes>3:00-3:10.</Notes>
+</Slide>
+
+<Slide accent="yellow">
+  <NumberPunch from={38} to={9} unit="min" label="Clean build, main branch" before="in June" delta steps />
+  <Notes>
+    3:10-3:50. The June number first. Right arrow: it rolls down to nine and the sticker shows
+    the change. Pause after the roll.
+  </Notes>
+</Slide>
+
+<Slide accent="teal">
+  <Punchline highlight="every branch" sub="questions, and the migration guide, next">Now on every branch</Punchline>
+  <Notes>3:50-4:30. The closer plays by itself: no steps on this one.</Notes>
+</Slide>
+
+</Presentation>

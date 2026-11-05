@@ -122,7 +122,8 @@ read as the official template.
 
 Reference decks: `folio-tour` (every frame around a broad set of components), `folio-minimal`
 (the smallest framed deck), `safe-retries` (a full framed talk), `ion-tour` (the ion theme with
-SignalFlow, TracedPoints, Gauge and TraceTimeline).
+SignalFlow, TracedPoints, Gauge and TraceTimeline), `studio-tour` (video-style cuts: Punchline,
+Chapter, Annotate, LowerThird, NumberPunch, each with `steps` for beat-by-beat pacing).
 
 ## Colour
 

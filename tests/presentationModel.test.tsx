@@ -24,6 +24,9 @@ Step.displayName = 'Step'
 function Diagram(_: { nodes: { label: string; step?: number }[] }) {
   return null
 }
+function Table(_: { headers: ReactNode[] }) {
+  return null
+}
 
 describe('steps', () => {
   test('readStep accepts only finite positive numbers', () => {
@@ -38,6 +41,7 @@ describe('steps', () => {
     expect(countSteps(<Slide><Title>a</Title></Slide>)).toBe(0)
     expect(countSteps(<Slide><Text>a</Text><Step at={2}><Text>b</Text></Step></Slide>)).toBe(2)
     expect(countSteps(<Slide><Diagram nodes={[{ label: 'a' }, { label: 'b', step: 4 }]} /></Slide>)).toBe(4)
+    expect(countSteps(<Slide><Table headers={['a', <><Text step={2}>b</Text></>]} /></Slide>)).toBe(2)
     // the highest beat, not the number of distinct beats
     expect(countSteps(<Slide><Text>x</Text><Step at={3}><Text>y</Text></Step></Slide>)).toBe(3)
   })

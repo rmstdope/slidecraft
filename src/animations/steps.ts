@@ -37,7 +37,11 @@ export function countSteps(node: ReactNode, depth = 0): number {
   if (typeof own === 'function') max = Math.max(max, readStep((own as (p: Record<string, unknown>) => unknown)(props)) ?? 0)
   for (const value of Object.values(props)) {
     if (!Array.isArray(value)) continue
-    for (const entry of value) if (isPlainObject(entry)) max = Math.max(max, readStep(entry.step) ?? 0)
+    for (const entry of value) {
+      if (isPlainObject(entry)) max = Math.max(max, readStep(entry.step) ?? 0)
+      // Elements passed as data, e.g. a Highlight inside ComparisonTable headers.
+      else if (isValidElement(entry)) max = Math.max(max, countSteps(entry, depth + 1))
+    }
   }
   max = Math.max(max, countSteps(props.children as ReactNode, depth + 1))
   return Math.min(MAX_STEPS, max)
