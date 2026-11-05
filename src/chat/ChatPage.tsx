@@ -5,6 +5,7 @@ import { subscribeServerEvents, useSSE } from '../hooks/useSSE'
 import { chatUrl, presentationUrl } from '../router'
 import { sendChat } from './api'
 import { MessageBubble, ToolCalls, ValidationErrors, WorkingBubble } from './components'
+import { AgentChat } from '../agent/AgentChat'
 
 const PROVIDER_KEY = 'slidecraft-chat-provider'
 
@@ -169,6 +170,16 @@ export default function ChatPage({ vault, deck: initialDeck, onExit }: { vault: 
       </header>
 
       <div className="chat-body">
+        {provider === 'claude-code' ? (
+          <section className="chat-panel">
+            <AgentChat
+              vault={vault}
+              deck={initialDeck}
+              getContext={() => (initialDeck ? { slide: currentSlideIndex() } : undefined)}
+              onDeckWritten={(written) => !deck && adoptDeck(written)}
+            />
+          </section>
+        ) : (
         <section className="chat-panel">
           <div ref={listRef} className="chat-messages">
             {messages.length === 0 && !loading && (
@@ -221,6 +232,7 @@ export default function ChatPage({ vault, deck: initialDeck, onExit }: { vault: 
             <p className="chat-input__hint">Press Enter to send, Shift+Enter for a new line</p>
           </div>
         </section>
+        )}
 
         <section className="chat-preview">
           <div className="chat-preview__header">

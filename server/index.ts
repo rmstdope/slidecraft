@@ -10,6 +10,7 @@ import { errorJson, json, preflight } from './lib/http.ts'
 import { APP_ID, DIST_DIR, hasFlag, IS_BUNDLED, PORT, VERSION } from './lib/paths.ts'
 import { serveAppFile, serveFileFrom } from './lib/static.ts'
 import { handleApplyFix } from './routes/applyFix.ts'
+import { handleAgent } from './routes/agent.ts'
 import { handleChat } from './routes/chat.ts'
 import { handleExport } from './routes/export.ts'
 import { handlePresentations, handleThemes, handleVaults } from './routes/content.ts'
@@ -36,6 +37,7 @@ export async function router(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/presentations') return handlePresentations(url)
   if (pathname === '/api/vaults' || pathname.startsWith('/api/vaults/')) return handleVaults(request, url)
   if (method === 'GET' && pathname === '/api/themes') return handleThemes(url)
+  if (pathname.startsWith('/api/agent/')) return handleAgent(request, url)
   if (method === 'POST' && pathname === '/api/chat') return handleChat(request)
   if (method === 'POST' && pathname === '/api/apply-fix') return handleApplyFix(request)
   if (method === 'POST' && (pathname === '/api/images/upload' || pathname === '/api/images')) return handleUpload(request)
@@ -63,6 +65,11 @@ export async function router(request: Request): Promise<Response> {
 }
 
 async function main() {
+  // The release binary doubles as the MCP server (agents in the app start it this way).
+  if (hasFlag('--mcp')) {
+    const { runMcpServer } = await import('./mcp.ts')
+    return runMcpServer()
+  }
   if (hasFlag('--contents') || hasFlag('--vaults')) {
     for (const s of getContentSources()) console.log(`${s.id}\t${s.name}\t${s.path}${s.readOnly ? '\t(read-only)' : ''}${s.temporary ? '\t(this run only)' : ''}`)
     process.exit(0)

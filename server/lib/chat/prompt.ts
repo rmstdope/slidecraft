@@ -91,7 +91,8 @@ export async function buildSystemPrompt(deck: DeckContext | null, contentDir: st
 }
 
 /** Context for the CLI agents, which run in the content folder and edit files themselves (§A.6.4). */
-export async function buildAgentContext(deck: DeckContext | null, contentDir: string): Promise<string> {
+/** Standing instructions for an agent working in a vault folder: the guide, components, themes, house style. */
+export async function buildAgentInstructions(contentDir: string): Promise<string> {
   const parts = [
     'You are editing presentations made with Slidecraft, an MDX presentation framework. Follow the presentation authoring guide below; it describes the components and the rules for using them.',
     buildComponentSummary(),
@@ -99,23 +100,29 @@ export async function buildAgentContext(deck: DeckContext | null, contentDir: st
     await buildThemeSummary(),
     `## Presentation authoring guide\n\n${readAuthorGuide() ?? 'Use the registered components only.'}`,
   ]
-  const folder = folderInstructions(deck?.contentDir ?? contentDir, false)
+  const folder = folderInstructions(contentDir, false)
   if (folder) parts.push(folder)
-  if (deck) {
-    const name = deckName(deck.ref)
-    const file = `${deck.ref.path}/index.mdx`
-    const view = viewOf(deck.source)
-    const lines = [`## Current presentation: ${name}`, '', `File path: ${file} (relative to the working directory)`]
-    if (!deck.source) lines.push('', '(The presentation file does not exist yet: create it.)')
-    else if (view) {
-      lines.push('', '### Slide structure', '', structure(view, deck.currentSlideIndex))
-      const current = deck.currentSlideIndex
-      if (current !== undefined && view.slides[current] !== undefined) lines.push('', `### Current slide (index ${current})`, '', '```jsx', view.slides[current], '```')
-    }
-    lines.push('', `IMPORTANT: Edit the MDX file directly with your file tools. The file is at: ${file}. Do not print the file contents in your reply; just edit the file.`)
-    parts.push(lines.join('\n'))
-  } else {
-    parts.push('## No presentation is open\n\nTo create one, write `<name>/index.mdx` in the working directory (lower-case words joined by dashes). Do not print the file in your reply; write it.')
-  }
   return parts.join('\n\n')
+}
+
+/** What the person is looking at: the deck, its structure and the slide on screen. */
+export function buildDeckContext(deck: DeckContext | null): string {
+  if (!deck) return '## No presentation is open\n\nTo create one, write `<name>/index.mdx` in the working directory (lower-case words joined by dashes). Do not print the file in your reply; write it.'
+  const name = deckName(deck.ref)
+  const file = `${deck.ref.path}/index.mdx`
+  const view = viewOf(deck.source)
+  const lines = [`## Current presentation: ${name}`, '', `File path: ${file} (relative to the working directory)`]
+  if (!deck.source) lines.push('', '(The presentation file does not exist yet: create it.)')
+  else if (view) {
+    lines.push('', '### Slide structure', '', structure(view, deck.currentSlideIndex))
+    const current = deck.currentSlideIndex
+    if (current !== undefined && view.slides[current] !== undefined) lines.push('', `### Current slide (index ${current})`, '', '```jsx', view.slides[current], '```')
+  }
+  lines.push('', `IMPORTANT: Edit the MDX file directly with your file tools. The file is at: ${file}. Do not print the file contents in your reply; just edit the file.`)
+  return lines.join('\n')
+}
+
+/** The CLI chat providers' context: instructions and deck context in one prompt. */
+export async function buildAgentContext(deck: DeckContext | null, contentDir: string): Promise<string> {
+  return [await buildAgentInstructions(deck?.contentDir ?? contentDir), buildDeckContext(deck)].join('\n\n')
 }

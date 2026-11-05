@@ -83,8 +83,10 @@ export function createMcpServer(): McpServer {
   return server
 }
 
-if (import.meta.main) {
+export async function runMcpServer(): Promise<void> {
   const server = createMcpServer()
   await server.connect(new StdioServerTransport())
   console.error(`Slidecraft MCP server ${VERSION} on stdio; vault ${getDefaultContentSource().name} (${getContentDir()})`)
 }
+
+if (import.meta.main) await runMcpServer()
