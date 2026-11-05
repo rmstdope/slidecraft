@@ -124,7 +124,8 @@ describe('prompts', () => {
   test('the system prompt has the guide, components, guidelines and the slides near the view', async () => {
     const prompt = await buildSystemPrompt({ ref: { source: 'content', path: 'talk' }, source: DECK, currentSlideIndex: 1, contentDir: content }, content)
     expect(prompt).toContain('# AI Presentation Assistant')
-    expect(prompt).toContain('# Presentation author guide')
+    expect(prompt).toContain('# Slidecraft presentations') // the guide, from the presentations skill
+    expect(prompt).toContain('# Motion')
     expect(prompt).toContain('## Available components')
     expect(prompt).toContain('Create and edit are different workflows')
     expect(prompt).toContain('1: "Middle" [dark/teal]  <-- viewing')

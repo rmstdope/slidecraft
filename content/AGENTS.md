@@ -2,7 +2,8 @@
 
 These rules come from the folder that holds the presentations. On style, language and wording they
 take precedence; which components exist and how they work is defined by Slidecraft's own
-documentation (`docs/agents/presentation-author.md` in the Slidecraft repository).
+documentation (the `slidecraft-presentations` skill, `skills/slidecraft-presentations/` in the
+Slidecraft repository).
 
 - **Language and tone:** declarative, peer-to-peer engineering English. No marketing adjectives:
   show the number or the mechanism instead.

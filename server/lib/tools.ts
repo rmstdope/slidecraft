@@ -11,6 +11,7 @@ import { getAllComponents } from '../../src/components/slides/defineComponent.ts
 import '../../src/components/slides/index.ts'
 import { listThemes, registerTheme, unregisterSource } from '../../src/themes/registry.ts'
 import { getContentSource, getDefaultContentSource, getLibraryDir } from './contentSources.ts'
+import { checkDeck } from './deckChecks.ts'
 import { discoverPresentations, resolveDeckRefInSources, resolveWritableDeckRefInSources, type ResolvedDeck } from './decks.ts'
 import { readDeckSource, saveValidatedDeck } from './deckStore.ts'
 import { listImages } from './images.ts'
@@ -89,6 +90,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     mutates: true,
     parameters: { type: 'object', properties: { name: str('Presentation folder name'), theme: str('Theme id from list_themes') }, required: ['name', 'theme'] },
   },
+  {
+    name: 'validate_deck',
+    description:
+      'Check a presentation the way the app will: whether it compiles, raw HTML, unknown components or props, invalid prop values, and document titles that probably wrap. Run it after every edit; errors must be fixed, warnings deserve a screenshot.',
+    mutates: false,
+    parameters: { type: 'object', properties: { name: str('Presentation folder name') }, required: ['name'] },
+  },
   { name: 'list_themes', description: 'List the themes available to presentations in this content folder, with their frames (slide masters).', mutates: false, parameters: { type: 'object', properties: {} } },
   {
     name: 'list_images',
@@ -162,6 +170,11 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
         const source = context.deck?.source ?? context.vault ?? getDefaultContentSource().id
         const decks = await discoverPresentations({ source })
         return { success: true, data: decks.map((d) => ({ name: d.name, path: d.path, source: d.source, readOnly: d.readOnly, updatedAt: d.updatedAt })) }
+      }
+      case 'validate_deck': {
+        const loaded = await loadDeck(args, context, false)
+        if ('success' in loaded) return loaded
+        return { success: true, data: await checkDeck(loaded.source) }
       }
       case 'read_presentation': {
         const loaded = await loadDeck(args, context, false)

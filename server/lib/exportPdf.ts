@@ -3,8 +3,8 @@
  * and printed with one 16:9 page (20in × 11.25in = 1920 × 1080 CSS px) per visible slide.
  * All slides render in one page load, so there is nothing to merge.
  */
-import { deckName, deckQuery, type DeckRef } from '../../shared/decks.ts'
-import { findChrome, launchChrome } from './chrome.ts'
+import { deckName, type DeckRef } from '../../shared/decks.ts'
+import { findChrome, launchChrome, type CdpPage } from './chrome.ts'
 import { resolveDeckRefInSources } from './decks.ts'
 import { readDeckSource } from './deckStore.ts'
 import { ExportError } from './exportDeck.ts'
@@ -23,21 +23,29 @@ const SETTLE = `(async () => {
   return true
 })()`
 
-export async function exportDeckPdf(ref: DeckRef, origin: string): Promise<{ pdf: Uint8Array; name: string; pages: number }> {
+/** The deck's print view (`?pdf=1`, or one slide with `&slide=n`) on the running app's URL scheme. */
+export const printViewUrl = (ref: DeckRef, origin: string, slide?: number): string =>
+  `${origin.replace(/\/$/, '')}/v/${encodeURIComponent(ref.source)}/${ref.path.split('/').map(encodeURIComponent).join('/')}?pdf=1${slide ? `&slide=${slide}` : ''}`
+
+/**
+ * Open a deck's print view in headless Chrome and wait until every slide is rendered and every
+ * animation finished. Runs `use` with the page and the slide count, then closes the browser.
+ */
+async function withPrintView<T>(ref: DeckRef, origin: string, slide: number | undefined, use: (page: CdpPage, count: number) => Promise<T>): Promise<T> {
   const name = deckName(ref)
   const resolved = resolveDeckRefInSources(ref)
   if (!resolved || (await readDeckSource(resolved)) === null) throw new ExportError(`Presentation "${name}" not found`, 404)
   const chrome = findChrome()
-  if (!chrome) throw new ExportError('No Chrome executable found. Set CHROME_PATH to enable PDF export.')
+  if (!chrome) throw new ExportError('No Chrome executable found. Set CHROME_PATH to enable PDF export and screenshots.')
 
   const browser = await launchChrome(chrome)
   try {
     const page = await browser.newPage()
     await page.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false })
     await page.send('Emulation.setEmulatedMedia', { media: 'screen', features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
-    await page.send('Page.navigate', { url: `${origin}/${encodeURIComponent(name)}?${deckQuery(ref)}&pdf=1` })
+    await page.send('Page.navigate', { url: printViewUrl(ref, origin, slide) })
 
-    // Wait for the static PDF view (or an error screen) to appear.
+    // Wait for the static print view (or an error screen) to appear.
     let count: number | null = null
     for (let i = 0; i < 300 && count === null; i++) {
       await new Promise((r) => setTimeout(r, 100))
@@ -50,10 +58,18 @@ export async function exportDeckPdf(ref: DeckRef, origin: string): Promise<{ pdf
       count = state.count
     }
     if (count === null) throw new ExportError(`Timed out rendering "${name}"`)
-    if (count === 0) throw new ExportError(`"${name}" has no slides to export`)
+    if (count === 0) throw new ExportError(`"${name}" has no slides to show`)
 
     await page.evaluate(`(() => { const s = document.createElement('style'); s.textContent = ${JSON.stringify(EXPORT_STYLE)}; document.head.appendChild(s); return true })()`)
     await page.evaluate(SETTLE)
+    return await use(page, count)
+  } finally {
+    browser.close()
+  }
+}
+
+export async function exportDeckPdf(ref: DeckRef, origin: string): Promise<{ pdf: Uint8Array; name: string; pages: number }> {
+  return withPrintView(ref, origin, undefined, async (page, count) => {
     const { data } = await page.send<{ data: string }>('Page.printToPDF', {
       paperWidth: 20,
       paperHeight: 11.25,
@@ -64,10 +80,19 @@ export async function exportDeckPdf(ref: DeckRef, origin: string): Promise<{ pdf
       printBackground: true,
       preferCSSPageSize: true,
     })
-    return { pdf: new Uint8Array(Buffer.from(data, 'base64')), name, pages: count }
-  } finally {
-    browser.close()
-  }
+    return { pdf: new Uint8Array(Buffer.from(data, 'base64')), name: deckName(ref), pages: count }
+  })
+}
+
+/**
+ * One slide as a PNG, every step shown, for an agent to look at its own work (`screenshot_slide`).
+ * `slide` is 1-based; `scale` 0.5 gives 960 × 540, enough to read titles and see overflow.
+ */
+export async function screenshotSlide(ref: DeckRef, origin: string, slide: number, scale = 0.5): Promise<Uint8Array> {
+  return withPrintView(ref, origin, slide, async (page) => {
+    const { data } = await page.send<{ data: string }>('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 1920, height: 1080, scale } })
+    return new Uint8Array(Buffer.from(data, 'base64'))
+  })
 }
 
 /** Page count of a PDF, from its page objects (for checks; not a general parser). */

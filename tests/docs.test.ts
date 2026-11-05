@@ -21,11 +21,13 @@ describe('documentation', () => {
     expect(docs.filter((f) => !pageFiles.includes(f))).toEqual([])
   })
 
-  test('the persona guides named in AGENTS.md exist', () => {
+  test('the skills named in AGENTS.md exist, with frontmatter, and are linked into .claude/skills', () => {
     const agents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8')
-    for (const persona of ['presentation-author', 'component-developer', 'framework-developer']) {
-      expect(agents).toContain(`docs/agents/${persona}.md`)
-      expect(existsSync(join(ROOT, 'docs/agents', `${persona}.md`))).toBe(true)
+    for (const skill of ['slidecraft-presentations', 'slidecraft-components', 'slidecraft-dev']) {
+      expect(agents).toContain(`skills/${skill}/SKILL.md`)
+      const text = readFileSync(join(ROOT, 'skills', skill, 'SKILL.md'), 'utf8')
+      expect(text).toMatch(new RegExp(`^---\\nname: ${skill}\\ndescription: .+\\n---\\n`))
+      expect(readFileSync(join(ROOT, '.claude/skills', skill, 'SKILL.md'), 'utf8')).toBe(text)
     }
   })
 

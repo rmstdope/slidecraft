@@ -3,6 +3,7 @@
  * files for the built app, and the file watcher. One process, a hand-written router.
  */
 import { syncAllFolderInstructions } from './lib/agentContext.ts'
+import { syncSkillsToVaults } from './lib/skillSync.ts'
 import { getBuiltInSource, getContentDir, getContentSource, getContentSources, getDefaultContentSource, getLibraryDir, persistMigratedConfig } from './lib/contentSources.ts'
 import { eventsResponse } from './lib/events.ts'
 import { startFileWatcher } from './lib/fileWatcher.ts'
@@ -83,6 +84,10 @@ async function main() {
   await startFileWatcher()
   for (const [s, sync] of await syncAllFolderInstructions(PORT)) {
     if (sync === 'written') console.log(`Wrote AGENTS.md in ${s.path}`)
+  }
+  for (const [s, sync] of syncSkillsToVaults()) {
+    if (sync === 'written') console.log(`Wrote the slidecraft-presentations skill in ${s.path}`)
+    if (sync === 'hand-edited') console.log(`Keeping the edited slidecraft-presentations skill in ${s.path}`)
   }
   console.log(IS_BUNDLED ? 'Serving the embedded app' : existsSync(DIST_DIR) ? 'Serving the built app from dist/' : 'No dist/: use `bun run dev` for the app, or `bun run build` first')
   Bun.serve({ port: PORT, fetch: router, idleTimeout: 255 })

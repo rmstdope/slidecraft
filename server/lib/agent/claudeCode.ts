@@ -23,10 +23,25 @@ export const ALLOWED_TOOLS = ['TodoWrite', 'mcp__slidecraft']
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 
 /** The Slidecraft MCP server for one vault: this checkout's script, or the release binary itself. */
-export function slidecraftMcpServer(vault: string): McpServerConfig {
+export function slidecraftMcpServer(vault: string, appOrigin?: string): McpServerConfig {
+  // Only what the server needs: where the config is, where Chrome is, and which page renders slides.
+  const env: Record<string, string> = {}
+  for (const key of ['HOME', 'PATH', 'SLIDECRAFT_CONFIG', 'CHROME_PATH']) if (process.env[key]) env[key] = process.env[key]!
+  if (appOrigin) env.SLIDECRAFT_APP_ORIGIN = appOrigin
   return IS_BUNDLED
-    ? { type: 'stdio', command: process.execPath, args: ['--mcp', '--vault', vault] }
-    : { type: 'stdio', command: process.execPath, args: [join(APP_ROOT, 'server', 'mcp.ts'), '--vault', vault] }
+    ? { type: 'stdio', command: process.execPath, args: ['--mcp', '--vault', vault], env }
+    : { type: 'stdio', command: process.execPath, args: [join(APP_ROOT, 'server', 'mcp.ts'), '--vault', vault], env }
+}
+
+/** An Origin header worth passing on: the app on this machine. */
+export function localOrigin(origin: string | null | undefined): string | undefined {
+  if (!origin) return undefined
+  try {
+    const url = new URL(origin)
+    return (url.protocol === 'http:' || url.protocol === 'https:') && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ? url.origin : undefined
+  } catch {
+    return undefined
+  }
 }
 
 const clip = (text: string, max = 120) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
@@ -190,7 +205,7 @@ export const claudeCodeBackend: AgentBackend = {
           permissionMode: 'acceptEdits',
           allowedTools: ALLOWED_TOOLS,
           canUseTool,
-          mcpServers: { slidecraft: slidecraftMcpServer(input.vault) },
+          mcpServers: { slidecraft: slidecraftMcpServer(input.vault, input.appOrigin) },
           systemPrompt: { type: 'preset', preset: 'claude_code', append: input.instructions },
           settingSources: ['user', 'project', 'local'],
         },

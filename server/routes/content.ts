@@ -8,6 +8,7 @@ import { errorJson, json, readJson } from '../lib/http.ts'
 import { PORT } from '../lib/paths.ts'
 import { discoverThemes } from '../lib/themes.ts'
 import { syncAllFolderInstructions } from '../lib/agentContext.ts'
+import { syncSkillsToVaults } from '../lib/skillSync.ts'
 
 export async function handlePresentations(url: URL): Promise<Response> {
   try {
@@ -28,6 +29,7 @@ function vaultsState() {
 async function afterVaultChange(): Promise<void> {
   await restartFileWatcher()
   await syncAllFolderInstructions(PORT)
+  syncSkillsToVaults()
 }
 
 /**

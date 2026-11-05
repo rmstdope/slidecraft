@@ -23,6 +23,8 @@ export interface TurnInput {
   /** The backend's session to continue, from an earlier turn. */
   sessionId?: string
   model?: string
+  /** The app page the person is on (a localhost origin), for tools that render slides. */
+  appOrigin?: string
   signal: AbortSignal
   emit(event: AgentEventBody): void
   /** Ask the person; resolves false when they deny or the turn is stopped. */

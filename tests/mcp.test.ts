@@ -21,7 +21,7 @@ describe('MCP server over stdio', () => {
     await client.connect(transport)
     try {
       const { tools } = await client.listTools()
-      expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(['get_content_dir', 'list_presentations', 'read_presentation', 'create_presentation', 'insert_slide', 'update_slide', 'delete_slide', 'list_themes', 'set_presentation_theme']))
+      expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(['get_content_dir', 'list_presentations', 'read_presentation', 'create_presentation', 'insert_slide', 'update_slide', 'delete_slide', 'list_themes', 'set_presentation_theme', 'validate_deck', 'screenshot_slide']))
       const created = await client.callTool({ name: 'create_presentation', arguments: { name: 'from-mcp', slides: ['<Slide>\n  <Title>Hello</Title>\n</Slide>'] } })
       expect(created.isError).toBe(false)
       const read = await client.callTool({ name: 'read_presentation', arguments: { name: 'from-mcp' } })
@@ -29,6 +29,10 @@ describe('MCP server over stdio', () => {
       expect(data.slideSummary).toEqual(['"Hello" [dark/yellow]'])
       const bad = await client.callTool({ name: 'update_slide', arguments: { name: 'from-mcp', index: 0, content: '<Slide><Title>x</Tittle></Slide>' } })
       expect(bad.isError).toBe(true)
+      const checked = await client.callTool({ name: 'validate_deck', arguments: { name: 'from-mcp' } })
+      expect(JSON.parse((checked.content as { text: string }[])[0].text)).toMatchObject({ ok: true, slideCount: 1, problems: [] })
+      const missing = await client.callTool({ name: 'screenshot_slide', arguments: { name: 'from-mcp', index: 5 } })
+      expect((missing.content as { text: string }[])[0].text).toContain('There is no slide 5')
     } finally {
       await client.close()
     }

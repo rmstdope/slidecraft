@@ -221,6 +221,35 @@ agent edits from showing; agent replies now render their Markdown. Deviations:
 **Done when:** an agent in the app validates and screenshots its own work without being told, and
 `claude` run in a vault folder from a terminal uses the same skill.
 
+**Status (2026-11-05): done.** The skills are `skills/slidecraft-presentations/` (SKILL.md plus
+`references/`: a generated `components.md`, `choosing.md`, `themes-and-colour.md`, `motion.md`,
+`examples.md`), `skills/slidecraft-components/` and `skills/slidecraft-dev/`; `.claude/skills/`
+holds symlinks to them, and `docs/agents/` and `docs/agent-personas.md` are gone. `bun run skills`
+(also run by `bun run build`) writes the catalogue; `tests/skills.test.ts` fails when it is stale.
+`server/lib/skillSync.ts` copies the presentations skill into every writable vault;
+`server/lib/deckChecks.ts` is `validate_deck`; `screenshotSlide` in `server/lib/exportPdf.ts` is
+`screenshot_slide`. Checked in the browser with Claude Code: asked only to "rewrite this slide's
+title as a stronger assertion", the agent loaded the skill, edited, ran `validate_deck`, took a
+screenshot, saw the title wrap, shortened it, validated and looked again, and said so. `claude -p`
+started in a vault folder from a terminal lists `slidecraft-presentations` among its skills.
+Deviations:
+
+- **The marker is a file**, `.slidecraft-generated.json` beside `SKILL.md`, holding a hash of every
+  file written: a skill's `SKILL.md` must start with its frontmatter, so the version header the
+  plan describes cannot go in it. Any file that differs from its hash, an extra or a missing
+  file, or a folder without the marker counts as a person's edit, and the copy is kept as it is.
+- **The Examples vault gets no copy:** it is inside the repository, whose own `.claude/skills/`
+  already holds the skill.
+- **`validate_deck` warns on titles by length** (over 46 characters in a document slide), a
+  heuristic; the screenshot is the real check. Errors: compile failures, raw HTML, unknown
+  components, invalid prop values. Unknown props are warnings.
+- **`screenshot_slide` renders through the running app** (the print view of one slide in headless
+  Chrome). The in-app agent passes the page's origin to the MCP server (`SLIDECRAFT_APP_ORIGIN`);
+  from a terminal it uses the server's own port. It takes the slide index as the other tools
+  count it (0-based, in the file) and refuses hidden slides.
+- **The HTTP chat prompt** builds its guide from the skill's files until Phase U6 removes it.
+
+
 ### Phase U5 — Checkpoints and attachments
 
 - A checkpoint before each turn, a diff per turn in the chat, and "Undo this turn" (refused when

@@ -138,10 +138,16 @@ claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --vault work
 | `insert_slide`, `update_slide`, `delete_slide` | change one slide |
 | `list_themes`, `set_presentation_theme` | themes and frames |
 | `list_images` | images beside a deck and in the shared library |
+| `validate_deck` | compile errors, raw HTML, unknown components or props, titles that probably wrap |
+| `screenshot_slide` | one slide as a 960 × 540 image, every step shown (needs the app running and Chrome) |
 | `export_html`, `export_pdf` | write an export into `<content>/exports/` |
 
 Every write is compile-checked; a failing write is refused with the line and the error.
 
+
+Agents also get the **`slidecraft-presentations` skill**: Slidecraft keeps a copy in every writable
+vault at `.claude/skills/slidecraft-presentations/`, so `claude` started in a vault folder finds it
+on its own. A copy you edit is never overwritten. The repository's own skills are in `skills/`.
 ## Export
 
 From a deck's card on the home page, or:
@@ -159,7 +165,7 @@ slide with its notes and prints as a handout. The PDF has one page per slide wit
 - [User guide](docs/guide.md): the editor, presenting, themes, export, sizing.
 - [Getting started with agents](docs/getting-started-with-agents.md): a first deck with an AI agent.
 - [Creating presentations](docs/creating-presentations.md): the condensed authoring guide.
-- [AGENTS.md](AGENTS.md) and [docs/agents/](docs/agents/): instructions for coding agents.
+- [AGENTS.md](AGENTS.md) and [skills/](skills/): instructions for coding agents, as three skills.
 - The gallery at `/gallery`: every component, live.
 
 The example decks in `content/` show the features: `welcome` (everything), `folio-tour` and
