@@ -153,4 +153,4 @@ Put images beside the deck in `images/`. Supported: png, jpg, gif, webp, svg. Al
   `A` draw, `Esc` edit this slide, `?` all shortcuts.
 - Example decks: `welcome` (everything), `folio-tour` and `folio-minimal` (frames), `motion`
   (every motion tool), `safe-retries` (a full talk with notes), `ion-tour` (the ion theme and the
-  wired components).
+  wired components), `studio-tour` (video-style cuts the presenter paces with the right arrow).

@@ -191,6 +191,7 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
 | Work flowing | `SignalFlow`: lights travel along the wires, looping, once the chain is built |
 | A measurement | `Stat` counts up (`countUp={false}` for years and versions); `ScatterChart threshold`; `Gauge` fills to a lit `target` |
 | Progress to today | `TraceTimeline`: a charge runs to `now`; `steps` makes each milestone a beat |
+| A cut, as in a video | `Punchline` (words land, a highlighter swipe), `LowerThird` (who is speaking), `Chapter` (a new part), `NumberPunch` (before → after), `Annotate` (zoom, ring, note). Each plays on entry, or beat by beat with `steps` |
 
 Connectors in diagrams draw themselves, `prefers-reduced-motion` is honoured, thumbnails and
 handouts show every step at once. More than three or four steps on a slide is usually two slides.
@@ -239,6 +240,7 @@ theirs under `?` as well.
 | `motion` | every motion mechanism, with a colour legend and time-budgeted notes |
 | `safe-retries` | a realistic research-based talk with full notes and sources |
 | `ion-tour` | the ion theme and the wired components: SignalFlow, TracedPoints, Gauge, TraceTimeline |
+| `studio-tour` | the video-style components, each cut on the presenter's right arrow: Punchline, Chapter, Annotate, LowerThird, NumberPunch |
 
 ## Documentation
 

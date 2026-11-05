@@ -18,13 +18,13 @@ export const CONTENT_INSTRUCTIONS_FILE = 'AGENTS.md'
 
 const CATEGORIES: Record<string, string[]> = {
   Structure: ['Presentation', 'Slide', 'Notes', 'Step'],
-  Text: ['Title', 'Subtitle', 'Text', 'Accent', 'Highlight', 'Caption', 'Quote', 'CenteredStatement', 'TagPill', 'Section', 'Code'],
+  Text: ['Title', 'Subtitle', 'Text', 'Accent', 'Highlight', 'Caption', 'Quote', 'CenteredStatement', 'TagPill', 'Section', 'Code', 'Punchline', 'LowerThird', 'Chapter'],
   Lists: ['List', 'ProConList'],
   Layout: ['TwoColumn', 'FourColumn', 'Stack', 'Divider', 'SplitBackground', 'ComparisonLayout', 'DefinitionLayout', 'PersonRow'],
   Content: ['Card', 'Callout', 'ContentBox', 'PersonCard', 'Legend', 'IconRow', 'PhaseRow', 'ComparisonTable'],
-  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart', 'Gauge', 'GaugeRow', 'TraceTimeline'],
+  'Data Visualization': ['Stat', 'ProgressBar', 'Spectrum', 'Timeline', 'Quadrants', 'ScatterChart', 'Gauge', 'GaugeRow', 'TraceTimeline', 'NumberPunch'],
   'Technical Diagrams': ['BlockDiagram', 'StackDiagram', 'CycleDiagram', 'PyramidDiagram', 'SequenceDiagram', 'ActivityDiagram', 'DataModel', 'FeedbackLoops', 'AppShellDiagram', 'BracketDiagram', 'SignalFlow', 'TracedPoints'],
-  Media: ['ContentImage', 'Svg', 'BackgroundImage', 'YouTube'],
+  Media: ['ContentImage', 'Svg', 'BackgroundImage', 'YouTube', 'Annotate'],
 }
 
 /** Component list grouped by category, with every component's props; parts are listed with their parent. */

@@ -13,6 +13,8 @@ export const springs = {
   gentle: { type: 'spring', visualDuration: 0.7, bounce: 0.22 },
   /** Shared-element morphs. */
   morph: { type: 'spring', visualDuration: 0.55, bounce: 0.16 },
+  /** Words and numbers that land hard and settle (Punchline, NumberPunch): short, with overshoot. */
+  punch: { type: 'spring', visualDuration: 0.4, bounce: 0.38 },
   /** Camera moves over a canvas: long travel, almost no overshoot. */
   camera: { type: 'spring', visualDuration: 0.85, bounce: 0.08 },
 } as const satisfies Record<string, Transition>

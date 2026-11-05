@@ -19,6 +19,12 @@ export { TagPill } from './TagPill'
 export { Quote } from './Quote'
 export { CenteredStatement } from './CenteredStatement'
 export { Section } from './Section'
+// Video-style: kinetic type, captions, chapter cards, a rolling number, annotated screenshots
+export { Punchline } from './Punchline'
+export { LowerThird } from './LowerThird'
+export { Chapter } from './Chapter'
+export { NumberPunch } from './NumberPunch'
+export { Annotate, Ring, Scribble } from './Annotate'
 // Containers and boxes
 export { TwoColumn } from './TwoColumn'
 export { FourColumn } from './FourColumn'
