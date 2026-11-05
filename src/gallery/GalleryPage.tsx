@@ -116,7 +116,7 @@ function PreviewStatus({ error, isCompiling }: { error: string | null; isCompili
 function LiveStage({ Component, width, theme, step, total, replay }: { Component: ComponentType; width: number; theme?: ResolvedTheme; step: number; total: number; replay: number }) {
   const scale = width / DESIGN_WIDTH
   return (
-    <div className={frameClass} style={{ width, height: Math.round(DESIGN_HEIGHT * scale) }}>
+    <div className={cn(frameClass, 'tw:self-center')} style={{ width, height: Math.round(DESIGN_HEIGHT * scale) }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: DESIGN_WIDTH, height: DESIGN_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
         <Themed theme={theme}>
           <StageScaleContext.Provider value={1}>
@@ -320,7 +320,7 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
       {Component ? (
         <LiveStage Component={Component} width={760} theme={theme} step={step} total={total} replay={replay} />
       ) : (
-        <div className={frameClass} style={{ width: 760, maxWidth: '100%', height: Math.round((760 * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
+        <div className={cn(frameClass, 'tw:self-center')} style={{ width: 760, maxWidth: '100%', height: Math.round((760 * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
           <PreviewStatus error={error} isCompiling={isCompiling} />
         </div>
       )}
@@ -410,7 +410,7 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
             {copied ? 'Copied' : 'Copy'}
           </Button>
         </div>
-        <pre className="tw:m-0 tw:overflow-x-auto tw:rounded-lg tw:bg-field tw:p-3.5 tw:font-mono tw:text-[12.5px] tw:text-fg-2">{snippet}</pre>
+        <pre className="tw:m-0 tw:overflow-x-auto tw:rounded-lg tw:bg-field tw:p-3.5 tw:font-mono tw:text-[12.5px] tw:whitespace-pre-wrap tw:text-fg-2">{snippet}</pre>
       </section>
     </Sheet>
   )
