@@ -69,34 +69,36 @@ decks/
 A deck may start with YAML frontmatter; Slidecraft keeps it byte for byte and never interprets
 it, so it is a safe place for your own metadata.
 
-### Content folders
+### Vaults
 
-Point Slidecraft at one folder:
+A **vault** is a folder of presentations with its own themes, images and house style. Keep one
+for work and one for private talks: the app shows one vault at a time, and the vault is in every
+link (`/v/<vault>/<deck>`), so two tabs can show two vaults.
 
-```sh
-bun run dev -- --content ~/decks        # or SLIDECRAFT_CONTENT_DIR=~/decks in .env
-slidecraft --content ~/decks            # the binary uses the current folder by default
-```
-
-Or mount several at once in `~/.config/slidecraft/config.json` (`SLIDECRAFT_CONFIG` to move it):
+Add, rename and remove vaults on the **Vaults…** page (`/settings`); removing one never deletes
+files. They are kept in `~/.config/slidecraft/config.json` (`SLIDECRAFT_CONFIG` to move it):
 
 ```json
 {
-  "default": "mine",
-  "contents": {
-    "mine": "~/decks",
-    "team": { "path": "/srv/team-decks", "include": ["presentations/*/index.mdx"], "readOnly": true }
-  }
+  "vaults": [
+    { "id": "work", "name": "Work", "path": "~/Presentations/Work" },
+    { "id": "team", "name": "Team", "path": "/srv/team-decks", "include": ["presentations/*/index.mdx"], "readOnly": true }
+  ],
+  "lastVault": "work"
 }
 ```
 
-- Every source stays mounted; the home page filters by source and deck URLs carry `?source=`.
 - `include` globs choose which files are decks (default `*/index.mdx` and
-  `presentations/*/index.mdx`); `readOnly` sources can be presented and exported but not edited.
-- The default source is chosen by `--content`, then `SLIDECRAFT_CONTENT_DIR`, then the config's
-  `default`, and finally this repository's example decks.
+  `presentations/*/index.mdx`); a `readOnly` vault can be presented and exported but not edited.
+- `/` opens the vault used last. `--vault <name>` (or `SLIDECRAFT_VAULT`) picks one at start.
+- `--content <folder>` (or `SLIDECRAFT_CONTENT_DIR`) opens a folder that is not a vault for this
+  run only; the home page offers to save it as one. The binary opens the current folder this way
+  when no vault exists.
+- In a checkout, this repository's example decks are the **Examples** vault.
+- An older config with `contents` and `default` is turned into vaults on start; the original is
+  kept as `config.json.bak`.
 
-On start the server writes an `AGENTS.md` into the default folder with the component list and
+On start the server writes an `AGENTS.md` into every writable vault with the component list and
 the authoring rules, and refreshes it when Slidecraft changes. A hand-written `AGENTS.md` is
 left alone.
 
@@ -116,12 +118,12 @@ repair editor.
 ## Agents over MCP
 
 ```sh
-claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --content ~/decks
+claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --vault work
 ```
 
 | Tool | Does |
 |---|---|
-| `get_content_dir` | where the decks are |
+| `get_content_dir` | the vault and its folder |
 | `list_presentations`, `read_presentation` | find and read decks, slide by slide |
 | `create_presentation` | a new deck with its first slides |
 | `insert_slide`, `update_slide`, `delete_slide` | change one slide |

@@ -8,7 +8,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
-import { getContentDir } from './lib/contentSources.ts'
+import { getContentDir, getDefaultContentSource } from './lib/contentSources.ts'
 import { exportRef, writeHtmlExport, writePdfExport } from './lib/exportFiles.ts'
 import { VERSION } from './lib/paths.ts'
 import { executeTool, TOOL_DEFINITIONS, type ToolDefinition, type ToolResult } from './lib/tools.ts'
@@ -35,8 +35,10 @@ const text = (result: ToolResult) => ({
 export function createMcpServer(): McpServer {
   const server = new McpServer({ name: 'slidecraft', version: VERSION === 'dev' ? '0.0.0' : VERSION })
 
-  server.registerTool('get_content_dir', { description: 'The folder that holds the presentations (each <name>/index.mdx).', inputSchema: {} }, async () =>
-    text({ success: true, data: { contentDir: getContentDir() } }),
+  server.registerTool('get_content_dir', { description: 'The vault this server works in and its folder (each presentation is <name>/index.mdx).', inputSchema: {} }, async () => {
+    const vault = getDefaultContentSource()
+    return text({ success: true, data: { contentDir: vault.path, vault: { id: vault.id, name: vault.name, readOnly: vault.readOnly } } })
+  },
   )
 
   for (const definition of TOOL_DEFINITIONS) {
@@ -84,5 +86,5 @@ export function createMcpServer(): McpServer {
 if (import.meta.main) {
   const server = createMcpServer()
   await server.connect(new StdioServerTransport())
-  console.error(`Slidecraft MCP server ${VERSION} on stdio; content directory ${getContentDir()}`)
+  console.error(`Slidecraft MCP server ${VERSION} on stdio; vault ${getDefaultContentSource().name} (${getContentDir()})`)
 }

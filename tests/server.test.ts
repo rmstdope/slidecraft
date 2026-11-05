@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parseDeck } from '../shared/deckParser.ts'
 import { buildFolderInstructions, GENERATED_PREFIX, syncFolderInstructions } from '../server/lib/agentContext.ts'
-import { initContentSources } from '../server/lib/contentSources.ts'
+import { initContentSources, setContentByName } from '../server/lib/contentSources.ts'
 import { executeTool } from '../server/lib/tools.ts'
 import { router } from '../server/index.ts'
 
@@ -36,7 +36,7 @@ beforeAll(() => {
   writeFileSync(join(local, 'themes', 'broken', 'theme.json'), '{ nope')
   mkdirSync(join(team, 'presentations', 'beta'), { recursive: true })
   writeFileSync(join(team, 'presentations', 'beta', 'index.mdx'), DECK)
-  initContentSources({ contents: { team: { path: team, readOnly: true } } }, local, join(root, 'fallback'))
+  initContentSources({ contents: { team: { path: team, readOnly: true } } }, local, join(root, 'fallback'), join(root, 'config.json'))
 })
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
@@ -58,7 +58,7 @@ describe('basics', () => {
 describe('decks', () => {
   test('lists presentations across sources', async () => {
     const list = (await (await call('/api/presentations')).json()) as { source: string; path: string; readOnly: boolean }[]
-    expect(list.map((d) => `${d.source}:${d.path}`)).toEqual(['default:alpha', 'team:presentations/beta'])
+    expect(list.map((d) => `${d.source}:${d.path}`)).toEqual(['local:alpha', 'team:presentations/beta'])
     expect(list[1].readOnly).toBe(true)
   })
 
@@ -82,8 +82,7 @@ describe('decks', () => {
   })
 
   test('serves deck assets and blocks traversal', async () => {
-    expect(await (await call('/content/alpha/images/pic.png')).text()).toBe('png-bytes')
-    expect(await (await call('/content-source/default/alpha/images/pic.png')).text()).toBe('png-bytes')
+    expect(await (await call('/content-source/local/alpha/images/pic.png')).text()).toBe('png-bytes')
     expect((await call('/content-source/nope/x.png')).status).toBe(404)
     expect((await call('/content/..%2F..%2Fetc%2Fpasswd')).status).toBe(404)
   })
@@ -100,16 +99,40 @@ describe('decks', () => {
 })
 
 describe('sources and themes', () => {
-  test('contents reports the mounted sources and can switch the default', async () => {
-    const state = await body(await call('/api/contents'))
-    expect((state.sources as { id: string }[]).map((s) => s.id)).toEqual(['default', 'team', 'built-in'])
-    expect((await call('/api/contents', { method: 'POST', body: JSON.stringify({ name: 'nope' }) })).status).toBe(404)
+  test('vaults: list, add, rename, open and remove without touching files', async () => {
+    const state = await body(await call('/api/vaults'))
+    expect((state.vaults as { id: string }[]).map((s) => s.id)).toEqual(['local', 'team', 'examples'])
+    expect(state.vaults).toContainEqual(expect.objectContaining({ id: 'local', temporary: true }))
+    expect(state.vaults).toContainEqual(expect.objectContaining({ id: 'examples', name: 'Examples', builtIn: true }))
+
+    const folder = join(root, 'private-decks')
+    expect((await call('/api/vaults', { method: 'POST', body: JSON.stringify({ name: 'Private', path: folder }) })).status).toBe(404)
+    const added = await call('/api/vaults', { method: 'POST', body: JSON.stringify({ name: 'Private', path: folder, create: true }) })
+    expect(added.status).toBe(201)
+    expect((await body(added)).vault).toMatchObject({ id: 'private', name: 'Private', path: folder })
+    expect((await call('/api/vaults', { method: 'POST', body: JSON.stringify({ name: 'private', path: join(root, 'x'), create: true }) })).status).toBe(409)
+
+    const config = () => JSON.parse(readFileSync(join(root, 'config.json'), 'utf8'))
+    expect(config().contents).toBeUndefined()
+    expect(config().vaults.map((v: { id: string }) => v.id)).toEqual(['team', 'private'])
+
+    const renamed = await body(await call('/api/vaults/private', { method: 'PATCH', body: JSON.stringify({ name: 'Home' }) }))
+    expect(renamed.vault).toMatchObject({ id: 'private', name: 'Home' })
+    expect((await call('/api/vaults/private/open', { method: 'POST' })).status).toBe(200)
+    expect(config().lastVault).toBe('private')
+
+    expect((await call('/api/vaults/examples', { method: 'DELETE' })).status).toBe(400)
+    expect((await call('/api/vaults/private', { method: 'DELETE' })).status).toBe(200)
+    expect(existsSync(folder)).toBe(true)
+    expect(config().vaults.map((v: { id: string }) => v.id)).toEqual(['team'])
+    expect(config().lastVault).toBeUndefined()
+    setContentByName('local')
   })
 
   test('themes come from content folders with validation errors and a base URL', async () => {
-    const themes = (await (await call('/api/themes?source=default')).json()) as { id: string; errors: string[]; baseUrl: string }[]
+    const themes = (await (await call('/api/themes?source=local')).json()) as { id: string; errors: string[]; baseUrl: string }[]
     expect(themes.map((t) => t.id)).toEqual(['acme', 'broken'])
-    expect(themes[0]).toMatchObject({ errors: [], baseUrl: '/content-source/default/themes/acme/' })
+    expect(themes[0]).toMatchObject({ errors: [], baseUrl: '/content-source/local/themes/acme/' })
     expect(themes[1].errors[0]).toContain('not valid JSON')
   })
 })
@@ -127,7 +150,7 @@ describe('images', () => {
     expect(path).toMatch(/^\.\/images\/my-photo-\d+\.(png|webp)$/)
     const listed = (await (await call('/api/images/alpha')).json()) as { images: { path: string }[] }
     expect(listed.images.map((i) => i.path)).toContain(path)
-    const del = await call('/api/images', { method: 'DELETE', body: JSON.stringify({ path, source: 'default', deckPath: 'alpha' }) })
+    const del = await call('/api/images', { method: 'DELETE', body: JSON.stringify({ path, source: 'local', deckPath: 'alpha' }) })
     expect(await body(del)).toEqual({ success: true })
   })
   test('rejects wrong content types', async () => {
@@ -197,6 +220,7 @@ describe('AGENTS.md for the content folder', () => {
     expect(text).toContain('# Presentation author guide')
   })
   test('is written once, refreshed when stale, and never replaces a hand-written file', async () => {
+    rmSync(join(local, 'AGENTS.md'), { force: true })
     expect(await syncFolderInstructions(6110)).toBe('written')
     expect(await syncFolderInstructions(6110)).toBe('unchanged')
     writeFileSync(join(local, 'AGENTS.md'), '# House style\n')

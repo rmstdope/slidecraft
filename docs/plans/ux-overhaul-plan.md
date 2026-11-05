@@ -107,6 +107,27 @@ active vault's decks, themes and images; links with the vault in them work in tw
 existing `contents` config migrates without losing anything; the MCP server limited to one vault
 sees only it.
 
+**Status (2026-11-05): done.** `server/lib/contentSources.ts` holds the vault registry
+(`migrateConfig`, `addVault`/`updateVault`/`removeVault`/`rememberVault`); `/api/vaults` replaces
+`/api/contents`; `src/router.ts` has the `/v/<vault>/…` routes and turns older URLs into them;
+`src/settings/SettingsPage.tsx` and `src/home/VaultSwitcher.tsx` are new. Checked in the browser
+with a scratch config: migration with `.bak`, switching between two vaults with a deck of the
+same name, an old `?source=` link redirecting, adding a vault from the settings page, the editor
+on a vault URL, and `mcp.ts --vault Private` listing only that vault. Deviations:
+
+- The deck ref keeps its field name `source` (it holds the vault id); renaming it in about 60
+  files would have changed nothing for the user.
+- The Examples vault is writable in a checkout, because that is where the example decks are
+  developed. In the release binary there is no Examples vault; the working directory opens as a
+  temporary vault when no vault exists.
+- There is no forced first-run flow. When the user has no vault of their own, the home page shows
+  a notice that leads to the settings page ("Create a vault", or "Save as a vault" for a temporary
+  one).
+- `/content/` now always serves the Examples vault (as Vite bundles it); other vaults' assets go
+  through `/content-source/<vault>/`.
+- Known gap: the shared image library (`/images/library/`) is not per vault yet. It is
+  `public/images/library` in a checkout and the default vault's `.slidecraft/library` in the binary.
+
 ### Phase U2 — Agent backend
 
 - `AgentBackend` interface with the normalised event type in `shared/agent.ts`.

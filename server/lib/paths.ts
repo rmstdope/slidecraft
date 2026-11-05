@@ -2,9 +2,9 @@
  * Process-level configuration (Part 4 §3.1): flags, environment, config file, port and the app's
  * own directories. Flags accept both `--flag value` and `--flag=value`.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { API_PORT, DEFAULT_API_PORT } from '../../shared/ports.ts'
 import { embedded } from '../embedded.generated.ts'
 
@@ -44,7 +44,21 @@ export interface SourceDescriptor {
   readOnly?: boolean
 }
 
+/** A vault: a named content folder, kept apart from the others (UX overhaul U1). */
+export interface VaultConfig {
+  /** Stable id used in URLs; derived from the name when missing. */
+  id?: string
+  name: string
+  path: string
+  include?: string | string[]
+  readOnly?: boolean
+}
+
 export interface AppConfig {
+  vaults?: VaultConfig[]
+  /** The vault opened last; `/` goes there. */
+  lastVault?: string
+  /** Before vaults: named content sources. Migrated to `vaults` on read. */
   default?: string
   contents?: Record<string, string | SourceDescriptor>
   /** Defaults for the Copilot CLI chat provider (Phase 10). */
@@ -62,5 +76,14 @@ export function readConfig(file = CONFIG_FILE): AppConfig {
   }
 }
 
-/** The content directory asked for on the command line or in the environment. */
-export const requestedContent = (): string | undefined => argValue('--content') ?? process.env.SLIDECRAFT_CONTENT_DIR ?? undefined
+/** Write the config file. The first rewrite of a file keeps the original next to it as `.bak`. */
+export function writeConfig(config: AppConfig, file = CONFIG_FILE): void {
+  mkdirSync(dirname(file), { recursive: true })
+  const backup = `${file}.bak`
+  if (existsSync(file) && !existsSync(backup)) copyFileSync(file, backup)
+  writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`)
+}
+
+/** The vault or content directory asked for on the command line or in the environment. */
+export const requestedContent = (): string | undefined =>
+  argValue('--vault') ?? argValue('--content') ?? process.env.SLIDECRAFT_VAULT ?? process.env.SLIDECRAFT_CONTENT_DIR ?? undefined

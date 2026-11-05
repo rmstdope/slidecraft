@@ -66,7 +66,7 @@ function saveSettings(settings: GallerySettings) {
 const themeKey = (t: Pick<ThemeSummary, 'source' | 'id'>) => `${t.source}:${t.id}`
 
 /** Theme groups by where they come from: the app, this repository's example content, a content folder. */
-const sourceLabel = (source: string) => (source === BUILTIN_SOURCE ? 'Ships with Slidecraft' : source === BUILT_IN_SOURCE_ID ? 'Example content' : `Content: ${source}`)
+const sourceLabel = (source: string) => (source === BUILTIN_SOURCE ? 'Ships with Slidecraft' : source === BUILT_IN_SOURCE_ID ? 'Example content' : 'This vault')
 
 /** The theme a "<source>:<id>" key names, if it is still registered. */
 function chosenTheme(key: string, themes: ThemeSummary[]): ResolvedTheme | undefined {
@@ -513,14 +513,15 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
 }
 
 /** Every component and template with a live preview (Part 3 §7). */
-export default function GalleryPage({ onExit }: { onExit(): void }) {
+/** The component gallery of one vault: built-in themes plus the vault's own. */
+export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(): void }) {
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('all')
   const [open, setOpen] = useState<RegistryConfig | null>(null)
   const [settings, setSettings] = useState<GallerySettings>(loadSettings)
   const version = useThemesVersion()
   // Content-folder themes register after load; the version re-lists them.
-  const themes = useMemo(() => (version >= 0 ? listAllThemes() : []), [version])
+  const themes = useMemo(() => (version >= 0 ? listAllThemes().filter((t) => !vault || t.source === BUILTIN_SOURCE || t.source === vault) : []), [version, vault])
   const theme = chosenTheme(settings.theme, themes)
   // A theme that has gone (a content folder changed) falls back to each example's own.
   const effective = useMemo(() => (settings.theme && !theme ? { ...settings, theme: '', frame: '' } : settings), [settings, theme])

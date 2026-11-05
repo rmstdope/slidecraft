@@ -2,8 +2,8 @@
  * Slidecraft server (Part 4 §3–6): the deck API, content sources, themes, images, SSE, static
  * files for the built app, and the file watcher. One process, a hand-written router.
  */
-import { syncFolderInstructions } from './lib/agentContext.ts'
-import { getContentDir, getContentSource, getContentSources, getDefaultContentSource, getLibraryDir } from './lib/contentSources.ts'
+import { syncAllFolderInstructions } from './lib/agentContext.ts'
+import { getBuiltInSource, getContentDir, getContentSource, getContentSources, getDefaultContentSource, getLibraryDir, persistMigratedConfig } from './lib/contentSources.ts'
 import { eventsResponse } from './lib/events.ts'
 import { startFileWatcher } from './lib/fileWatcher.ts'
 import { errorJson, json, preflight } from './lib/http.ts'
@@ -12,7 +12,7 @@ import { serveAppFile, serveFileFrom } from './lib/static.ts'
 import { handleApplyFix } from './routes/applyFix.ts'
 import { handleChat } from './routes/chat.ts'
 import { handleExport } from './routes/export.ts'
-import { handleContents, handlePresentations, handleThemes } from './routes/content.ts'
+import { handlePresentations, handleThemes, handleVaults } from './routes/content.ts'
 import { handleDeleteImage, handleListImages, handleUpload } from './routes/images.ts'
 import { handleMdx } from './routes/mdx.ts'
 import { existsSync } from 'node:fs'
@@ -31,10 +31,10 @@ export async function router(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/events') return eventsResponse()
   if (method === 'GET' && pathname === '/api/health') {
     const source = getDefaultContentSource()
-    return json({ app: APP_ID, version: VERSION, port: PORT, contentDir: source.path, contentName: source.builtIn ? null : source.id, pid: process.pid })
+    return json({ app: APP_ID, version: VERSION, port: PORT, contentDir: source.path, contentName: source.builtIn ? null : source.id, vault: source.id, pid: process.pid })
   }
   if (method === 'GET' && pathname === '/api/presentations') return handlePresentations(url)
-  if (pathname === '/api/contents') return handleContents(request)
+  if (pathname === '/api/vaults' || pathname.startsWith('/api/vaults/')) return handleVaults(request, url)
   if (method === 'GET' && pathname === '/api/themes') return handleThemes(url)
   if (method === 'POST' && pathname === '/api/chat') return handleChat(request)
   if (method === 'POST' && pathname === '/api/apply-fix') return handleApplyFix(request)
@@ -55,28 +55,27 @@ export async function router(request: Request): Promise<Response> {
     if (!source) return errorJson(404, 'Unknown content source')
     return serveFileFrom(source.path, rest.join('/'))
   }
-  if (method === 'GET' && pathname.startsWith('/content/')) return serveFileFrom(getContentDir(), pathname.slice('/content/'.length))
+  // /content/ is the repository's examples in a checkout (as Vite bundles them), else the default vault.
+  if (method === 'GET' && pathname.startsWith('/content/')) return serveFileFrom(getBuiltInSource()?.path ?? getContentDir(), pathname.slice('/content/'.length))
   if (method === 'GET' && pathname.startsWith('/images/library/')) return serveFileFrom(getLibraryDir(), pathname.slice('/images/library/'.length))
   if (method === 'GET') return (await serveAppFile(pathname)) ?? errorJson(404, 'Not found')
   return errorJson(404, 'Not found')
 }
 
 async function main() {
-  if (hasFlag('--contents')) {
-    const named = getContentSources().filter((s) => !s.builtIn)
-    if (named.length === 0) console.log('No named content directories. Add them to the config file, e.g. { "contents": { "mine": "~/decks" } }')
-    for (const s of named) console.log(`${s.id}\t${s.path}`)
+  if (hasFlag('--contents') || hasFlag('--vaults')) {
+    for (const s of getContentSources()) console.log(`${s.id}\t${s.name}\t${s.path}${s.readOnly ? '\t(read-only)' : ''}${s.temporary ? '\t(this run only)' : ''}`)
     process.exit(0)
   }
+  if (persistMigratedConfig()) console.log('Moved the content folders in the config file to vaults (the old file is kept as config.json.bak)')
   const key = process.env.AI_API_KEY
   console.log(key ? `AI_API_KEY: ${key.slice(0, 8)}…${key.slice(-4)}` : 'AI_API_KEY is not set: the HTTP chat provider is unavailable (CLI providers still work).')
-  const source = getDefaultContentSource()
   console.log(`Slidecraft ${VERSION}`)
-  console.log(`Content directory: ${source.path}${source.builtIn ? '' : ` (${source.id})`}`)
+  for (const s of getContentSources()) console.log(`Vault ${s.name} (${s.id}): ${s.path}${s.readOnly ? ', read-only' : ''}${s.temporary ? ', this run only' : ''}`)
   await startFileWatcher()
-  const sync = await syncFolderInstructions(PORT)
-  if (sync === 'written') console.log(`Wrote AGENTS.md in ${source.path}`)
-  if (sync === 'hand-written') console.log(`Keeping the hand-written AGENTS.md in ${source.path}`)
+  for (const [s, sync] of await syncAllFolderInstructions(PORT)) {
+    if (sync === 'written') console.log(`Wrote AGENTS.md in ${s.path}`)
+  }
   console.log(IS_BUNDLED ? 'Serving the embedded app' : existsSync(DIST_DIR) ? 'Serving the built app from dist/' : 'No dist/: use `bun run dev` for the app, or `bun run build` first')
   Bun.serve({ port: PORT, fetch: router, idleTimeout: 255 })
   console.log(`Listening on http://localhost:${PORT}`)

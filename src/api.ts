@@ -1,5 +1,5 @@
 /** Small fetch helpers for the app shell. They never throw: failures become `{ error }`. */
-import type { ContentSourceInfo, DeckRef, PresentationInfo } from '@shared/decks.ts'
+import type { DeckRef, PresentationInfo, VaultInfo } from '@shared/decks.ts'
 import { deckName, deckQuery } from '@shared/decks.ts'
 import { appPath } from './basePath'
 
@@ -20,10 +20,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T
   }
 }
 
-export interface ContentsState {
-  current: ContentSourceInfo & { name: string | null; dir: string }
-  sources: ContentSourceInfo[]
-  options: { name: string; dir: string }[]
+export interface VaultsState {
+  vaults: VaultInfo[]
+  /** The vault `/` opens: the last one used, else the server's default. */
+  defaultVault: string
   configFile: string
 }
 
@@ -35,7 +35,20 @@ export interface ContentThemeInfo {
   baseUrl: string
 }
 
-export const fetchContents = () => request<ContentsState>('/api/contents')
+const jsonInit = (method: string, body?: unknown): RequestInit => ({
+  method,
+  headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+  body: body === undefined ? undefined : JSON.stringify(body),
+})
+const vaultPath = (id: string) => `/api/vaults/${encodeURIComponent(id)}`
+
+export const fetchVaults = () => request<VaultsState>('/api/vaults')
+export const createVault = (input: { name: string; path: string; readOnly?: boolean; create?: boolean }) =>
+  request<VaultsState & { vault: VaultInfo }>('/api/vaults', jsonInit('POST', input))
+export const updateVault = (id: string, change: { name?: string; readOnly?: boolean }) => request<VaultsState & { vault: VaultInfo }>(vaultPath(id), jsonInit('PATCH', change))
+export const removeVault = (id: string) => request<VaultsState>(vaultPath(id), jsonInit('DELETE'))
+/** Remember the vault as the one `/` opens next time. */
+export const openVault = (id: string) => request<VaultsState>(`${vaultPath(id)}/open`, jsonInit('POST'))
 export const fetchPresentations = () => request<PresentationInfo[]>('/api/presentations')
 export const fetchThemes = () => request<ContentThemeInfo[]>('/api/themes')
 export const fetchDeckSource = (deck: DeckRef) =>

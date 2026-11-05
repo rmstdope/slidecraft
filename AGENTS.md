@@ -34,13 +34,15 @@ When a request spans personas, finish one role's part before starting the next.
 
 ## Where presentations live
 
-Decks live in a **content directory**: one folder per deck, `<content-dir>/<name>/index.mdx`.
-`bun run content-dir` prints the folder the server uses; the order is `--content`, then
-`SLIDECRAFT_CONTENT_DIR`, then the config file's default (`~/.config/slidecraft/config.json`), and
-only when nothing is configured this repository's own `content/`. **Do not add decks to `content/`
-when the content directory is somewhere else**; `content/` holds the example decks.
+Decks live in **vaults**: named content folders, one folder per deck, `<vault>/<name>/index.mdx`.
+Vaults are listed in `~/.config/slidecraft/config.json` and managed on `/settings`; the app shows
+one at a time at `/v/<vault>/…`. `bun run content-dir` prints the default vault's folder; the order
+is `--vault`/`--content`, then `SLIDECRAFT_VAULT`/`SLIDECRAFT_CONTENT_DIR`, then the vault used
+last, then the first vault, and only when nothing is configured this repository's own `content/`
+(the Examples vault). **Do not add decks to `content/` when the user has a vault of their own**;
+`content/` holds the example decks.
 
-A content directory may hold its own `AGENTS.md` with house style (tone, language, required slides).
+A vault may hold its own `AGENTS.md` with house style (tone, language, required slides).
 On style it wins; on which components exist and how they work, this repository's docs win.
 
 ## Commands
@@ -54,7 +56,7 @@ On style it wins; on which components exist and how they work, this repository's
 | `bun run build` | type check, app build to `dist/`, export viewer to `dist/viewer/` |
 | `bun test` | run all tests |
 | `bun start` | serve `dist/` and the API from one process (folder mode) |
-| `bun run mcp` | MCP server over stdio with the deck tools (`--content <dir>` to pick a folder) |
+| `bun run mcp` | MCP server over stdio with the deck tools (`--vault <name>` or `--content <dir>` to pick one vault) |
 | `bun run export --name <deck> [--pdf]` | write `<content>/exports/<deck>.html` (or `.pdf`; PDF needs the server and Chrome) |
 | `bun run build:release [--target macos-arm64]` | binaries in `release/` (after `bun run build`) |
 | `bun run build:site [--base /slidecraft/]` | static docs site with the example decks in `site/` |
@@ -84,14 +86,15 @@ src/themes/     theme registry and the built-in themes (slidecraft, paper, folio
 src/animations/ springs and variant tables
 src/presenter/  presenter window, cross-window sync, navigation hook
 src/drawing/    annotations: canvas, toolbar, history, persistence
-src/home/       home page: deck cards, filters, home commands
+src/home/       home page: deck cards, filters, vault switcher, home commands
+src/settings/   vault management page
 src/gallery/    component gallery: search, lazy preview scheduler
 src/chat/       chat page: providers, tool calls, repair editor
 src/editor/     deck editor: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
 src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
 src/language-service-monaco/ Monaco adapter for the language service
 shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, deckModel, tagAttrs, themes, mdxImports
-server/         Bun server: router (index.ts), routes/, lib/ (content sources, decks, tools, watcher, SSE, chat/, exports), mcp.ts
+server/         Bun server: router (index.ts), routes/, lib/ (vaults in contentSources.ts, decks, tools, watcher, SSE, chat/, exports), mcp.ts
 scripts/        dev orchestrator, export, release and site builds, image and favicon scripts
 tests/          bun test suites
 content/        example decks (<name>/index.mdx) and the repo's own content-folder theme

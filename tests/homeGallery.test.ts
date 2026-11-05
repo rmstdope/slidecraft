@@ -22,8 +22,7 @@ describe('home deck filters', () => {
     expect(displayName('talks/deck-10')).toBe('Deck 10')
   })
 
-  test('source, path and text filters combine; text matches the display name', () => {
-    expect(filterDecks(decks, { ...DEFAULT_FILTERS, source: 'team' }).map((d) => d.path)).toEqual(['quarterly-review', 'talks/deck-9', 'talks/deck-10'])
+  test('path and text filters combine; text matches the display name', () => {
     expect(filterDecks(decks, { ...DEFAULT_FILTERS, path: 'TALKS/' }).map((d) => d.path)).toEqual(['talks/deck-9', 'talks/deck-10'])
     expect(filterDecks(decks, { ...DEFAULT_FILTERS, q: 'quarterly review' }).map((d) => d.path)).toEqual(['quarterly-review'])
   })
@@ -35,7 +34,7 @@ describe('home deck filters', () => {
   })
 
   test('filters round-trip through the URL and defaults stay out of it', () => {
-    const f = { q: 'q r', source: 'team', path: 'talks/', sort: 'alphabetical' as const }
+    const f = { q: 'q r', path: 'talks/', sort: 'alphabetical' as const }
     expect(filtersFromSearch(searchFromFilters(f))).toEqual(f)
     expect(searchFromFilters(DEFAULT_FILTERS)).toBe('')
     expect(filtersFromSearch('?sort=nonsense').sort).toBe('updated')

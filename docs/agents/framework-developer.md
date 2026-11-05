@@ -71,16 +71,17 @@ until it parses again. Saving adds newly used components to the import line
 
 | Mode | Where | Notes |
 |---|---|---|
-| home | `/` | cards, sort, source filter, create, HTML/PDF export |
-| presentation | `/<deck>` | the player; `?source=` picks a content source |
+| home | `/v/<vault>/` (`/` opens the last vault) | cards, sort, vault switcher, create, HTML/PDF export |
+| settings | `/settings` | add, rename, remove vaults |
+| presentation | `/v/<vault>/<deck path>` | the player; older `/<deck>?source=` links redirect |
 | dev | `D` in the player | overflow and title-length warnings, frame outline, `F` toggles fit |
 | overview | `M` / `Tab` | grid of every slide; `Tab` again for a large preview |
-| presenter | `/<deck>?presenter` | current and next slide, notes, timer; synced over a `BroadcastChannel` |
+| presenter | `/v/<vault>/<deck>?presenter` | current and next slide, notes, timer; synced over a `BroadcastChannel` |
 | thumbnail | inside cards, rails, overviews | every step shown, motion frozen (`ThumbnailContext`) |
-| PDF | `/<deck>?pdf=1[&slide=n]` | every slide stacked for headless Chrome |
-| editor | `/edit/<deck>` | three panels, resizable |
-| chat | `/chat[/<deck>]` | provider picker, streamed tool calls, preview |
-| gallery | `/gallery` | registry-driven |
+| PDF | `/v/<vault>/<deck>?pdf=1[&slide=n]` | every slide stacked for headless Chrome |
+| editor | `/v/<vault>/edit/<deck>` | three panels, resizable |
+| chat | `/v/<vault>/chat[/<deck>]` | provider picker, streamed tool calls, preview |
+| gallery | `/v/<vault>/gallery` | registry-driven; built-in themes plus the vault's |
 
 The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothing reflows.
 
@@ -89,7 +90,7 @@ The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothin
 | File | Lines | What |
 |---|---|---|
 | `src/App.tsx` | ~235 | view state machine, deck loading, live reload |
-| `src/router.ts` | ~90 | routes, URLs, `?source=` handling |
+| `src/router.ts` | ~150 | vault routes, URL builders, redirects for older URLs |
 | `src/components/slides/Presentation.tsx` | ~470 | player, keyboard map, palette commands |
 | `src/components/slides/Slide.tsx` | ~350 | look resolution, layouts, frames, steps, auto-fit |
 | `src/editor/EditorPage.tsx` | ~420 | editor layout, keyboard, toolbars |

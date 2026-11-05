@@ -44,7 +44,7 @@ const payloadOf = (html: string): ExportPayload => {
 
 describe('single-file HTML export', () => {
   test('embeds the compiled deck, its assets and the themes it uses', async () => {
-    const { html, name } = await exportDeck({ source: 'default', path: 'talk' }, { viewer })
+    const { html, name } = await exportDeck({ source: 'content', path: 'talk' }, { viewer })
     expect(name).toBe('talk')
     const payload = payloadOf(html)
     const code = Buffer.from(payload.code, 'base64').toString('utf8')
@@ -56,7 +56,7 @@ describe('single-file HTML export', () => {
   })
 
   test('nothing in the deck or the viewer can close a script or style element early', async () => {
-    const { html } = await exportDeck({ source: 'default', path: 'talk' }, { viewer })
+    const { html } = await exportDeck({ source: 'content', path: 'talk' }, { viewer })
     expect(html.match(/<\/script>/g)).toHaveLength(2) // the payload and the loader, nothing else
     expect(html).not.toContain('</style></style>')
     expect(html).toContain('<\\/style>')
@@ -65,7 +65,7 @@ describe('single-file HTML export', () => {
   test('a missing deck is a 404; a missing imported file names the file', async () => {
     const missing = await router(new Request('http://localhost/api/export/nope', { method: 'POST' }))
     expect(missing.status).toBe(404)
-    await expect(exportDeck({ source: 'default', path: 'broken' }, { viewer })).rejects.toThrow('missing.png')
+    await expect(exportDeck({ source: 'content', path: 'broken' }, { viewer })).rejects.toThrow('missing.png')
     expect((await router(new Request('http://localhost/api/export/a%2F..%2Fb', { method: 'POST' }))).status).toBe(400)
   })
 })

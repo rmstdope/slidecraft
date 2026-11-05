@@ -787,6 +787,30 @@ import docsShot from './images/docs.png'
   <Notes>The words land as you say them; the right arrow brings the highlight, then the line underneath. The studio-tour deck shows all five video-style components in a short talk.</Notes>
 </Slide>
 
+<Slide scheme="dark" accent="yellow" layout="document">
+  <Subtitle>Vaults</Subtitle>
+  <Title>Work decks and private talks stay apart</Title>
+  <TwoColumn>
+    <Code title="~/.config/slidecraft/config.json" fontSize={22} width={700}>{`
+    {
+      "vaults": [
+        { "id": "work", "name": "Work",
+          "path": "~/Presentations/Work" },
+        { "id": "home", "name": "Private",
+          "path": "~/Presentations/Private" }
+      ],
+      "lastVault": "work"
+    }`}</Code>
+    <List compact>
+      <ListItem>Each vault keeps its own decks and themes.</ListItem>
+      <ListItem>The app shows one vault at a time.</ListItem>
+      <ListItem>Links carry the vault: two tabs, two vaults.</ListItem>
+      <ListItem>Removing a vault never deletes its files.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>Add vaults on the Vaults page. An older config with content folders becomes vaults on the next start, with a backup of the original file. The MCP server works in one vault: --vault work.</Notes>
+</Slide>
+
 <Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Documentation</Subtitle>
   <Title>Agents read the guide for their role</Title>

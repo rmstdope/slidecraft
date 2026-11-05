@@ -3,7 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { sourceContentAssetUrl } from '../shared/mdxImports.ts'
-import { normalizeContentSource, normalizeContentSources } from '../server/lib/contentSources.ts'
+import { migrateConfig, normalizeContentSource, normalizeContentSources } from '../server/lib/contentSources.ts'
+import { vaultIdFromName } from '../shared/decks.ts'
 import { discoverContentSources, globToRegex, resolveDeckRefInSources, resolveWritableDeckRefInSources } from '../server/lib/decks.ts'
 
 const root = mkdtempSync(join(tmpdir(), 'slidecraft-sources-'))
@@ -26,21 +27,53 @@ describe('normalisation', () => {
     expect(() => normalizeContentSource('x', { path: root, include: ['../*'] })).toThrow('at least one safe include pattern')
     expect(() => normalizeContentSource('x', '  ')).toThrow('must define a path')
   })
-  test('precedence: requested source, then config default, then the fallback', () => {
+  test('precedence: requested vault, then the last vault, then the first vault, then the examples', () => {
     const config = { default: 'mine', contents: { mine: join(root, 'mine'), team: { path: join(root, 'team'), include: 'presentations/*/index.mdx' } } }
-    const requested = normalizeContentSources(config, 'team', '/content/built-in')
+    const requested = normalizeContentSources(config, 'team', '/content/examples', { bundled: false })
     expect(requested.defaultSourceId).toBe('team')
-    expect(requested.sources.map((s) => s.id)).toEqual(['mine', 'team', 'built-in'])
-    expect(normalizeContentSources(config, undefined, '/content/built-in').defaultSourceId).toBe('mine')
-    const byPath = normalizeContentSources(config, join(root, 'elsewhere'), '/fallback')
-    expect(byPath.sources[0]).toMatchObject({ id: 'default', path: join(root, 'elsewhere') })
-    expect(normalizeContentSources({}, undefined, root)).toMatchObject({ defaultSourceId: 'built-in' })
+    expect(requested.sources.map((s) => s.id)).toEqual(['mine', 'team', 'examples'])
+    expect(normalizeContentSources(config, undefined, '/content/examples', { bundled: false }).defaultSourceId).toBe('mine')
+    expect(normalizeContentSources(config, 'Team', '/x', { bundled: false }).defaultSourceId).toBe('team')
+    const byPath = normalizeContentSources(config, join(root, 'elsewhere'), '/fallback', { bundled: false })
+    expect(byPath.sources[0]).toMatchObject({ id: 'elsewhere', name: 'elsewhere', path: join(root, 'elsewhere'), temporary: true })
+    expect(normalizeContentSources({}, undefined, root, { bundled: false })).toMatchObject({ defaultSourceId: 'examples' })
+    const vaults = { vaults: [{ name: 'Work', path: join(root, 'w') }, { name: 'Private', path: join(root, 'p') }] }
+    expect(normalizeContentSources(vaults, undefined, '/x', { bundled: false }).defaultSourceId).toBe('work')
+    expect(normalizeContentSources({ ...vaults, lastVault: 'private' }, undefined, '/x', { bundled: false }).defaultSourceId).toBe('private')
   })
   test('the fallback directory is flagged built-in when a configured source already mounts it', () => {
-    const result = normalizeContentSources({ contents: { repo: { path: root } } }, undefined, root)
+    const result = normalizeContentSources({ contents: { repo: { path: root } } }, undefined, root, { bundled: false })
     expect(result.sources).toHaveLength(1)
     expect(result.sources[0].builtIn).toBe(true)
     expect(result.defaultSourceId).toBe('repo')
+  })
+  test('in the release binary the working directory is a temporary vault only when there is no vault', () => {
+    expect(normalizeContentSources({}, undefined, join(root, 'here'), { bundled: true }).sources).toEqual([expect.objectContaining({ id: 'here', temporary: true, builtIn: false })])
+    const withVault = normalizeContentSources({ vaults: [{ name: 'Work', path: join(root, 'w') }] }, undefined, join(root, 'here'), { bundled: true })
+    expect(withVault.sources.map((s) => s.id)).toEqual(['work'])
+  })
+})
+
+describe('vault config', () => {
+  test('content sources migrate to vaults; other settings are kept', () => {
+    const { config, changed } = migrateConfig({ default: 'team', contents: { mine: '~/decks', team: { path: '/t', readOnly: true } }, copilot: { model: 'x' } })
+    expect(changed).toBe(true)
+    expect(config).toEqual({
+      copilot: { model: 'x' },
+      vaults: [
+        { id: 'mine', name: 'Mine', path: '~/decks', include: ['*/index.mdx'] },
+        { id: 'team', name: 'Team', path: '/t', readOnly: true },
+      ],
+      lastVault: 'team',
+    })
+    expect(migrateConfig(config).changed).toBe(false)
+  })
+  test('vault ids come from names and stay unique', () => {
+    expect(vaultIdFromName('Work Stuff!')).toBe('work-stuff')
+    expect(vaultIdFromName('Privé')).toBe('prive')
+    expect(vaultIdFromName('!!!')).toBe('vault')
+    const { sources } = normalizeContentSources({ vaults: [{ name: 'Work', path: '/a' }, { name: 'work', path: '/b' }] }, undefined, '/x', { bundled: false })
+    expect(sources.map((s) => [s.id, s.name])).toEqual([['work', 'Work'], ['work-2', 'work'], ['examples', 'Examples']])
   })
 })
 

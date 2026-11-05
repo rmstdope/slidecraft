@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import { motion } from 'motion/react'
-import type { ContentSourceInfo, DeckRef, PresentationInfo } from '@shared/decks.ts'
+import type { DeckRef, PresentationInfo, VaultInfo } from '@shared/decks.ts'
 import { appPath } from '../basePath'
 import { GlobalCommandPalette, type CommandItem } from '../components/editor/GlobalCommandPalette'
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal'
 import { displayName, filterDecks, filtersFromSearch, searchFromFilters, type DeckFilters, type DeckSort } from './filterDecks'
 import { PlusIcon } from './icons'
 import { PresentationCard } from './PresentationCard'
+import { VaultSwitcher } from './VaultSwitcher'
 
 export interface HomePageProps {
+  /** The vault shown; `decks` are its decks only. */
+  vault: VaultInfo
+  vaults: VaultInfo[]
   decks: PresentationInfo[]
-  sources: ContentSourceInfo[]
-  /** Hides "Create New" (static builds, read-only content folder). */
+  /** Hides "Create New" (static builds, read-only vault). */
   canCreate: boolean
   /** Static builds: no editor or chat. */
   isStatic: boolean
@@ -22,6 +25,8 @@ export interface HomePageProps {
   onEdit(deck: DeckRef): void
   onChat(deck?: DeckRef): void
   onGallery(): void
+  onSwitchVault(id: string): void
+  onSettings(): void
 }
 
 const SORTS: { value: DeckSort; label: string }[] = [
@@ -43,7 +48,7 @@ function Logo({ size }: { size: number }) {
 
 /** The deck browser (Part 3 §1.5). */
 export function HomePage(props: HomePageProps) {
-  const { decks, sources, canCreate, isStatic, error, defaultSource, loadDeck, onPresent, onEdit, onChat, onGallery } = props
+  const { vault, vaults, decks, canCreate, isStatic, error, defaultSource, loadDeck, onPresent, onEdit, onChat, onGallery, onSwitchVault, onSettings } = props
   const [filters, setFilters] = useState<DeckFilters>(() => filtersFromSearch(window.location.search))
   const [scrollTop, setScrollTop] = useState(0)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -64,15 +69,19 @@ export function HomePage(props: HomePageProps) {
       { id: 'shortcuts', name: 'Keyboard Shortcuts', category: 'action', shortcut: ['?'], action: () => setShortcutsOpen(true) },
       ...(isStatic ? [] : [{ id: 'chat', name: 'Chat', description: 'Create or change decks with an AI assistant', category: 'action' as const, action: () => onChat() }]),
       { id: 'gallery', name: 'Component Gallery', description: 'Every component and template with a live preview', category: 'action', action: onGallery },
+      ...(isStatic ? [] : [{ id: 'settings', name: 'Manage Vaults', description: 'Add, rename or remove vaults', category: 'action' as const, action: onSettings }]),
+      ...vaults
+        .filter((v) => v.id !== vault.id)
+        .map((v): CommandItem => ({ id: `vault:${v.id}`, name: `Switch to Vault: ${v.name}`, description: v.path, category: 'navigation', action: () => onSwitchVault(v.id) })),
       ...decks.flatMap((d): CommandItem[] => [
-        { id: `present:${d.source}:${d.path}`, name: `Present: ${displayName(d.path)}`, description: `${d.source} / ${d.path}`, category: 'navigation', action: () => onPresent(d, false) },
-        { id: `dev:${d.source}:${d.path}`, name: `Dev Mode: ${displayName(d.path)}`, description: `${d.source} / ${d.path}`, category: 'navigation', action: () => onPresent(d, true) },
+        { id: `present:${d.source}:${d.path}`, name: `Present: ${displayName(d.path)}`, description: d.path, category: 'navigation', action: () => onPresent(d, false) },
+        { id: `dev:${d.source}:${d.path}`, name: `Dev Mode: ${displayName(d.path)}`, description: d.path, category: 'navigation', action: () => onPresent(d, true) },
         ...(d.readOnly || isStatic
           ? []
-          : [{ id: `edit:${d.source}:${d.path}`, name: `Edit: ${displayName(d.path)}`, description: `${d.source} / ${d.path}`, category: 'navigation' as const, action: () => onEdit(d) }]),
+          : [{ id: `edit:${d.source}:${d.path}`, name: `Edit: ${displayName(d.path)}`, description: d.path, category: 'navigation' as const, action: () => onEdit(d) }]),
       ]),
     ],
-    [decks, isStatic, onChat, onGallery, onPresent, onEdit],
+    [decks, isStatic, onChat, onGallery, onPresent, onEdit, onSettings, onSwitchVault, vault.id, vaults],
   )
 
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {})
@@ -102,7 +111,8 @@ export function HomePage(props: HomePageProps) {
     return loader
   }, [loadDeck])
 
-  const showFilters = decks.length > 0 || sources.length > 1
+  const showFilters = decks.length > 0
+  const ownVaults = vaults.filter((v) => !v.builtIn && !v.temporary)
 
   return (
     <div ref={rootRef} className="home" onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}>
@@ -120,6 +130,14 @@ export function HomePage(props: HomePageProps) {
           transition={{ duration: 1.2 }}
         />
         <div className="home-hero__shade" />
+        <div className="home-topbar">
+          <VaultSwitcher vault={vault} vaults={vaults} onSwitch={onSwitchVault} />
+          {!isStatic && (
+            <button type="button" className="tool-button" onClick={onSettings}>
+              Vaults…
+            </button>
+          )}
+        </div>
         <div className="home-hero__content">
           <Logo size={64} />
           <h1 className="home-hero__name">Slidecraft</h1>
@@ -133,21 +151,23 @@ export function HomePage(props: HomePageProps) {
 
       <main className="home-main">
         {error && <p className="home-error" role="alert">{error}</p>}
+        {!isStatic && !error && ownVaults.length === 0 && (
+          <div className="home-notice">
+            <div>
+              <strong>Keep your presentations in a vault</strong>
+              <span>
+                {vault.temporary
+                  ? `This folder is open for this run only. Save it as a vault to find it again, or add vaults for work and private decks.`
+                  : 'A vault is a folder of your own presentations, kept apart from the others: one for work, one for private talks.'}
+              </span>
+            </div>
+            <button type="button" className="tool-button is-primary" onClick={onSettings}>
+              {vault.temporary ? 'Save as a vault' : 'Create a vault'}
+            </button>
+          </div>
+        )}
         {showFilters && (
           <div className="home-filters">
-            {sources.length > 1 && (
-              <label className="tool-field">
-                <span>Source</span>
-                <select value={filters.source} onChange={(e) => set('source', e.target.value)}>
-                  <option value="">All sources</option>
-                  {sources.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <label className="tool-field">
               <span>Path</span>
               <input value={filters.path} placeholder="presentations/" onChange={(e) => set('path', e.target.value)} />
@@ -174,7 +194,7 @@ export function HomePage(props: HomePageProps) {
 
         {decks.length === 0 && (
           <p className="home-empty">
-            No presentations found. Create a folder in <code>content/</code> with an <code>index.mdx</code> file.
+            No presentations in {vault.name} yet.{vault.path ? <> Each one is a folder in <code>{vault.path}</code> with an <code>index.mdx</code> file.</> : null}
           </p>
         )}
         {(canCreate || decks.length > 0) && (
