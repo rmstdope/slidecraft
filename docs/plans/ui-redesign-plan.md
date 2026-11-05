@@ -159,6 +159,18 @@ the theme picker, present and save; the slide list; the code and preview panes o
 canvas; the agent panel (already restyled in R3) on the right, without its forced dark theme.
 Monaco follows the app theme.
 
+**Status (2026-11-05): done.** `src/editor/EditorPage.tsx` is rebuilt on `src/ui`: a header with
+back, the deck name and save state, an *Agent is editing* badge, the Preview/Split/Code switch, a
+popover for the deck's theme, scheme and accent, Format, Help, Save and Present; then the slide
+rail, the code and preview in one rounded pane (the preview centred at 16:9 on the dotted canvas),
+the help panel, and the conversation on the right (no longer forced dark; a tab brings it back
+when hidden). Resizing measures each pane from its own edge. `SlideSidebar`, `SlidePreview`,
+`SlideStill`, `ContextualToolbar`, `SelectionToolbar` and `HelpPanel` moved to the new chrome;
+`src/ui` gained `Popover` and `NativeSelect`. Monaco has `slidecraft-light` and `slidecraft-dark`
+themes that follow the app, with Geist Mono. The workspace rules in `editor.css` are gone; the
+insert palette and image picker keep theirs until R5. The welcome deck's editor and workspace
+screenshots and the guide are updated. Checked in the browser at 1440 px in light and dark.
+
 ### Phase R5: Gallery, presenter and the rest
 
 The gallery, the presenter window chrome, dialogs and pickers (image picker, insert palette,
