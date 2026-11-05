@@ -23,7 +23,7 @@ export and packaging. Module map, data model, routes and key files:
 3. **Change the code.** Follow the area's conventions below.
 4. **Run the checks:** `bun run typecheck`, `bun test`, `bun run build`. Done when all are green.
 5. **Check it in the running app.** Exercise the changed flow in the browser, and when it touches
-   them: the home page (cards, sorting, exports), a deck (arrows walk steps, `↓` skips, `M`, `D`,
+   them: the home page (cards, sorting, exports), a deck (arrows walk steps, `↓` skips, `M`, `G`,
    `P`, `A`), the workspace (select, edit, `Alt+↑/↓`, `⌘K`, `⌘S`, an agent turn), an external
    edit reloading the deck. Done when the flow works and the console is clean.
 6. **Keep the docs true.** Update the guides and the plan's status for what changed; a feature

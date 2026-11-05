@@ -74,8 +74,8 @@ imports for you when you save.
 The home page lists the decks of one **vault** as cards showing their first slide. The sidebar
 switches vaults and the light, dark or system theme; **Settings** adds, renames or removes vaults (a
 removed vault's files stay where they are) and holds the appearance choices. Sort by update date,
-creation date or name, or filter by name and folder. Each card presents the deck (hover the
-preview), opens its workspace, or exports HTML or PDF.
+creation date or name, or filter by name and folder. Hover a card's preview for **Present** and
+**Edit** (the deck's workspace); the icons below it export HTML or PDF.
 
 The box at the top asks the agent for something: describe a talk or paste your notes, and when it
 writes the new deck, the deck's workspace opens with the conversation. **New deck** starts from a
@@ -84,7 +84,7 @@ any other way appears on the home page too.
 
 ## The editor
 
-Open a deck and press `Esc`, or use **Edit** on its card. The editor has three panels, and the
+Open a deck and press `E`, or use **Edit** on its card. The editor has three panels, and the
 separators between them can be dragged:
 
 - **Slide rail** (left): a live thumbnail per slide. Click to select, `↑`/`↓` to move through
@@ -122,7 +122,7 @@ when `sharp` is installed.
 
 `⌘K` in the editor opens the insert palette: every component and slide template, searchable,
 with a live preview. Enter inserts the snippet at the cursor (a template inserts a new slide).
-`⌘K` while presenting opens a palette of commands for that mode: overview, dev mode,
+`⌘K` while presenting opens a palette of commands for that mode: overview, guides,
 fullscreen, presenter view, drawing, go to slide, edit, chat.
 
 ## Slides, themes and colours
@@ -212,10 +212,11 @@ Open a deck from the home page. Slides scale to fit the window; nothing reflows.
 | Home / End | first / last slide |
 | `M`, `Tab` | overview of every slide (arrows and Enter to jump; `Tab` again for a large preview) |
 | `F` | fullscreen |
-| `D` | dev mode: overflow warnings, title-length marks, frame outline (`F` toggles fit) |
+| `G` | guides: overflow warnings, title-length marks, frame outline (`F` toggles fit); also the **Guides** button beside Fullscreen |
 | `P` | presenter window |
 | `A` | draw on slides |
-| `Esc` | edit this slide (closes the overview or leaves drawing first) |
+| `E` | edit this slide |
+| `Esc` | back to the home page (closes the overview or leaves drawing first; opens the overview in an exported file) |
 | `⌘K` | command palette |
 | `?` | every shortcut for the current mode |
 
@@ -307,4 +308,4 @@ viewport units, `clamp()` or CSS variables for spacing.
 - Write notes with a time budget on the first line (`4:00-4:50.`); the presenter view and reader
   mode show them.
 - Shrink large images before adding them: `node scripts/process-images.mjs <in> <out>`.
-- Check the flow in the overview (`M`) and dev mode (`D`) before presenting.
+- Check the flow in the overview (`M`) and with the guides on (`G`) before presenting.

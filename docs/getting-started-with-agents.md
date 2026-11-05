@@ -61,7 +61,7 @@ works.
 ## 5. Before you present
 
 - Click through the deck (arrow keys). Press `M` for an overview of all slides.
-- Press `D` for dev mode: it marks text that overflows and titles that wrap.
+- Press `G` for the guides: they mark text that overflows and titles that wrap.
 - Ask the agent for changes one slide at a time: "make the title on slide 4 shorter",
   "the numbers on slide 3 are from September, not October".
 - Press `P` to open the presenter window with your notes and a timer.

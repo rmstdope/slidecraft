@@ -12,7 +12,7 @@ export interface OverviewProps {
   onSelect: (index: number) => void
   onClose: () => void
   onColumnsChange: (columns: number) => void
-  /** Opens dev mode at the focused slide; omitted in exported files. */
+  /** Opens the guides at the focused slide; omitted in exported files. */
   onEditSlide?: (index: number) => void
 }
 

@@ -67,7 +67,7 @@ describe('isSameDeckView (popstate guard)', () => {
 describe('URL builders', () => {
   test('put the vault and the deck path in the URL', () => {
     expect(presentationUrl(deck)).toBe('/v/examples/motion')
-    expect(presentationUrl(deck, { dev: true, slide: 4 })).toBe('/v/examples/motion?mode=dev#slide-4')
+    expect(presentationUrl(deck, { guides: true, slide: 4 })).toBe('/v/examples/motion?mode=guides#slide-4')
     expect(editorUrl({ source: 'team', path: 'presentations/q3' }, 2)).toBe('/v/team/edit/presentations/q3?slide=2')
     expect(chatUrl({ source: 'team', path: 'q 3' })).toBe('/v/team/chat/q%203')
     expect(vaultChatUrl('team')).toBe('/v/team/chat')

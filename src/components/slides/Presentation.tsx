@@ -9,7 +9,7 @@ import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react
 import { ALL_STEPS_STATE, StepContext } from '../../animations/stepContext'
 import { springs } from '../../animations/springs'
 import { slideVariants } from '../../animations/variants'
-import { editorUrl, homeUrl } from '../../router'
+import { editorUrl, homeUrl, isGuidesMode } from '../../router'
 import { resolveTheme } from '../../themes/registry'
 import { resolveSlideLook } from '../../themes/resolveSlideLook'
 import type { Scheme } from '@shared/themes.ts'
@@ -19,7 +19,7 @@ import { isExported, isTypingTarget, navigateTo } from '../../utils/environment'
 import type { AppMode } from '../../utils/keyboardShortcuts'
 import { GlobalCommandPalette, type CommandItem } from '../editor/GlobalCommandPalette'
 import { KeyboardShortcutsModal } from '../editor/KeyboardShortcutsModal'
-import { DevOverlay } from '../presentation/DevOverlay'
+import { GuidesFrame } from '../presentation/GuidesFrame'
 import { Overview } from '../presentation/Overview'
 import { PdfView } from '../presentation/PdfView'
 import { ReaderView } from '../presentation/ReaderView'
@@ -106,7 +106,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const { nav, actions } = useDeckNavigation(stepCounts, channel)
   const drawing = useDrawing()
   const remote = useRemoteOverlay(channel, true)
-  const [devMode, setDevMode] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'dev')
+  const [guides, setGuides] = useState(() => isGuidesMode(new URLSearchParams(window.location.search).get('mode')))
   // Reader mode is a handout for exported decks (Part 4 §8.3): every slide with its notes.
   const [readMode, setReadMode] = useState(() => exported && new URLSearchParams(window.location.search).get('mode') === 'read')
   const setViewerMode = useCallback((mode: 'read' | null) => {
@@ -116,7 +116,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     window.history.replaceState(window.history.state, '', url)
     setReadMode(mode === 'read')
   }, [])
-  const [devFitMode, setDevFitMode] = useState(true)
+  const [fitMode, setFitMode] = useState(true)
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [focused, setFocused] = useState(0)
   const [previewMode, setPreviewMode] = useState(false)
@@ -125,14 +125,14 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
-  // Dev mode is state; the URL follows so links and reloads keep it.
+  // Guides are state; the URL follows so links and reloads keep them.
   useEffect(() => {
     const url = new URL(window.location.href)
     if (readMode) return
-    if (devMode) url.searchParams.set('mode', 'dev')
-    else if (url.searchParams.get('mode') === 'dev') url.searchParams.delete('mode')
+    if (guides) url.searchParams.set('mode', 'guides')
+    else if (isGuidesMode(url.searchParams.get('mode'))) url.searchParams.delete('mode')
     if (url.href !== window.location.href) window.history.replaceState(window.history.state, '', url)
-  }, [devMode, readMode])
+  }, [guides, readMode])
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement)
@@ -180,11 +180,11 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     }
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
     switch (key) {
-      case 'd':
-        if (!exported) setDevMode((d) => !d)
+      case 'g':
+        if (!exported) setGuides((d) => !d)
         return
       case 'f':
-        if (devMode) setDevFitMode((f) => !f)
+        if (guides) setFitMode((f) => !f)
         else toggleFullscreen()
         return
       case 'm':
@@ -195,6 +195,9 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
         return
       case 'a':
         drawing?.toggleDrawMode()
+        return
+      case 'e':
+        if (!exported && deck && !overviewOpen) editSlide()
         return
     }
     if (key === 'Escape' && drawing?.isDrawMode) {
@@ -243,8 +246,9 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
 
     switch (key) {
       case 'Escape':
-        if (exported || !deck) openOverview()
-        else editSlide()
+        // An exported file has no home page, so Esc opens the overview there.
+        if (exported) openOverview()
+        else navigateTo(homeUrl(deck?.source))
         break
       case 'Tab':
         openOverview()
@@ -305,9 +309,9 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
       ...(stepsOnSlide > 0
         ? [{ id: 'skip', name: 'Skip to Next Slide', description: 'Skip the remaining steps', category: 'action' as const, shortcut: ['↓'], action: actions.nextSlide }]
         : []),
-      ...(exported ? [] : [{ id: 'dev', name: devMode ? 'Exit Dev Mode' : 'Enter Dev Mode', description: 'Overflow warnings and frame outline', category: 'view' as const, shortcut: ['D'], action: () => setDevMode((d) => !d) }]),
-      ...(devMode
-        ? [{ id: 'fit', name: devFitMode ? 'Switch to Actual Size' : 'Switch to Fit', category: 'view' as const, shortcut: ['F'], action: () => setDevFitMode((f) => !f) }]
+      ...(exported ? [] : [{ id: 'guides', name: guides ? 'Hide Guides' : 'Show Guides', description: 'Overflow warnings, title-length marks and the frame outline', category: 'view' as const, shortcut: ['G'], action: () => setGuides((d) => !d) }]),
+      ...(guides
+        ? [{ id: 'fit', name: fitMode ? 'Switch to Actual Size' : 'Switch to Fit', category: 'view' as const, shortcut: ['F'], action: () => setFitMode((f) => !f) }]
         : [{ id: 'fullscreen', name: isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen', category: 'view' as const, shortcut: ['F'], action: toggleFullscreen }]),
       ...(canPresent
         ? [{ id: 'presenter', name: 'Open Presenter View', description: 'Open presenter notes and timer in new window', category: 'view' as const, shortcut: ['P'], action: openPresenter }]
@@ -317,17 +321,17 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
     ]
     if (exported) list.push({ id: 'read', name: 'Read Mode', description: 'Every slide with its notes; prints as a handout', category: 'view', action: () => setViewerMode('read') })
     if (!exported) {
-      list.push({ id: 'home', name: 'Go to Home', category: 'navigation', action: () => navigateTo(homeUrl(deck?.source)) })
+      list.push({ id: 'home', name: 'Go to Home', category: 'navigation', shortcut: ['Esc'], action: () => navigateTo(homeUrl(deck?.source)) })
       if (deck) {
-        list.push({ id: 'edit', name: 'Edit Presentation', description: `Open slide ${nav.current + 1} in the editor`, category: 'navigation', shortcut: ['Esc'], action: editSlide })
+        list.push({ id: 'edit', name: 'Edit Presentation', description: `Open slide ${nav.current + 1} in the editor`, category: 'navigation', shortcut: ['E'], action: editSlide })
         list.push({ id: 'chat', name: 'Ask the Agent', description: 'Open the workspace with the conversation', category: 'navigation', action: () => navigateTo(editorUrl(deck, nav.current + 1)) })
       }
     }
     slides.forEach((_, i) => list.push({ id: `slide-${i}`, name: `Go to Slide ${i + 1}`, category: 'navigation', action: () => actions.goTo(i) }))
     return list
-  }, [setViewerMode, drawing, overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, devMode, devFitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
+  }, [setViewerMode, drawing, overviewOpen, openOverview, stepsOnSlide, nav.step, nav.current, actions, guides, fitMode, isFullscreen, toggleFullscreen, canPresent, openPresenter, exported, deck, editSlide, slides])
 
-  const mode: AppMode = overviewOpen ? 'miniature' : devMode ? 'dev' : 'presentation'
+  const mode: AppMode = overviewOpen ? 'miniature' : guides ? 'guides' : 'presentation'
 
   if (readMode) return <ReaderView slides={slides} notes={analysis.notes} onPresent={() => setViewerMode(null)} />
 
@@ -399,13 +403,13 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
                   renderSlide={(runSlide, _i, active) => (
                     // The rest of the canvas is the map around the focused slide: always fully built.
                     <StepContext.Provider value={active ? liveSteps : ALL_STEPS_STATE}>
-                      {cloneElement(runSlide, { direction: nav.direction, _skipAnimation: true, _fixedScale: 1, _devMode: devMode, _devFitMode: devFitMode })}
+                      {cloneElement(runSlide, { direction: nav.direction, _skipAnimation: true, _fixedScale: 1, _guides: guides, _fitMode: fitMode })}
                     </StepContext.Provider>
                   )}
                 />
               ) : (
                 <StepContext.Provider value={liveSteps}>
-                  {cloneElement(slide, { direction: nav.direction, _skipAnimation: true, _devMode: devMode, _devFitMode: devFitMode })}
+                  {cloneElement(slide, { direction: nav.direction, _skipAnimation: true, _guides: guides, _fitMode: fitMode })}
                 </StepContext.Provider>
               )}
             </motion.div>
@@ -417,20 +421,36 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
 
         <ProgressIndicator total={total} current={nav.current} step={nav.step} stepsOnSlide={stepsOnSlide} light={light} onSelect={(i) => actions.goTo(i)} />
 
-        {devMode ? (
-          <DevOverlay fitMode={devFitMode} onToggleFit={() => setDevFitMode((f) => !f)} onExit={() => setDevMode(false)} />
-        ) : (
-          <div className="presentation__controls" data-no-advance>
-            {exported && (
-              <button type="button" className="presentation-view-button" onClick={() => setViewerMode('read')}>
-                Read
+        {guides && <GuidesFrame />}
+        <div className="presentation__controls" data-no-advance>
+          {guides && (
+            <>
+              <span className="guides-badge">GUIDES</span>
+              <button type="button" className="presentation-view-button" onClick={() => setFitMode((f) => !f)} title="F">
+                {fitMode ? 'Fit Mode' : 'Actual Mode'}
               </button>
-            )}
-            <button type="button" className="presentation-view-button" onClick={toggleFullscreen}>
-              {isFullscreen ? 'Exit' : 'Fullscreen'}
+            </>
+          )}
+          {exported && (
+            <button type="button" className="presentation-view-button" onClick={() => setViewerMode('read')}>
+              Read
             </button>
-          </div>
-        )}
+          )}
+          {!exported && (
+            <button
+              type="button"
+              className="presentation-view-button"
+              aria-pressed={guides}
+              onClick={() => setGuides((d) => !d)}
+              title="Guides: overflow warnings, title-length marks and the frame outline (G)"
+            >
+              Guides
+            </button>
+          )}
+          <button type="button" className="presentation-view-button" onClick={toggleFullscreen}>
+            {isFullscreen ? 'Exit' : 'Fullscreen'}
+          </button>
+        </div>
 
         <AnimatePresence>
           {overviewOpen && (
@@ -451,7 +471,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
                   ? undefined
                   : (i) => {
                       actions.goTo(i)
-                      setDevMode(true)
+                      setGuides(true)
                       setOverviewOpen(false)
                     }
               }
@@ -459,7 +479,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
           )}
         </AnimatePresence>
 
-        <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode={mode === 'miniature' ? 'Overview' : mode === 'dev' ? 'Dev' : 'Presentation'} commands={commands} theme="dark" />
+        <GlobalCommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} mode={mode === 'miniature' ? 'Overview' : mode === 'guides' ? 'Guides' : 'Presentation'} commands={commands} theme="dark" />
         <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode={mode} theme="dark" />
       </div>
     </MotionConfig>

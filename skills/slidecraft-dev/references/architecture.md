@@ -108,7 +108,7 @@ until it parses again. Saving adds newly used components to the import line
 | home | `/v/<vault>/` (`/` opens the last vault) | the vault conversation, cards, sort, vault switcher, new deck, HTML/PDF export |
 | settings | `/settings` | vaults; the agent's status and model |
 | presentation | `/v/<vault>/<deck path>` | the player; older `/<deck>?source=` links redirect |
-| dev | `D` in the player | overflow and title-length warnings, frame outline, `F` toggles fit |
+| guides | `G` or the **Guides** button in the player (`?mode=guides`) | overflow and title-length warnings, frame outline, `F` toggles fit |
 | overview | `M` / `Tab` | grid of every slide; `Tab` again for a large preview |
 | presenter | `/v/<vault>/<deck>?presenter` | current and next slide, notes, timer; synced over a `BroadcastChannel` |
 | thumbnail | inside cards, rails, overviews | every step shown, motion frozen (`ThumbnailContext`) |

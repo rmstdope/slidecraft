@@ -1,7 +1,7 @@
 import { isMac } from './environment'
 
 /** The single source of truth for the shortcuts modal and help panel (Part 3 §1.9). */
-export type AppMode = 'home' | 'presentation' | 'miniature' | 'dev' | 'editor' | 'presenter'
+export type AppMode = 'home' | 'presentation' | 'miniature' | 'guides' | 'editor' | 'presenter'
 
 export interface Shortcut {
   keys: string[]
@@ -35,9 +35,10 @@ const PRESENTING: Shortcut[] = [
   { keys: ['Right click'], action: 'Previous step or slide', category: 'Navigation' },
   { keys: ['M'], action: 'Slide overview', category: 'Views' },
   { keys: ['Tab'], action: 'Slide overview', category: 'Views' },
-  { keys: ['D'], action: 'Toggle dev mode', category: 'Views' },
+  { keys: ['G'], action: 'Show or hide the guides', category: 'Views' },
   { keys: ['P'], action: 'Open presenter view', category: 'Views' },
-  { keys: ['Esc'], action: 'Edit this slide', category: 'Views' },
+  { keys: ['E'], action: 'Edit this slide', category: 'Views' },
+  { keys: ['Esc'], action: 'Back to the home page', category: 'Views' },
   ...DRAWING_KEYS,
 ]
 
@@ -59,9 +60,9 @@ const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
       { keys: ['Esc'], action: 'Close overview', category: 'Views' },
     ],
   },
-  dev: {
-    label: 'Dev',
-    shortcuts: [...PRESENTING, { keys: ['F'], action: 'Switch fit and actual size', category: 'Dev' }],
+  guides: {
+    label: 'Guides',
+    shortcuts: [...PRESENTING, { keys: ['F'], action: 'Switch fit and actual size', category: 'Guides' }],
   },
   presenter: {
     label: 'Presenter',
