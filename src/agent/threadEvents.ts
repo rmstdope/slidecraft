@@ -2,7 +2,7 @@
  * Folding a thread's events into what the chat shows (UX overhaul U2). Pure, so it is tested
  * without a browser. Live text arrives as deltas; the stored thread has them merged.
  */
-import type { AgentEvent, ToolCallInfo } from '@shared/agent.ts'
+import type { AgentEvent, FileChange, ToolCallInfo } from '@shared/agent.ts'
 
 /** Add a live event to the list: skip what is already there, merge text deltas of one turn. */
 export function addEvent(events: AgentEvent[], event: AgentEvent): AgentEvent[] {
@@ -23,9 +23,12 @@ export type TurnItem =
 
 export interface Turn {
   turn: number
-  user?: { text: string; slide?: number; selection?: boolean }
+  user?: { text: string; slide?: number; selection?: boolean; attachments?: string[] }
   items: TurnItem[]
   files: string[]
+  /** What the turn changed, from its checkpoint; undo is offered for these. */
+  changes: FileChange[]
+  undone?: boolean
   done?: { ok: boolean; error?: string; costUsd?: number; stopped?: boolean }
 }
 
@@ -35,13 +38,13 @@ export function toTurns(events: AgentEvent[]): Turn[] {
   for (const event of events) {
     let turn = turns.get(event.turn)
     if (!turn) {
-      turn = { turn: event.turn, items: [], files: [] }
+      turn = { turn: event.turn, items: [], files: [], changes: [] }
       turns.set(event.turn, turn)
     }
     const lastItem = turn.items[turn.items.length - 1]
     switch (event.type) {
       case 'user-message':
-        turn.user = { text: event.text, slide: event.context?.slide, selection: !!event.context?.selection }
+        turn.user = { text: event.text, slide: event.context?.slide, selection: !!event.context?.selection, attachments: event.context?.attachments }
         break
       case 'text':
         if (lastItem?.kind === 'text') lastItem.text += event.text
@@ -66,6 +69,12 @@ export function toTurns(events: AgentEvent[]): Turn[] {
         break
       case 'file-changed':
         if (!turn.files.includes(event.path)) turn.files.push(event.path)
+        break
+      case 'changes':
+        turn.changes = event.files
+        break
+      case 'turn-undone':
+        turn.undone = true
         break
       case 'turn-done':
         turn.done = { ok: event.ok, error: event.error, costUsd: event.costUsd, stopped: event.stopped }

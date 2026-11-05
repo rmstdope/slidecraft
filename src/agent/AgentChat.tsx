@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { AgentEvent, MessageContext } from '@shared/agent.ts'
+import type { AgentEvent, MessageContext, TurnDiff } from '@shared/agent.ts'
+import { fetchTurnDiff, undoTurn, uploadAttachment } from './api'
 import { deckName, type DeckRef } from '@shared/decks.ts'
 import { Markdown } from './markdown'
 import { pendingApproval, toTurns, type Turn, type TurnItem } from './threadEvents'
@@ -44,8 +45,25 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
     slide: context?.slide !== undefined && context.slide !== dismissed.slide ? context.slide : undefined,
     selection: context?.selection?.trim() && context.selection !== dismissed.selection ? context.selection : undefined,
   }
+  // Files dropped or picked for the next message, already uploaded into the vault.
+  const [attachments, setAttachments] = useState<{ name: string; path: string }[]>([])
+  const [uploading, setUploading] = useState(0)
+  const [dropping, setDropping] = useState(false)
+  const [attachError, setAttachError] = useState<string>()
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const attach = async (files: File[]) => {
+    setAttachError(undefined)
+    for (const file of files) {
+      setUploading((n) => n + 1)
+      const result = await uploadAttachment(vault, deck?.path, file)
+      setUploading((n) => n - 1)
+      if (result.data) setAttachments((list) => [...list, { name: file.name, path: result.data!.path }])
+      else setAttachError(`${file.name}: ${result.error}`)
+    }
+  }
 
   useEffect(() => onRunningChange?.(running), [running, onRunningChange])
   useEffect(() => {
@@ -57,16 +75,36 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
 
   const send = async () => {
     const text = input.trim()
-    if (!text || running) return
+    if (!text || running || uploading) return
     if (beforeSend && !(await beforeSend())) return
     setInput('')
-    const sent: MessageContext | undefined = chips.slide !== undefined || chips.selection ? { slide: chips.slide, selection: chips.selection } : undefined
-    if (!(await state.send(text, sent))) setInput(text)
+    const files = attachments.map((a) => a.path)
+    const sent: MessageContext | undefined =
+      chips.slide !== undefined || chips.selection || files.length ? { slide: chips.slide, selection: chips.selection, attachments: files.length ? files : undefined } : undefined
+    if (await state.send(text, sent)) setAttachments([])
+    else setInput(text)
     inputRef.current?.focus()
   }
 
   return (
-    <section className={`agent-chat${compact ? ' is-compact' : ''}`} aria-label="Agent conversation">
+    <section
+      className={`agent-chat${compact ? ' is-compact' : ''}${dropping ? ' is-dropping' : ''}`}
+      aria-label="Agent conversation"
+      onDragOver={(e) => {
+        if (unavailable || ![...e.dataTransfer.types].includes('Files')) return
+        e.preventDefault()
+        setDropping(true)
+      }}
+      onDragLeave={(e) => {
+        if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setDropping(false)
+      }}
+      onDrop={(e) => {
+        setDropping(false)
+        if (!e.dataTransfer.files.length) return
+        e.preventDefault()
+        void attach([...e.dataTransfer.files])
+      }}
+    >
       {(!compact || threads.length > 0) && (
       <div className="agent-chat__bar">
         <select
@@ -109,7 +147,7 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
           </div>
         )}
         {turns.map((turn) => (
-          <TurnView key={turn.turn} turn={turn} onAnswer={state.answer} />
+          <TurnView key={turn.turn} turn={turn} vault={vault} threadId={thread?.id} running={running} onAnswer={state.answer} />
         ))}
         {running && !waiting && (
           <div className="agent-working" role="status">
@@ -129,8 +167,17 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
       </div>
 
       <div className="chat-input">
-        {(chips.slide !== undefined || chips.selection) && (
+        {(chips.slide !== undefined || chips.selection || attachments.length > 0 || uploading > 0) && (
           <div className="agent-chips" aria-label="Sent with your message">
+            {attachments.map((a) => (
+              <span key={a.path} className="agent-chip" title={a.path}>
+                📎 {a.name}
+                <button type="button" aria-label={`Do not send ${a.name}`} onClick={() => setAttachments((list) => list.filter((x) => x !== a))}>
+                  ×
+                </button>
+              </span>
+            ))}
+            {uploading > 0 && <span className="agent-chip">Uploading…</span>}
             {chips.slide !== undefined && (
               <span className="agent-chip">
                 Slide {chips.slide + 1}
@@ -149,7 +196,28 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
             )}
           </div>
         )}
+        {attachError && (
+          <p className="agent-error" role="alert">
+            {attachError}
+          </p>
+        )}
         <div className="chat-input__row">
+          <button type="button" className="agent-attach" disabled={unavailable} onClick={() => fileRef.current?.click()} aria-label="Attach files" title="Attach files (or drop them here)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])]
+              e.target.value = ''
+              if (files.length) void attach(files)
+            }}
+          />
           <textarea
             ref={inputRef}
             rows={2}
@@ -157,6 +225,12 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
             disabled={unavailable}
             placeholder={deck ? 'Ask for a change…' : 'What do you want to present? Describe the talk or paste your notes…'}
             onChange={(e) => setInput(e.target.value)}
+            onPaste={(e) => {
+              const files = [...e.clipboardData.files]
+              if (!files.length) return
+              e.preventDefault()
+              void attach(files)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -171,7 +245,7 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
               </svg>
             </button>
           ) : (
-            <button type="button" className="chat-send" disabled={!input.trim() || unavailable} onClick={() => void send()} aria-label="Send">
+            <button type="button" className="chat-send" disabled={!input.trim() || unavailable || uploading > 0} onClick={() => void send()} aria-label="Send">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />
               </svg>
@@ -184,31 +258,108 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
   )
 }
 
-function TurnView({ turn, onAnswer }: { turn: Turn; onAnswer(id: string, allow: boolean): void }) {
+function TurnView({ turn, vault, threadId, running, onAnswer }: { turn: Turn; vault: string; threadId?: string; running: boolean; onAnswer(id: string, allow: boolean): void }) {
+  const context = turn.user && [
+    turn.user.slide !== undefined ? `Slide ${turn.user.slide + 1}` : '',
+    turn.user.selection ? 'selection' : '',
+    turn.user.attachments?.length ? `${turn.user.attachments.length} file${turn.user.attachments.length === 1 ? '' : 's'}` : '',
+  ].filter(Boolean)
   return (
     <div className="agent-turn">
       {turn.user && (
         <div className="chat-row is-user">
           <div className="chat-bubble is-user">
             {turn.user.text}
-            {(turn.user.slide !== undefined || turn.user.selection) && (
-              <span className="agent-turn__context">
-                {turn.user.slide !== undefined ? `Slide ${turn.user.slide + 1}` : ''}
-                {turn.user.selection ? `${turn.user.slide !== undefined ? ' · ' : ''}selection` : ''}
-              </span>
-            )}
+            {context && context.length > 0 && <span className="agent-turn__context">{context.join(' · ')}</span>}
           </div>
         </div>
       )}
       {turn.items.map((item) => (
         <ItemView key={item.key} item={item} onAnswer={onAnswer} />
       ))}
-      {turn.done && (turn.files.length > 0 || !turn.done.ok) && (
-        <div className={`agent-done${turn.done.ok ? '' : ' is-bad'}`}>
-          {turn.done.stopped ? 'Stopped. ' : !turn.done.ok ? `Failed: ${turn.done.error ?? 'unknown error'}. ` : ''}
-          {turn.files.length > 0 && `Changed ${turn.files.join(', ')}`}
-        </div>
+      {turn.done && !turn.done.ok && <div className="agent-done is-bad">{turn.done.stopped ? 'Stopped.' : `Failed: ${turn.done.error ?? 'unknown error'}.`}</div>}
+      {turn.done && turn.changes.length > 0 && threadId && <TurnChanges turn={turn} vault={vault} threadId={threadId} running={running} />}
+      {turn.done && turn.changes.length === 0 && turn.files.length > 0 && <div className="agent-done">Changed {turn.files.join(', ')}</div>}
+    </div>
+  )
+}
+
+/** What a turn changed, with its diff and "Undo this turn" (UX overhaul U5). */
+function TurnChanges({ turn, vault, threadId, running }: { turn: Turn; vault: string; threadId: string; running: boolean }) {
+  const [diff, setDiff] = useState<TurnDiff | null>(null)
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+  const names = turn.changes.map((c) => `${c.path}${c.status === 'added' ? ' (new)' : c.status === 'deleted' ? ' (deleted)' : ''}`)
+
+  const showDiff = async () => {
+    if (open) return setOpen(false)
+    setOpen(true)
+    const result = await fetchTurnDiff(vault, threadId, turn.turn)
+    if (result.data) setDiff(result.data)
+    else setError(result.error)
+  }
+  const undo = async () => {
+    setBusy(true)
+    setError(undefined)
+    const result = await undoTurn(vault, threadId, turn.turn)
+    setBusy(false)
+    if (!result.data) {
+      setError(result.error)
+      // A refused undo shows what is there now against the turn.
+      if (!open) void showDiff()
+    }
+  }
+
+  return (
+    <div className={`agent-changes${turn.undone ? ' is-undone' : ''}`}>
+      <div className="agent-changes__bar">
+        <span className="agent-changes__what">
+          {turn.undone ? 'Undone: ' : 'Changed '}
+          {names.join(', ')}
+        </span>
+        <button type="button" className="tool-button" aria-expanded={open} onClick={() => void showDiff()}>
+          {open ? 'Hide diff' : 'Diff'}
+        </button>
+        {!turn.undone && (
+          <button type="button" className="tool-button" disabled={busy || running} onClick={() => void undo()} title={running ? 'Wait for the agent to finish' : 'Put these files back as they were before this turn'}>
+            {busy ? 'Undoing…' : 'Undo this turn'}
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className="agent-error" role="alert">
+          {error}
+        </p>
       )}
+      {open && (diff ? <DiffView diff={diff} /> : !error && <p className="agent-changes__loading">Loading the diff…</p>)}
+    </div>
+  )
+}
+
+function DiffView({ diff }: { diff: TurnDiff }) {
+  return (
+    <div className="agent-diff">
+      {diff.files.map((file) => (
+        <section key={file.path} className="agent-diff__file">
+          <header>
+            {file.path} <span className={`agent-diff__status is-${file.status}`}>{file.status}</span>
+          </header>
+          {file.binary && <p className="agent-diff__note">A binary file: no line diff.</p>}
+          {file.tooLarge && <p className="agent-diff__note">Too large to show as a diff.</p>}
+          {file.hunks?.map((hunk, i) => (
+            <pre key={i} className="agent-diff__hunk">
+              {hunk.lines.map((line, j) => (
+                <span key={j} className={`agent-diff__line is-${line.kind}`}>
+                  {line.kind === 'add' ? '+ ' : line.kind === 'remove' ? '- ' : '  '}
+                  {line.text}
+                  {'\n'}
+                </span>
+              ))}
+            </pre>
+          ))}
+        </section>
+      ))}
     </div>
   )
 }

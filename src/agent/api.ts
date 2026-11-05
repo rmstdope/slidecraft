@@ -1,5 +1,5 @@
 /** The agent API (UX overhaul U2). Helpers never throw: failures become `{ error }`. */
-import type { AgentBackendId, AgentBackendInfo, MessageContext, ThreadDetail, ThreadInfo } from '@shared/agent.ts'
+import type { AgentBackendId, AgentBackendInfo, MessageContext, ThreadDetail, ThreadInfo, TurnDiff } from '@shared/agent.ts'
 import type { DeckRef } from '@shared/decks.ts'
 import { appPath } from '../basePath'
 import type { ApiResult } from '../api'
@@ -35,6 +35,18 @@ export const stopThread = (vault: string, id: string) => request<{ stopped: bool
 
 export const answerApproval = (vault: string, id: string, approvalId: string, allow: boolean) =>
   request<{ ok: true }>(`${threadPath(vault, id)}/approvals/${encodeURIComponent(approvalId)}`, post({ allow }))
+
+export const fetchTurnDiff = (vault: string, id: string, turn: number) => request<TurnDiff>(`${threadPath(vault, id)}/turns/${turn}/diff`)
+export const undoTurn = (vault: string, id: string, turn: number) => request<{ files: string[] }>(`${threadPath(vault, id)}/turns/${turn}/undo`, post())
+
+/** Upload a file dropped into the conversation; images for a deck go into its images/ folder. */
+export function uploadAttachment(vault: string, deckPath: string | undefined, file: File) {
+  const form = new FormData()
+  form.set('vault', vault)
+  if (deckPath) form.set('path', deckPath)
+  form.set('file', file)
+  return request<{ path: string; image: boolean }>('/api/agent/attachments', { method: 'POST', body: form })
+}
 
 export interface AgentSettings {
   backend: AgentBackendId

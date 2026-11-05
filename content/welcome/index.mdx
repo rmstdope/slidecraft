@@ -710,6 +710,17 @@ import docsShot from './images/docs.png'
   <Notes>Preview, Code and Split switch the right side. The slide on screen and any selected code go with each message as chips you can remove. While the agent edits, the code is read-only; unsaved changes are saved before a message goes out.</Notes>
 </Slide>
 
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Undo</Subtitle>
+  <Title>Every agent turn can be taken back</Title>
+  <TwoColumn>
+    <Card title="Changes and a diff">After each turn the conversation lists the files it changed; Diff shows every line.</Card>
+    <Card title="Undo this turn">Puts those files back as they were, unless they have changed since. The agent hears about it.</Card>
+  </TwoColumn>
+  <Callout label="Attach:">drop images, PDFs or notes into the conversation; images for a deck land in its images folder.</Callout>
+  <Notes>Checkpoints live in the vault's .slidecraft folder, twenty turns per conversation, independent of git. An undo is refused when a file changed after the turn, so a later edit is never lost.</Notes>
+</Slide>
+
 <Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Home</Subtitle>
   <Title>New decks start from the home page</Title>

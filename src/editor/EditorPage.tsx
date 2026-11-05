@@ -231,6 +231,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   )
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
+      // A paste into the conversation is an attachment for the agent, not an image for the slide.
+      if (e.target instanceof Element && e.target.closest('.agent-chat')) return
       const item = [...(e.clipboardData?.items ?? [])].find((i) => i.type.startsWith('image/'))
       const file = item?.getAsFile()
       if (!file) return

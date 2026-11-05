@@ -119,6 +119,12 @@ drives it through the Claude Agent SDK, so your own login and settings apply.
   Deny** first. **Stop** ends a turn.
 - Conversations are kept per deck in `<vault>/.slidecraft/conversations/` and resume after a
   restart.
+- After each turn the conversation lists the files it changed, with a **Diff** and **Undo this
+  turn**, which puts them back unless they have changed since. Checkpoints are kept in
+  `<vault>/.slidecraft/checkpoints/` (the last 20 turns of each conversation), independent of git.
+- Drop or paste files into the conversation, or use the paper clip: an image for a deck goes
+  into its `images/` folder, anything else into `<vault>/.slidecraft/attachments/` for the agent
+  to read.
 - **Settings** (`/settings`) shows whether the agent is installed and signed in, and sets the model
   (`"agent": { "model": "opus" }` in the config file).
 

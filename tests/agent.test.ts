@@ -6,7 +6,7 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { AgentEventBody } from '../shared/agent.ts'
 import type { AgentBackend, TurnInput } from '../server/lib/agent/backend.ts'
 import { ALLOWED_TOOLS, mapClaudeMessage, newMapState, summarizeTool } from '../server/lib/agent/claudeCode.ts'
-import { clearThreadCache, createThread, getThread, listThreads, resolveApproval, sendMessage, setBackend, settled, stopTurn } from '../server/lib/agent/threads.ts'
+import { clearThreadCache, createThread, getThread, getTurnDiff, listThreads, resolveApproval, sendMessage, setBackend, settled, stopTurn, undoAgentTurn } from '../server/lib/agent/threads.ts'
 import { initContentSources } from '../server/lib/contentSources.ts'
 import { router } from '../server/index.ts'
 
@@ -184,6 +184,68 @@ describe('vault conversations', () => {
   })
 })
 
+describe('checkpoints', () => {
+  const deckFile = join(work, 'q4-plan', 'index.mdx')
+  test('a turn records what it changed; undo puts it back and tells the agent next time', async () => {
+    const original = readFileSync(deckFile, 'utf8')
+    const thread = createThread('work', { deck: { source: 'work', path: 'q4-plan' } })
+    script = async () => {
+      writeFileSync(deckFile, original.replace('<Title>Bets</Title>', '<Title>Three bets</Title>'))
+      mkdirSync(join(work, 'q4-plan', 'images'), { recursive: true })
+      writeFileSync(join(work, 'q4-plan', 'images', 'chart.svg'), '<svg/>')
+      return { ok: true }
+    }
+    await sendMessage('work', thread.id, 'Sharper title and a chart')
+    await settled('work', thread.id)
+    const changes = getThread('work', thread.id).events.find((e) => e.type === 'changes')
+    expect(changes).toMatchObject({ type: 'changes', turn: 1, files: [{ path: 'q4-plan/images/chart.svg', status: 'added' }, { path: 'q4-plan/index.mdx', status: 'modified' }] })
+
+    const diff = getTurnDiff('work', thread.id, 1)
+    expect(diff.undone).toBe(false)
+    const edited = diff.files.find((f) => f.path === 'q4-plan/index.mdx')!
+    expect(edited.hunks![0].lines.filter((l) => l.kind !== 'same').map((l) => `${l.kind}:${l.text.trim()}`)).toEqual(['remove:<Title>Bets</Title>', 'add:<Title>Three bets</Title>'])
+
+    expect(undoAgentTurn('work', thread.id, 1)).toEqual(['q4-plan/images/chart.svg', 'q4-plan/index.mdx'])
+    expect(readFileSync(deckFile, 'utf8')).toBe(original)
+    expect(existsSync(join(work, 'q4-plan', 'images'))).toBe(false) // the folder the turn added is gone too
+    expect(getThread('work', thread.id).events.at(-1)).toMatchObject({ type: 'turn-undone', turn: 1 })
+    expect(() => undoAgentTurn('work', thread.id, 1)).toThrow('already undone')
+
+    script = async () => ({ ok: true })
+    await sendMessage('work', thread.id, 'Go on')
+    await settled('work', thread.id)
+    expect(seen[seen.length - 1].prompt).toContain('The person undid your changes from turn 1')
+    await sendMessage('work', thread.id, 'And again')
+    await settled('work', thread.id)
+    expect(seen[seen.length - 1].prompt).not.toContain('undid your changes') // told once
+  })
+
+  test('undo is refused when a file changed after the turn, and nothing is touched', async () => {
+    const original = readFileSync(deckFile, 'utf8')
+    const thread = createThread('work', { deck: { source: 'work', path: 'q4-plan' } })
+    script = async () => {
+      writeFileSync(deckFile, original.replace('<Title>Bets</Title>', '<Title>Agent</Title>'))
+      return { ok: true }
+    }
+    await sendMessage('work', thread.id, 'Change it')
+    await settled('work', thread.id)
+    const byHand = original.replace('<Title>Bets</Title>', '<Title>By hand</Title>')
+    writeFileSync(deckFile, byHand)
+    expect(() => undoAgentTurn('work', thread.id, 1)).toThrow('Changed since this turn: q4-plan/index.mdx')
+    expect(readFileSync(deckFile, 'utf8')).toBe(byHand)
+    writeFileSync(deckFile, original)
+  })
+
+  test('a turn that changes nothing leaves no checkpoint', async () => {
+    const thread = createThread('work', { deck: { source: 'work', path: 'q4-plan' } })
+    script = async () => ({ ok: true })
+    await sendMessage('work', thread.id, 'Just a question')
+    await settled('work', thread.id)
+    expect(getThread('work', thread.id).events.some((e) => e.type === 'changes')).toBe(false)
+    expect(() => getTurnDiff('work', thread.id, 1)).toThrow('no checkpoint')
+  })
+})
+
 describe('agent routes', () => {
   const call = (path: string, init?: RequestInit) => router(new Request(`http://localhost:6110${path}`, init))
   test('create, send, read, and errors as JSON', async () => {
@@ -193,6 +255,7 @@ describe('agent routes', () => {
     }
     const backends = (await (await call('/api/agent/backends')).json()) as unknown
     expect(backends).toEqual([{ id: 'claude-code', name: 'Fake', available: true, version: 'test' }])
+    const before = listThreads('work', { source: 'work', path: 'q4-plan' }).length
     const created = await call('/api/agent/threads', { method: 'POST', body: JSON.stringify({ vault: 'work', path: 'q4-plan' }) })
     expect(created.status).toBe(201)
     const { id } = (await created.json()) as { id: string }
@@ -201,10 +264,30 @@ describe('agent routes', () => {
     const detail = (await (await call(`/api/agent/threads/work/${id}`)).json()) as { events: { type: string }[] }
     expect(detail.events.map((e) => e.type)).toEqual(['user-message', 'text', 'turn-done'])
     const listed = (await (await call('/api/agent/threads?vault=work&path=q4-plan')).json()) as unknown[]
-    expect(listed.length).toBe(2)
+    expect(listed.length).toBe(before + 1)
     expect((await call('/api/agent/threads', { method: 'POST', body: JSON.stringify({ vault: 'team' }) })).status).toBe(403)
     expect((await call(`/api/agent/threads/work/${id}/approvals/nope`, { method: 'POST', body: JSON.stringify({ allow: true }) })).status).toBe(404)
     expect((await call('/api/agent/threads?vault=nope')).status).toBe(404)
+  })
+
+  test('attachments: an image for a deck lands in its images folder, other files in .slidecraft', async () => {
+    const upload = (file: File, path?: string, vault = 'work') => {
+      const form = new FormData()
+      form.set('vault', vault)
+      if (path) form.set('path', path)
+      form.set('file', file)
+      return call('/api/agent/attachments', { method: 'POST', body: form })
+    }
+    const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0))
+    const image = (await (await upload(new File([png], 'Team Photo.png', { type: 'image/png' }), 'q4-plan')).json()) as { path: string; image: boolean }
+    expect(image.image).toBe(true)
+    expect(image.path).toMatch(/^q4-plan\/images\/team-photo-\d+\.(png|webp)$/)
+    expect(existsSync(join(work, image.path))).toBe(true)
+    const notes = (await (await upload(new File(['# Notes'], 'Talk notes.md', { type: 'text/markdown' }), 'q4-plan')).json()) as { path: string; image: boolean }
+    expect(notes).toMatchObject({ image: false })
+    expect(notes.path).toMatch(/^\.slidecraft\/attachments\/\d{4}-\d{2}-\d{2}\/talk-notes-\d+\.md$/)
+    expect(readFileSync(join(work, notes.path), 'utf8')).toBe('# Notes')
+    expect((await upload(new File(['x'], 'a.txt', { type: 'text/plain' }), undefined, 'team')).status).toBe(403)
   })
 
   test('agent settings keep the backend when only the model changes', async () => {
