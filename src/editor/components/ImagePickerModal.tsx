@@ -39,6 +39,9 @@ export function ImagePickerModal({ isOpen, deck, defaultSource, onClose, onSelec
     setSelected(null)
     setError(null)
     void refresh()
+    // Take focus from the code editor, so Escape and Enter reach the picker.
+    const t = setTimeout(() => document.querySelector<HTMLElement>('[role=dialog][aria-label=Images]')?.focus(), 50)
+    return () => clearTimeout(t)
   }, [isOpen])
 
   if (!isOpen) return null
@@ -68,7 +71,8 @@ export function ImagePickerModal({ isOpen, deck, defaultSource, onClose, onSelec
       onKeyDown={(e) => {
         e.stopPropagation()
         if (e.key === 'Escape') onClose()
-        if (e.key === 'Enter') choose(selected)
+        // Enter on a button is that button's click (Cancel must not also choose).
+        if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) choose(selected)
       }}
     >
       <div className="tw:flex tw:items-center tw:gap-3 tw:border-b tw:border-line tw:px-4 tw:py-3">

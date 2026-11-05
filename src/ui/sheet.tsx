@@ -33,7 +33,7 @@ export function Sheet({
   return (
     <motion.div
       data-sc-theme={theme}
-      className="sc-app tw:fixed tw:inset-0 tw:z-[1000] tw:flex tw:items-start tw:justify-center tw:overflow-y-auto tw:bg-black/45 tw:px-4 tw:pt-[10vh] tw:pb-8 tw:backdrop-blur-[3px]"
+      className="sc-app tw:fixed tw:inset-0 tw:z-[1100] tw:flex tw:items-start tw:justify-center tw:overflow-y-auto tw:bg-black/45 tw:px-4 tw:pt-[10vh] tw:pb-8 tw:backdrop-blur-[3px]"
       initial={animate ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -45,7 +45,7 @@ export function Sheet({
       <div
         role="dialog"
         aria-label={label}
-        aria-modal="true"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cn('tw:flex tw:w-full tw:max-w-[600px] tw:flex-col tw:overflow-hidden tw:rounded-2xl tw:bg-raised tw:text-fg tw:shadow-[0_0_0_1px_var(--sc-line),0_24px_60px_rgba(0,0,0,0.35)]', className)}
       >
