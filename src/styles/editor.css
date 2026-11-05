@@ -98,6 +98,7 @@
 
 /* Image picker. */
 .image-picker {
+  color: var(--dark-text); /* the workspace root may be light */
   position: absolute;
   top: 10vh;
   left: 50%;

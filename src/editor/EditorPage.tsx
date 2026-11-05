@@ -66,7 +66,9 @@ const inMonaco = (el: EventTarget | null) =>
 /** A form control, including Radix selects and menus (a button trigger and role=option items), which need the arrow keys and Enter. */
 const inField = (el: EventTarget | null) =>
   el instanceof HTMLElement &&
-  (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable || !!el.closest('[role=combobox],[role=listbox],[role=option],[role=menu],[role=menuitem]'))
+  (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) ||
+    el.isContentEditable ||
+    !!el.closest('[role=combobox],[role=listbox],[role=option],[role=menu],[role=menuitem],[role=radio],[role=dialog],[aria-haspopup]'))
 
 /**
  * The deck workspace (UX overhaul U3; the editor of Part 3 §2): the agent conversation, the slide
@@ -489,8 +491,9 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
                     </div>
                   )}
                   {view === 'split' && (
-                    <button
-                      type="button"
+                    <div
+                      role="separator"
+                      aria-orientation="vertical"
                       aria-label="Resize the code and the preview"
                       onMouseDown={startResize('editor')}
                       className="tw:w-1 tw:shrink-0 tw:cursor-col-resize tw:bg-line tw:transition-colors tw:hover:bg-focus"
@@ -607,8 +610,9 @@ function Pane({
 /** The gap between two panes, which drags to resize the one beside it. */
 function Handle({ label, onStart }: { label: string; onStart(): void }) {
   return (
-    <button type="button" aria-label={label} onMouseDown={onStart} className="tw:group tw:flex tw:w-2.5 tw:shrink-0 tw:cursor-col-resize tw:justify-center">
+    // A mouse-only separator: the panes keep sensible default widths for keyboard users.
+    <div role="separator" aria-orientation="vertical" aria-label={label} onMouseDown={onStart} className="tw:group tw:flex tw:w-2.5 tw:shrink-0 tw:cursor-col-resize tw:justify-center">
       <span className="tw:my-6 tw:w-0.5 tw:rounded-full tw:bg-transparent tw:transition-colors tw:group-hover:bg-focus" />
-    </button>
+    </div>
   )
 }

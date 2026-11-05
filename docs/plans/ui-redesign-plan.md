@@ -161,7 +161,7 @@ Monaco follows the app theme.
 
 **Status (2026-11-05): done.** `src/editor/EditorPage.tsx` is rebuilt on `src/ui`: a header with
 back, the deck name and save state, an *Agent is editing* badge, the Preview/Split/Code switch, a
-popover for the deck's theme, scheme and accent, Format, Help, Save and Present; then the slide
+popover for the deck's theme, scheme and accent, Format (in the code views only), Help, Save and Present; then the slide
 rail, the code and preview in one rounded pane (the preview centred at 16:9 on the dotted canvas),
 the help panel, and the conversation on the right (no longer forced dark; a tab brings it back
 when hidden). Resizing measures each pane from its own edge. `SlideSidebar`, `SlidePreview`,
