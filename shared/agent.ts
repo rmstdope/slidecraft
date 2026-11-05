@@ -16,6 +16,8 @@ export interface AgentBackendInfo {
   version?: string
   /** Why it is not available, or how to set it up. */
   detail?: string
+  /** Can ask the person before a tool runs; without it, anything not allowed up front is refused. */
+  approvals: boolean
 }
 
 /** A conversation about one deck, or about the vault as a whole (`deck` absent). */
@@ -39,6 +41,16 @@ export interface MessageContext {
   selection?: string
   /** Files dropped into the conversation, as vault-relative paths. */
   attachments?: string[]
+}
+
+/** One finding of the deck check (`validate_deck`, and the check after every turn). */
+export interface DeckProblem {
+  severity: 'error' | 'warning'
+  /** 1-based line in the file. */
+  line?: number
+  /** 0-based slide index, when the problem sits in one slide. */
+  slide?: number
+  message: string
 }
 
 /** A file an agent turn added, changed or deleted, as a vault-relative path. */
@@ -70,6 +82,7 @@ export type AgentEventBody =
   | { type: 'approval-request'; id: string; tool: string; summary: string; detail?: string }
   | { type: 'approval-resolved'; id: string; allowed: boolean }
   | { type: 'changes'; files: FileChange[] }
+  | { type: 'deck-check'; path: string; ok: boolean; problems: DeckProblem[] }
   | { type: 'turn-undone'; files: string[] }
   | { type: 'turn-done'; ok: boolean; error?: string; costUsd?: number; stopped?: boolean }
 

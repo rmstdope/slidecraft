@@ -56,10 +56,10 @@ describe('normalisation', () => {
 
 describe('vault config', () => {
   test('content sources migrate to vaults; other settings are kept', () => {
-    const { config, changed } = migrateConfig({ default: 'team', contents: { mine: '~/decks', team: { path: '/t', readOnly: true } }, copilot: { model: 'x' } })
+    const { config, changed } = migrateConfig({ default: 'team', contents: { mine: '~/decks', team: { path: '/t', readOnly: true } }, agent: { model: 'x' } })
     expect(changed).toBe(true)
     expect(config).toEqual({
-      copilot: { model: 'x' },
+      agent: { model: 'x' },
       vaults: [
         { id: 'mine', name: 'Mine', path: '~/decks', include: ['*/index.mdx'] },
         { id: 'team', name: 'Team', path: '/t', readOnly: true },

@@ -7,8 +7,6 @@ export type ServerEvent =
   | { type: 'connected'; timestamp: number }
   | { type: 'presentation-updated' | 'presentation-created' | 'presentation-deleted'; source: string; path: string; name: string; timestamp: number }
   | { type: 'themes-updated'; source: string; timestamp: number }
-  | { type: 'chat-tool-call'; conversationId: string; toolCall: unknown; timestamp: number }
-  | { type: 'chat-iteration'; conversationId: string; iteration: number; maxIterations: number; timestamp: number }
   | AgentServerEvent
   | AgentThreadServerEvent
 

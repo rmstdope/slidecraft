@@ -75,6 +75,6 @@ works.
 | A red error instead of slides | The file does not compile. Ask the agent to fix the line named in the error, or press **Edit** to fix it yourself. |
 | The agent writes `<div>` or `<br>` | Remind it to read `AGENTS.md`: decks use components only. |
 | Changes do not show up | Reload the page. On some Macs file changes are missed; restart with `SLIDECRAFT_WATCH_POLLING=1`. |
-| The chat says the provider is unavailable | Install the CLI (`claude`, `copilot`) or set `AI_API_KEY`, then restart Slidecraft. |
+| The conversation says to connect an agent | Install Claude Code or the Copilot CLI and sign in once in a terminal; **Settings** shows what Slidecraft found. |
 | PDF export fails | Install Google Chrome or Chromium, or set `CHROME_PATH`. |
 | macOS says the binary cannot be opened | Clear the quarantine flag (step 1). |

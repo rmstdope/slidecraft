@@ -28,6 +28,9 @@ A deck is one MDX file, `<vault>/<name>/index.mdx`: a `<Presentation>` root whos
    Done when it reports none.
 5. **Look.** Run `screenshot_slide` on each slide you changed and compare it with what you meant:
    nothing cut off, the title on one line, one accent. Done when every changed slide looks right.
+   Without the `slidecraft` tools (some agents, or an organisation's policy, block them), skip
+   steps 4 and 5: Slidecraft checks every deck you changed after your turn and passes any
+   problem back to you with the next message.
 6. **Report** in a sentence or two what changed. Inside Slidecraft the person already sees the
    deck; give a URL only when you work from a terminal (`http://localhost:<port>/v/<vault>/<name>`).
 

@@ -58,11 +58,12 @@ src/main.tsx → App.tsx                      view state machine over src/router
         └─ slides/Slide                      resolveSlideLook (theme → frame → props), steps, canvas
 
 shared/   deckParser (lossless, MDX AST based) · deckModel (head/slides/seps/tail) · tagAttrs
-          frontmatter · mdxImports · themes · decks (refs, reserved names) · chat · exportPayload · ports
-server/   index.ts router · routes/ (mdx, content, vaults, images, export, agent, chat, applyFix)
+          frontmatter · mdxImports · themes · decks (refs, reserved names) · agent · lineDiff · exportPayload · ports
+server/   index.ts router · routes/ (mdx, content and vaults, images, export, agent)
           lib/ contentSources (vaults), decks, deckStore, fileWatcher, events (SSE), tools, mdxValidator,
                mdxRepair, agentContext (generated AGENTS.md), skillSync, deckChecks, themes, images,
-               exports, chrome, agent/ (backend seam, Claude Code, threads), chat/
+               exports, chrome, agent/ (backend seam, Claude Code, Copilot, threads, checkpoints,
+               attachments, prompt)
           mcp.ts (stdio MCP server over lib/tools; the binary runs it with --mcp)
 skills/   slidecraft-presentations (synced into vaults), slidecraft-components, slidecraft-dev
 ```
@@ -133,8 +134,8 @@ The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothin
 | `shared/themes.ts` | theme format, validation, `extends` merging |
 | `shared/agent.ts` | the agent contract: threads, events, backends |
 | `server/lib/contentSources.ts` | vaults: config, migration, management, agent settings |
-| `server/lib/agent/` | `AgentBackend`, the Claude Code backend, thread store and runner |
-| `server/lib/tools.ts` | deck tools shared by chat and MCP, with fixed error texts |
+| `server/lib/agent/` | `AgentBackend`, the Claude Code and Copilot backends, threads, checkpoints, attachments |
+| `server/lib/tools.ts` | the deck tools the MCP server serves, with fixed error texts |
 | `vite.config.ts` | MDX plugin, frontmatter stripping, aliases, API proxy |
 
 ## Vite configuration

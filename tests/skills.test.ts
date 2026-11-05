@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildCatalogue, CATALOGUE_FILE } from '../scripts/generateSkills.ts'
 import { getTopLevelComponents } from '../src/components/slides/defineComponent.ts'
-import { readAuthorGuide } from '../server/lib/appFiles.ts'
 import { normalizeContentSource } from '../server/lib/contentSources.ts'
 import { checkDeck, DOCUMENT_TITLE_CHARS } from '../server/lib/deckChecks.ts'
 import { printViewUrl } from '../server/lib/exportPdf.ts'
@@ -36,12 +35,6 @@ describe('the presentations skill', () => {
     const examples = readFileSync(join(skill, 'references', 'examples.md'), 'utf8')
     const deck = /```mdx\n(import[\s\S]*?)```/.exec(examples)![1]
     expect(await checkDeck(deck)).toEqual({ ok: true, slideCount: 4, problems: [] })
-  })
-  test('the author guide for the chat prompt is assembled from it', () => {
-    const guide = readAuthorGuide()!
-    expect(guide.startsWith('# Slidecraft presentations')).toBe(true)
-    expect(guide).toContain('# Themes, frames and colour')
-    expect(guide).not.toContain('name: slidecraft-presentations')
   })
 })
 

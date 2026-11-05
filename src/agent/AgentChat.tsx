@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { AgentEvent, MessageContext, TurnDiff } from '@shared/agent.ts'
-import { fetchTurnDiff, undoTurn, uploadAttachment } from './api'
+import type { AgentBackendId, AgentEvent, MessageContext, TurnDiff } from '@shared/agent.ts'
+import { fetchAgentSettings, fetchTurnDiff, undoTurn, uploadAttachment } from './api'
 import { deckName, type DeckRef } from '@shared/decks.ts'
 import { Markdown } from './markdown'
 import { pendingApproval, toTurns, type Turn, type TurnItem } from './threadEvents'
@@ -70,8 +70,15 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
   }, [events])
 
-  const claude = backends?.find((b) => b.id === 'claude-code')
-  const unavailable = backends !== null && !claude?.available
+  // The agent of the conversation on screen, or the one a new conversation will use.
+  const [choice, setChoice] = useState<AgentBackendId | null>(null)
+  useEffect(() => {
+    void fetchAgentSettings().then((r) => r.data && setChoice((c) => c ?? r.data!.backend))
+  }, [])
+  const ready = backends?.filter((b) => b.available) ?? []
+  const backendId: AgentBackendId = thread?.backend ?? choice ?? ready[0]?.id ?? 'claude-code'
+  const backend = backends?.find((b) => b.id === backendId)
+  const unavailable = backends !== null && !backend?.available
 
   const send = async () => {
     const text = input.trim()
@@ -81,7 +88,7 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
     const files = attachments.map((a) => a.path)
     const sent: MessageContext | undefined =
       chips.slide !== undefined || chips.selection || files.length ? { slide: chips.slide, selection: chips.selection, attachments: files.length ? files : undefined } : undefined
-    if (await state.send(text, sent)) setAttachments([])
+    if (await state.send(text, sent, thread ? undefined : backendId)) setAttachments([])
     else setInput(text)
     inputRef.current?.focus()
   }
@@ -124,6 +131,15 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
         <button type="button" className="tool-button" disabled={running || !thread} onClick={() => state.select(null)}>
           New
         </button>
+        {!thread && ready.length > 1 && (
+          <select className="agent-chat__backend" aria-label="Agent for the new conversation" value={backendId} onChange={(e) => setChoice(e.target.value as AgentBackendId)}>
+            {ready.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
         {onCollapse && (
           <button type="button" className="tool-button" onClick={onCollapse} aria-label="Hide the conversation" title="Hide the conversation">
             ⟨
@@ -136,7 +152,7 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
         {unavailable && (
           <div className="agent-setup">
             <strong>Connect an agent</strong>
-            <p>{claude?.detail ?? 'Install Claude Code and sign in: run `claude` once in a terminal.'}</p>
+            <p>{backend?.detail ?? 'Install Claude Code and sign in: run `claude` once in a terminal.'}</p>
             <p>Until then, edit the deck by hand in the code view.</p>
           </div>
         )}
@@ -252,7 +268,9 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
             </button>
           )}
         </div>
-        <p className="chat-input__hint">{claude?.available ? `${claude.name} ${claude.version ?? ''} · ` : ''}Enter to send, Shift+Enter for a new line</p>
+        <p className="chat-input__hint" title={backend && !backend.approvals ? backend.detail : undefined}>
+          {backend?.available ? `${backend.name} ${backend.version ?? ''}${backend.approvals ? '' : ' (cannot ask: edits in the vault only)'} · ` : ''}Enter to send, Shift+Enter for a new line
+        </p>
       </div>
     </section>
   )
@@ -280,6 +298,19 @@ function TurnView({ turn, vault, threadId, running, onAnswer }: { turn: Turn; va
       {turn.done && !turn.done.ok && <div className="agent-done is-bad">{turn.done.stopped ? 'Stopped.' : `Failed: ${turn.done.error ?? 'unknown error'}.`}</div>}
       {turn.done && turn.changes.length > 0 && threadId && <TurnChanges turn={turn} vault={vault} threadId={threadId} running={running} />}
       {turn.done && turn.changes.length === 0 && turn.files.length > 0 && <div className="agent-done">Changed {turn.files.join(', ')}</div>}
+      {turn.checks.map((check) => (
+        <div key={check.path} className={`agent-check${check.ok ? '' : ' is-bad'}`} role={check.ok ? undefined : 'alert'}>
+          <strong>{check.ok ? `Worth a look in ${check.path}` : `${check.path} has problems`}</strong>
+          <ul>
+            {check.problems.map((p, i) => (
+              <li key={i}>
+                {p.line ? `Line ${p.line}: ` : ''}
+                {p.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   )
 }

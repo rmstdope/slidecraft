@@ -8,6 +8,8 @@ import type { AgentBackend, TurnInput } from '../server/lib/agent/backend.ts'
 import { ALLOWED_TOOLS, mapClaudeMessage, newMapState, summarizeTool } from '../server/lib/agent/claudeCode.ts'
 import { clearThreadCache, createThread, getThread, getTurnDiff, listThreads, resolveApproval, sendMessage, setBackend, settled, stopTurn, undoAgentTurn } from '../server/lib/agent/threads.ts'
 import { initContentSources } from '../server/lib/contentSources.ts'
+import { buildAgentInstructions, buildDeckContext } from '../server/lib/agent/prompt.ts'
+import { GENERATED_PREFIX } from '../server/lib/agentContext.ts'
 import { router } from '../server/index.ts'
 
 const root = mkdtempSync(join(tmpdir(), 'slidecraft-agent-'))
@@ -71,7 +73,7 @@ const seen: TurnInput[] = []
 const fake: AgentBackend = {
   id: 'claude-code',
   name: 'Fake',
-  detect: async () => ({ id: 'claude-code', name: 'Fake', available: true, version: 'test' }),
+  detect: async () => ({ id: 'claude-code', name: 'Fake', available: true, version: 'test', approvals: true }),
   runTurn: async (input) => {
     seen.push(input)
     return script(input)
@@ -246,6 +248,52 @@ describe('checkpoints', () => {
   })
 })
 
+describe('after a turn', () => {
+  test('Slidecraft checks the decks a turn changed and tells the agent about errors', async () => {
+    const deckFile = join(work, 'q4-plan', 'index.mdx')
+    const original = readFileSync(deckFile, 'utf8')
+    const thread = createThread('work', { deck: { source: 'work', path: 'q4-plan' } })
+    script = async () => {
+      writeFileSync(deckFile, original.replace('<Title>Bets</Title>', '<Title>Bets</Title>\n  <div>raw</div>'))
+      return { ok: true }
+    }
+    await sendMessage('work', thread.id, 'Add a line')
+    await settled('work', thread.id)
+    const check = getThread('work', thread.id).events.find((e) => e.type === 'deck-check')
+    expect(check).toMatchObject({ type: 'deck-check', path: 'q4-plan/index.mdx', ok: false, problems: [expect.objectContaining({ severity: 'error', slide: 1 })] })
+    script = async () => ({ ok: true })
+    await sendMessage('work', thread.id, 'Fix it')
+    await settled('work', thread.id)
+    expect(seen[seen.length - 1].prompt).toContain('q4-plan/index.mdx has problems to fix: line')
+    writeFileSync(deckFile, original)
+  })
+
+  test('a conversation can use another agent than the default', () => {
+    expect(createThread('work', { backend: 'copilot' }).backend).toBe('copilot')
+    expect(() => createThread('work', { backend: 'nope' as never })).toThrow('Unknown agent')
+  })
+})
+
+describe('agent prompts', () => {
+  const DECK = '<Presentation>\n\n<Slide>\n  <Title>Opening</Title>\n</Slide>\n\n<Slide accent="teal">\n  <Title>Middle</Title>\n</Slide>\n\n</Presentation>\n'
+  test('the instructions point at the skill and carry a hand-written house style, never the generated file', async () => {
+    writeFileSync(join(work, 'AGENTS.md'), 'Write in British English.')
+    const instructions = await buildAgentInstructions(work)
+    expect(instructions).toContain('slidecraft-presentations')
+    expect(instructions).toContain('Write in British English.')
+    writeFileSync(join(work, 'AGENTS.md'), `${GENERATED_PREFIX} dev -->\nGenerated text`)
+    expect(await buildAgentInstructions(work)).not.toContain('Generated text')
+    rmSync(join(work, 'AGENTS.md'))
+  })
+  test('the deck context names the file and marks the slide on screen', () => {
+    const context = buildDeckContext({ ref: { source: 'work', path: 'talk' }, source: DECK, currentSlideIndex: 1, contentDir: work })
+    expect(context).toContain('File path: talk/index.mdx')
+    expect(context).toContain('1: "Middle" [dark/teal]  <-- viewing')
+    expect(context).toContain('### Current slide (index 1)')
+    expect(buildDeckContext(null)).toContain('No presentation is open')
+  })
+})
+
 describe('agent routes', () => {
   const call = (path: string, init?: RequestInit) => router(new Request(`http://localhost:6110${path}`, init))
   test('create, send, read, and errors as JSON', async () => {
@@ -254,7 +302,7 @@ describe('agent routes', () => {
       return { ok: true }
     }
     const backends = (await (await call('/api/agent/backends')).json()) as unknown
-    expect(backends).toEqual([{ id: 'claude-code', name: 'Fake', available: true, version: 'test' }])
+    expect(backends).toContainEqual({ id: 'claude-code', name: 'Fake', available: true, version: 'test', approvals: true })
     const before = listThreads('work', { source: 'work', path: 'q4-plan' }).length
     const created = await call('/api/agent/threads', { method: 'POST', body: JSON.stringify({ vault: 'work', path: 'q4-plan' }) })
     expect(created.status).toBe(201)

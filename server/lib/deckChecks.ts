@@ -7,14 +7,9 @@ import { parseDeck } from '../../shared/deckParser.ts'
 import { registryLanguageService } from '../../src/language-service/index.ts'
 import { validateMdx } from './mdxValidator.ts'
 
-export interface DeckProblem {
-  severity: 'error' | 'warning'
-  /** 1-based line in the file. */
-  line?: number
-  /** 0-based slide index, when the problem sits in one slide. */
-  slide?: number
-  message: string
-}
+import type { DeckProblem } from '../../shared/agent.ts'
+
+export type { DeckProblem }
 
 export interface DeckCheck {
   ok: boolean

@@ -239,13 +239,18 @@ Files are written to `<content folder>/exports/`.
 
 ## The agent
 
-The workspace and the home page carry a conversation with **Claude Code**, your installed
-`claude`, signed in. Ask for a slide, a shorter title, another theme or a whole new deck; the agent
-edits the file and the preview follows.
+The workspace and the home page carry a conversation with a coding agent on your own login:
+**Claude Code** (`claude`) or the **GitHub Copilot CLI** (`copilot`). Ask for a slide, a shorter
+title, another theme or a whole new deck; the agent edits the file and the preview follows.
+**Settings** chooses the agent for new conversations; the panel can choose another when you start
+one.
 
 - Its work streams in as it happens: text, each tool call, each changed file.
-- It edits decks in the vault without asking; a shell command or a file outside the vault shows
-  **Allow** and **Deny** first. **Stop** ends the turn.
+- It edits decks in the vault without asking. With Claude Code, a shell command or a file outside
+  the vault shows **Allow** and **Deny** first; Copilot cannot ask from inside Slidecraft, so it is
+  refused anything beyond editing in the vault. **Stop** ends the turn.
+- After the turn Slidecraft checks the decks it changed; a problem shows in the conversation and
+  goes to the agent with your next message.
 - The slide on screen and any code you selected go with your message, shown as chips above the
   box; remove one with ×.
 - While it works, the code is read-only (**Agent is editing**); unsaved edits are saved before a

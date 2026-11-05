@@ -104,9 +104,17 @@ left alone.
 
 ## The agent
 
-Slidecraft is built around a coding agent working beside you. Today that is **Claude Code**: the
-`claude` CLI on your `PATH`, signed in (`SLIDECRAFT_CLAUDE_BIN` to point elsewhere). Slidecraft
-drives it through the Claude Agent SDK, so your own login and settings apply.
+Slidecraft is built around a coding agent working beside you, on your own login:
+
+| Agent | Setup | Asks before acting |
+|---|---|---|
+| **Claude Code** | the `claude` CLI on your `PATH`, signed in (`SLIDECRAFT_CLAUDE_BIN` to point elsewhere); driven through the Claude Agent SDK | yes: a shell command or a file outside the vault shows **Allow / Deny** |
+| **GitHub Copilot CLI** | the `copilot` CLI on your `PATH`, signed in (`SLIDECRAFT_COPILOT_BIN`) | no: it may edit files in the vault, and anything else it tries is refused |
+
+**Settings** picks the one new conversations use; the conversation panel can pick another for a
+new conversation. Both get the `slidecraft-presentations` skill and the Slidecraft MCP tools
+(when your organisation's Copilot policy allows local MCP servers), and after every turn
+Slidecraft checks the decks it changed and shows any problem in the conversation.
 
 - **On the home page**, the question box starts a conversation about the vault. When the agent
   writes a new deck, its workspace opens and the conversation follows.
@@ -114,9 +122,7 @@ drives it through the Claude Agent SDK, so your own login and settings apply.
   rail and a work area showing **Preview**, **Code** or **Split**. The slide on screen and any
   selected code go with each message as chips you can remove. The code is read-only while the
   agent works, and unsaved edits are saved before a message goes out.
-- Its text, every tool call and every changed file appear as they happen. Reading and editing
-  decks inside the vault goes ahead; a shell command or a file outside the vault shows **Allow /
-  Deny** first. **Stop** ends a turn.
+- Its text, every tool call and every changed file appear as they happen. **Stop** ends a turn.
 - Conversations are kept per deck in `<vault>/.slidecraft/conversations/` and resume after a
   restart.
 - After each turn the conversation lists the files it changed, with a **Diff** and **Undo this
