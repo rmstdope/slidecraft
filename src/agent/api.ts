@@ -35,3 +35,12 @@ export const stopThread = (vault: string, id: string) => request<{ stopped: bool
 
 export const answerApproval = (vault: string, id: string, approvalId: string, allow: boolean) =>
   request<{ ok: true }>(`${threadPath(vault, id)}/approvals/${encodeURIComponent(approvalId)}`, post({ allow }))
+
+export interface AgentSettings {
+  backend: AgentBackendId
+  model?: string
+}
+
+export const fetchAgentSettings = () => request<AgentSettings>('/api/agent/settings')
+export const saveAgentSettings = (change: Partial<AgentSettings>) =>
+  request<AgentSettings>('/api/agent/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(change) })

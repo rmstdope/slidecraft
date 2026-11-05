@@ -73,7 +73,7 @@ export async function buildFolderInstructions(port: number): Promise<string> {
     '',
     'Each subfolder holding an `index.mdx` is one presentation; the folder name is its URL. Images go next to the file and are imported by relative path. Themes live in `themes/<id>/theme.json`.',
     '',
-    `- **Create** a presentation: write \`<name>/index.mdx\` (lower-case words joined by dashes) and tell the user to open http://localhost:${port}/<name>.`,
+    `- **Create** a presentation: write \`<name>/index.mdx\` (lower-case words joined by dashes). Inside Slidecraft the person already sees it; from a terminal it is at http://localhost:${port}/v/<vault>/<name>.`,
     '- **Change** one: edit its `index.mdx` in place; the open presentation reloads on save.',
     '- Import components from `@components` only. Never use raw HTML.',
     '',

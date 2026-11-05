@@ -7,7 +7,8 @@ import { assetResolverFor, DeckContext } from '../components/slides/deckContext'
 import { useSSE } from '../hooks/useSSE'
 import { registryLanguageService } from '../language-service'
 import type { LanguageService } from '../language-service/service'
-import { chatUrl, presentationUrl } from '../router'
+import { AgentChat } from '../agent/AgentChat'
+import { presentationUrl } from '../router'
 import { listThemes, resolveTheme } from '../themes/registry'
 import { DeckLookContext, useThemesVersion } from '../themes/ThemeContext'
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from './api'
@@ -31,12 +32,41 @@ export interface EditorPageProps {
 }
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
+
+/** What the work area shows: the slide, the code, or both side by side. */
+export type WorkspaceView = 'preview' | 'code' | 'split'
+const VIEWS: { id: WorkspaceView; label: string }[] = [
+  { id: 'preview', label: 'Preview' },
+  { id: 'code', label: 'Code' },
+  { id: 'split', label: 'Split' },
+]
+const VIEW_KEY = 'slidecraft-workspace-view'
+const CHAT_KEY = 'slidecraft-workspace-chat'
+function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const value = localStorage.getItem(key)
+    return allowed.includes(value as T) ? (value as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+function store(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    /* storage unavailable */
+  }
+}
 /** Inside Monaco, including its floating widgets (quick-fix menu, suggest list, hovers), which render outside the editor. */
 const inMonaco = (el: EventTarget | null) =>
   el instanceof Element && !!el.closest('.monaco-editor, .context-view, .action-widget, .monaco-hover, .overflowingContentWidgets, .monaco-menu-container')
 const inField = (el: EventTarget | null) => el instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)
 
-/** The deck editor (Part 3 §2): rail, code editor with toolbars, live preview, help. */
+/**
+ * The deck workspace (UX overhaul U3; the editor of Part 3 §2): the agent conversation, the slide
+ * rail, and a work area showing the preview, the code or both. While the agent works the code is
+ * read-only, and unsaved edits are saved before a message goes out.
+ */
 export default function EditorPage({ deck, defaultSource, onExit }: EditorPageProps) {
   const { state, actions, selected, selectedIndex, deckTheme, deckLook } = usePresentation(deck)
   const editorRef = useRef<SlideEditorHandle>(null)
@@ -52,10 +82,25 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   const [uploading, setUploading] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(200)
   const [editorRatio, setEditorRatio] = useState(0.5)
-  const resizing = useRef<'sidebar' | 'editor' | null>(null)
+  const [chatWidth, setChatWidth] = useState(400)
+  const [view, setView] = useState<WorkspaceView>(() => stored(VIEW_KEY, ['preview', 'code', 'split'], 'preview'))
+  const [chatOpen, setChatOpen] = useState(() => stored(CHAT_KEY, ['open', 'closed'], 'open') === 'open')
+  const [agentRunning, setAgentRunning] = useState(false)
+  const resizing = useRef<'sidebar' | 'editor' | 'chat' | null>(null)
+  const chooseView = (next: WorkspaceView) => {
+    setView(next)
+    store(VIEW_KEY, next)
+  }
+  const toggleChat = (open: boolean) => {
+    setChatOpen(open)
+    store(CHAT_KEY, open ? 'open' : 'closed')
+  }
   useThemesVersion()
 
-  const readOnly = state.readOnly
+  const deckReadOnly = state.readOnly
+  // Locked while the agent edits the file, so the two never write over each other.
+  const readOnly = deckReadOnly || agentRunning
+  const chatShown = chatOpen && !deckReadOnly
   const text = selected?.text ?? ''
   const theme = resolveTheme(deckTheme, deck.source)
   const frames = Object.keys(theme.spec.frames ?? {})
@@ -95,11 +140,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     window.location.href = presentationUrl(deck, { slide: Math.max(1, selectedIndex + 1) })
   }, [state.isDirty, actions, deck, selectedIndex])
 
-  const openChat = useCallback(async () => {
-    if (state.isDirty) await actions.save()
-    navigatingAway.current = true
-    window.location.href = chatUrl(deck)
-  }, [state.isDirty, actions, deck])
+  /** Before a message goes to the agent: save, so it works on what is on screen. */
+  const beforeSend = useCallback(async () => (state.isDirty ? actions.save() : true), [state.isDirty, actions])
 
   const exit = () => {
     if (state.isDirty && !window.confirm('You have unsaved changes. Leave anyway?')) return
@@ -204,8 +246,10 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     const onMove = (e: MouseEvent) => {
       const box = containerRef.current?.getBoundingClientRect()
       if (!resizing.current || !box) return
-      if (resizing.current === 'sidebar') setSidebarWidth(clamp(e.clientX - box.left, 120, 400))
-      else setEditorRatio(clamp((e.clientX - box.left - sidebarWidth - 16) / (box.width - sidebarWidth - 32 - (helpOpen ? 320 : 0)), 0.2, 0.8))
+      const chat = chatShown ? chatWidth + 6 : 0
+      if (resizing.current === 'chat') setChatWidth(clamp(e.clientX - box.left, 300, 640))
+      else if (resizing.current === 'sidebar') setSidebarWidth(clamp(e.clientX - box.left - chat, 120, 400))
+      else setEditorRatio(clamp((e.clientX - box.left - chat - sidebarWidth - 16) / (box.width - chat - sidebarWidth - 32 - (helpOpen ? 320 : 0)), 0.2, 0.8))
     }
     const onUp = () => {
       resizing.current = null
@@ -218,8 +262,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [sidebarWidth, helpOpen])
-  const startResize = (which: 'sidebar' | 'editor') => () => {
+  }, [sidebarWidth, helpOpen, chatWidth, chatShown])
+  const startResize = (which: 'sidebar' | 'editor' | 'chat') => () => {
     resizing.current = which
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
@@ -251,7 +295,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
             </button>
             <span className="editor-toolbar__name">{deckName(deck)}</span>
             {state.isDirty && <span className="editor-chip is-accent">Unsaved</span>}
-            {readOnly && <span className="editor-chip">Read-only</span>}
+            {deckReadOnly && <span className="editor-chip">Read-only</span>}
+            {agentRunning && <span className="editor-chip is-accent">Agent is editing</span>}
             {state.error && <span className="editor-chip is-danger" title={state.error}>Save failed</span>}
             <span className="editor-toolbar__spacer" />
             {state.model && (
@@ -299,11 +344,13 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
             <button type="button" className="editor-button" onClick={() => void present()}>
               ▶ Present
             </button>
-            {!readOnly && (
-              <button type="button" className="editor-button" onClick={() => void openChat()}>
-                Chat
-              </button>
-            )}
+            <div className="workspace-views" role="radiogroup" aria-label="Show">
+              {VIEWS.map((v) => (
+                <button key={v.id} type="button" role="radio" aria-checked={view === v.id} className={view === v.id ? 'is-active' : ''} onClick={() => chooseView(v.id)}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
             {!readOnly && selected && (
               <button type="button" className="editor-button" onClick={() => applyText(formatMdx(text))}>
                 Format
@@ -312,13 +359,35 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
             <button type="button" className={`editor-button${helpOpen ? ' is-active' : ''}`} onClick={() => setHelpOpen((h) => !h)}>
               Help
             </button>
-            {!readOnly && (
-              <button type="button" className="editor-button is-primary" disabled={!state.isDirty || state.isSaving} onClick={() => void actions.save()}>
+            {!deckReadOnly && (
+              <button type="button" className="editor-button is-primary" disabled={!state.isDirty || state.isSaving || agentRunning} onClick={() => void actions.save()}>
                 {state.isSaving ? 'Saving…' : 'Save (⌘S)'}
               </button>
             )}
           </header>
 
+          <div className="workspace-body" ref={containerRef}>
+          {chatShown ? (
+            <>
+              <div className="workspace-chat" style={{ width: chatWidth }}>
+                <AgentChat
+                  vault={deck.source}
+                  deck={deck}
+                  context={{ slide: selectedIndex >= 0 ? selectedIndex : undefined, selection: selection?.text }}
+                  beforeSend={beforeSend}
+                  onCollapse={() => toggleChat(false)}
+                  onRunningChange={setAgentRunning}
+                />
+              </div>
+              <div className="editor-handle" onMouseDown={startResize('chat')} />
+            </>
+          ) : (
+            !deckReadOnly && (
+              <button type="button" className="workspace-chat-tab" onClick={() => toggleChat(true)} aria-label="Show the conversation">
+                Agent ⟩
+              </button>
+            )
+          )}
           {state.raw ? (
             <div className="editor-raw">
               <div className="editor-raw__banner" role="alert">
@@ -341,7 +410,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
               </div>
             </div>
           ) : (
-            <div className="editor-body" ref={containerRef}>
+            <div className="editor-body">
               <div style={{ width: sidebarWidth, flex: '0 0 auto', display: 'flex' }}>
                 <SlideSidebar
                   slides={state.model!.slides}
@@ -376,7 +445,8 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
                   void insertImage(file)
                 }}
               >
-                <div className="editor-code" style={{ flex: editorRatio }}>
+                {view !== 'preview' && (
+                <div className="editor-code" style={{ flex: view === 'split' ? editorRatio : 1 }}>
                   {!readOnly && selected && (
                     <ContextualToolbar
                       context={context}
@@ -407,16 +477,20 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
                     )}
                   </div>
                 </div>
-                <div className="editor-handle" onMouseDown={startResize('editor')} />
-                <div className="editor-preview" style={{ flex: 1 - editorRatio }}>
-                  {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <div className="editor-still__placeholder">No slide selected</div>}
-                </div>
+                )}
+                {view === 'split' && <div className="editor-handle" onMouseDown={startResize('editor')} />}
+                {view !== 'code' && (
+                  <div className="editor-preview" style={{ flex: view === 'split' ? 1 - editorRatio : 1 }}>
+                    {selected ? <SlidePreview source={selected.text} target={target} theme={deckTheme} /> : <div className="editor-still__placeholder">No slide selected</div>}
+                  </div>
+                )}
                 {dragging && <div className="editor-overlay is-drop">Drop image here</div>}
                 {uploading && <div className="editor-overlay">Uploading image…</div>}
               </div>
               {helpOpen && <HelpPanel />}
             </div>
           )}
+          </div>
 
           {selection && !readOnly && (
             <SelectionToolbar

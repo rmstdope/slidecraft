@@ -9,7 +9,7 @@ import { assetResolverFor, DeckContext } from '../components/slides/deckContext'
 import { useInView } from '../hooks/useInView'
 import { displayName } from './filterDecks'
 import { downloadHtmlExport, downloadPdfExport } from '../api'
-import { AlertIcon, ChatIcon, DownloadIcon, EditIcon, FileIcon } from './icons'
+import { AlertIcon, DownloadIcon, EditIcon, FileIcon } from './icons'
 
 const scope = mdxComponentScope as MDXComponents
 
@@ -24,7 +24,6 @@ export interface PresentationCardProps {
   onPresent(): void
   onDev(): void
   onEdit?: () => void
-  onChat?: () => void
   /** Export buttons need the server (hidden in static builds). */
   canExport?: boolean
 }
@@ -57,7 +56,7 @@ function ExportButton({ kind, deck }: { kind: 'html' | 'pdf'; deck: Presentation
   )
 }
 
-export function PresentationCard({ deck, index, defaultSource, load, onPresent, onDev, onEdit, onChat, canExport = false }: PresentationCardProps) {
+export function PresentationCard({ deck, index, defaultSource, load, onPresent, onDev, onEdit, canExport = false }: PresentationCardProps) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const [thumb, setThumb] = useState<Thumb>({ state: 'loading' })
   const key = `${deck.source}:${deck.path}:${deck.updatedAt}`
@@ -127,13 +126,8 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
         <div className="deck-card__actions">
           {canExport && <ExportButton kind="html" deck={deck} />}
           {canExport && <ExportButton kind="pdf" deck={deck} />}
-          {onChat && (
-            <button type="button" className="icon-button" onClick={onChat} title="Chat about this deck" aria-label="Chat">
-              <ChatIcon />
-            </button>
-          )}
           {onEdit && (
-            <button type="button" className="icon-button" onClick={onEdit} title="Edit" aria-label="Edit">
+            <button type="button" className="icon-button" onClick={onEdit} title="Open in the workspace: the agent and the editor" aria-label="Open in the workspace">
               <EditIcon />
             </button>
           )}

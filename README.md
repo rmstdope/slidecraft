@@ -102,24 +102,27 @@ On start the server writes an `AGENTS.md` into every writable vault with the com
 the authoring rules, and refreshes it when Slidecraft changes. A hand-written `AGENTS.md` is
 left alone.
 
-## The AI assistant
+## The agent
 
-**Chat** on the home page or in the editor talks to one of three providers:
+Slidecraft is built around a coding agent working beside you. Today that is **Claude Code**: the
+`claude` CLI on your `PATH`, signed in (`SLIDECRAFT_CLAUDE_BIN` to point elsewhere). Slidecraft
+drives it through the Claude Agent SDK, so your own login and settings apply.
 
-| Provider | Setup |
-|---|---|
-| OpenAI-compatible API | `AI_API_KEY`; optional `SLIDECRAFT_AI_URL` and `SLIDECRAFT_AI_MODEL` (or `"ai": { "url", "model" }` in the config file) |
-| Claude Code | the `claude` CLI on your `PATH` (`SLIDECRAFT_CLAUDE_BIN` to override) |
-| GitHub Copilot CLI | the `copilot` CLI on your `PATH` (`SLIDECRAFT_COPILOT_BIN`; `"copilot": { "model", "effort" }` in the config) |
+- **On the home page**, the question box starts a conversation about the vault. When the agent
+  writes a new deck, its workspace opens and the conversation follows.
+- **In the deck workspace** (`/v/<vault>/edit/<deck>`), the conversation sits beside the slide
+  rail and a work area showing **Preview**, **Code** or **Split**. The slide on screen and any
+  selected code go with each message as chips you can remove. The code is read-only while the
+  agent works, and unsaved edits are saved before a message goes out.
+- Its text, every tool call and every changed file appear as they happen. Reading and editing
+  decks inside the vault goes ahead; a shell command or a file outside the vault shows **Allow /
+  Deny** first. **Stop** ends a turn.
+- Conversations are kept per deck in `<vault>/.slidecraft/conversations/` and resume after a
+  restart.
+- **Settings** (`/settings`) shows whether the agent is installed and signed in, and sets the model
+  (`"agent": { "model": "opus" }` in the config file).
 
-With **Claude Code** the conversation streams: its text, every tool call and every changed file
-appear as they happen, through the Claude Agent SDK driving your own `claude` (and its login). It
-works in the vault folder: reading and editing decks there goes ahead, while a shell command or a
-file outside the vault shows **Allow / Deny** in the chat. **Stop** ends a turn. Conversations are
-kept per deck in `<vault>/.slidecraft/conversations/` and resume after a restart.
-
-With the AI API every change is compile-checked before it is written; a slide the model cannot fix
-opens in a repair editor.
+Without Claude Code everything else works: the workspace is a complete hand editor.
 
 ## Agents over MCP
 

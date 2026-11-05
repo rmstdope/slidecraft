@@ -12,8 +12,9 @@ them without asking.
 src/main.tsx → App.tsx                      view state machine over src/router.ts routes
 ├─ home/HomePage                            deck cards (live first-slide thumbnails), filters, exports
 ├─ gallery/GalleryPage                      every registered component, lazily previewed
-├─ chat/ChatPage                            AI chat (lazy; carries Monaco for the repair editor)
-├─ editor/EditorPage                        rail · Monaco · live preview (lazy)
+├─ settings/SettingsPage                    vaults, agent status and model (lazy)
+├─ editor/EditorPage                        the deck workspace: agent · rail · code / preview (lazy)
+│   ├─ agent/AgentChat                       conversation panel (also on the home page); useAgentThread, threadEvents
 │   ├─ usePresentation                      editor state: DeckModel, selection, dirty, save
 │   ├─ compileSlide                         compiles one slide in the browser for the preview
 │   ├─ components/                          SlideSidebar, SlideEditor, SlidePreview, InsertPalette,
@@ -79,8 +80,8 @@ until it parses again. Saving adds newly used components to the import line
 | presenter | `/v/<vault>/<deck>?presenter` | current and next slide, notes, timer; synced over a `BroadcastChannel` |
 | thumbnail | inside cards, rails, overviews | every step shown, motion frozen (`ThumbnailContext`) |
 | PDF | `/v/<vault>/<deck>?pdf=1[&slide=n]` | every slide stacked for headless Chrome |
-| editor | `/v/<vault>/edit/<deck>` | three panels, resizable |
-| chat | `/v/<vault>/chat[/<deck>]` | provider picker, streamed tool calls, preview |
+| workspace | `/v/<vault>/edit/<deck>` | three panels, resizable |
+| chat | `/v/<vault>/chat[/<deck>]` | redirects: to the deck's workspace, or to the vault's home page |
 | gallery | `/v/<vault>/gallery` | registry-driven; built-in themes plus the vault's |
 
 The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothing reflows.

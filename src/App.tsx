@@ -12,7 +12,6 @@ import { subscribeServerEvents, useSSE } from './hooks/useSSE'
 import { HomePage } from './home/HomePage'
 import {
   canonicalUrl,
-  chatUrl,
   editorUrl,
   galleryUrl,
   homeUrl,
@@ -21,7 +20,6 @@ import {
   presentationUrl,
   routeVault,
   settingsUrl,
-  vaultChatUrl,
   type Route,
   type ViewState,
 } from './router'
@@ -31,8 +29,6 @@ import { startContentThemes } from './themes/contentThemes'
 const EditorPage = lazy(() => import('./editor/EditorPage'))
 /** The gallery compiles previews in the browser, so it also loads on demand. */
 const GalleryPage = lazy(() => import('./gallery/GalleryPage'))
-/** The chat page carries Monaco (for the repair editor), so it loads on demand too. */
-const ChatPage = lazy(() => import('./chat/ChatPage'))
 
 /** Vault management loads on demand. */
 const SettingsPage = lazy(() => import('./settings/SettingsPage'))
@@ -147,7 +143,9 @@ export function App() {
         case 'gallery':
           return setView({ type: 'gallery', vault: route.vault })
         case 'chat':
-          return setView({ type: 'chat', vault: route.vault, deck: route.deck })
+          // The conversation lives in the deck workspace, or at the top of the vault's home page.
+          window.history.replaceState(null, '', route.deck ? editorUrl(route.deck) : homeUrl(route.vault))
+          return setView(route.deck ? { type: 'editor', deck: route.deck } : { type: 'home', vault: route.vault })
         case 'editor':
           return setView({ type: 'editor', deck: route.deck })
         case 'presentation': {
@@ -228,7 +226,6 @@ export function App() {
           loadDeck={loadContent}
           onPresent={(deck, dev) => go(presentationUrl(deck, { dev }))}
           onEdit={(deck) => go(editorUrl(deck))}
-          onChat={(deck) => go(deck ? chatUrl(deck) : vaultChatUrl(vault.id))}
           onGallery={() => go(galleryUrl(vault.id))}
           onSwitchVault={(id) => go(homeUrl(id))}
           onSettings={() => go(settingsUrl())}
@@ -239,12 +236,6 @@ export function App() {
       return (
         <Suspense fallback={<div className="spinner" role="status" aria-label="Loading gallery" />}>
           <GalleryPage vault={view.vault} onExit={goHome} />
-        </Suspense>
-      )
-    case 'chat':
-      return (
-        <Suspense fallback={<div className="spinner" role="status" aria-label="Loading chat" />}>
-          <ChatPage key={view.deck ? `${view.deck.source}:${view.deck.path}` : `new:${view.vault}`} vault={view.vault} deck={view.deck} onExit={goHome} />
         </Suspense>
       )
     case 'editor':

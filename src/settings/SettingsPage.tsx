@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import type { AgentBackendInfo } from '@shared/agent.ts'
 import type { VaultInfo } from '@shared/decks.ts'
+import { fetchAgentSettings, fetchBackends, saveAgentSettings, type AgentSettings } from '../agent/api'
 import { createVault, removeVault, updateVault, type ApiResult } from '../api'
 
 interface Props {
@@ -35,9 +37,10 @@ export default function SettingsPage({ vaults, onChanged, onOpenVault, onExit }:
         <button type="button" className="tool-button" onClick={onExit}>
           ← Back
         </button>
-        <h1>Vaults</h1>
+        <h1>Settings</h1>
       </header>
       <main className="settings-main">
+        <h2 className="settings-heading">Vaults</h2>
         <p className="settings-intro">
           A vault is a folder of presentations with its own themes, images and house style (its <code>AGENTS.md</code>). The app shows one vault at a time, and
           its address is in the link, so two tabs can show two vaults.
@@ -55,6 +58,8 @@ export default function SettingsPage({ vaults, onChanged, onOpenVault, onExit }:
         </ul>
 
         <AddVault key={temporary?.id ?? 'new'} busy={busy} initial={temporary} run={run} onAdded={onOpenVault} />
+
+        <AgentSection />
       </main>
     </div>
   )
@@ -147,5 +152,68 @@ function AddVault({ busy, initial, run, onAdded }: { busy: boolean; initial?: Va
         Create the folder if it does not exist
       </label>
     </form>
+  )
+}
+
+/** Which agent works in the app, whether it is ready, and the model it uses. */
+function AgentSection() {
+  const [backends, setBackends] = useState<AgentBackendInfo[] | null>(null)
+  const [settings, setSettings] = useState<AgentSettings | null>(null)
+  const [model, setModel] = useState('')
+  const [saved, setSaved] = useState<string>()
+  useEffect(() => {
+    void fetchBackends().then((r) => setBackends(r.data ?? []))
+    void fetchAgentSettings().then((r) => {
+      if (!r.data) return
+      setSettings(r.data)
+      setModel(r.data.model ?? '')
+    })
+  }, [])
+  const save = async (change: Partial<AgentSettings>) => {
+    const result = await saveAgentSettings(change)
+    if (result.data) {
+      setSettings(result.data)
+      setSaved('Saved')
+      setTimeout(() => setSaved(undefined), 1500)
+    } else setSaved(result.error)
+  }
+  return (
+    <section className="settings-agent" aria-labelledby="agent-heading">
+      <h2 id="agent-heading" className="settings-heading">Agent</h2>
+      <p className="settings-intro">The agent works in the vault folder with your own command-line login. It edits decks there without asking and asks before anything else.</p>
+      <ul className="vault-list">
+        {backends === null && <li className="vault-row">Checking…</li>}
+        {backends?.map((b) => (
+          <li key={b.id} className="vault-row">
+            <div className="vault-row__main">
+              <strong className="vault-row__name">{b.name}</strong>
+              <span className="vault-row__path">{b.available ? `Ready${b.version ? ` · version ${b.version}` : ''}` : (b.detail ?? 'Not available')}</span>
+            </div>
+            <div className="vault-row__actions">
+              <label className="vault-row__toggle">
+                <input type="radio" name="agent-backend" checked={settings?.backend === b.id} onChange={() => void save({ backend: b.id })} />
+                Use for new conversations
+              </label>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="vault-add__fields"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void save({ model })
+        }}
+      >
+        <label className="tool-field is-grow">
+          <span>Model</span>
+          <input value={model} placeholder="The CLI's default (for example opus or sonnet)" onChange={(e) => setModel(e.target.value)} />
+        </label>
+        <button type="submit" className="tool-button is-primary" disabled={!settings || model === (settings.model ?? '')}>
+          Save model
+        </button>
+        {saved && <span className="settings-saved">{saved}</span>}
+      </form>
+    </section>
   )
 }

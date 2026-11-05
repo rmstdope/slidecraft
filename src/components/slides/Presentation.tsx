@@ -9,7 +9,7 @@ import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react
 import { ALL_STEPS_STATE, StepContext } from '../../animations/stepContext'
 import { springs } from '../../animations/springs'
 import { slideVariants } from '../../animations/variants'
-import { chatUrl, editorUrl, homeUrl } from '../../router'
+import { editorUrl, homeUrl } from '../../router'
 import { resolveTheme } from '../../themes/registry'
 import { resolveSlideLook } from '../../themes/resolveSlideLook'
 import type { Scheme } from '@shared/themes.ts'
@@ -320,7 +320,7 @@ function LivePresentation({ analysis, channel }: { analysis: DeckAnalysis; chann
       list.push({ id: 'home', name: 'Go to Home', category: 'navigation', action: () => navigateTo(homeUrl(deck?.source)) })
       if (deck) {
         list.push({ id: 'edit', name: 'Edit Presentation', description: `Open slide ${nav.current + 1} in the editor`, category: 'navigation', shortcut: ['Esc'], action: editSlide })
-        list.push({ id: 'chat', name: 'Chat', description: 'Edit with AI assistant', category: 'navigation', action: () => navigateTo(chatUrl(deck)) })
+        list.push({ id: 'chat', name: 'Ask the Agent', description: 'Open the workspace with the conversation', category: 'navigation', action: () => navigateTo(editorUrl(deck, nav.current + 1)) })
       }
     }
     slides.forEach((_, i) => list.push({ id: `slide-${i}`, name: `Go to Slide ${i + 1}`, category: 'navigation', action: () => actions.goTo(i) }))

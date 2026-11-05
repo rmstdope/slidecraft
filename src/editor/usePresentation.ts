@@ -100,7 +100,13 @@ export function usePresentation(deck: DeckRef) {
         const next = s.model.slides[Math.max(0, Math.min(s.model.slides.length - 1, i + delta))]
         return next ? { ...s, selectedId: next.id } : s
       }),
-    updateSelectedSlide: (text: string) => editModel((m) => (stateRef.current.selectedId ? updateSlideText(m, stateRef.current.selectedId, text) : m)),
+    // Monaco reports a value set from outside (a reload after the agent edited) as a change: an
+    // update that leaves the text as it is must not mark the deck unsaved.
+    updateSelectedSlide: (text: string) => {
+      const { model, selectedId } = stateRef.current
+      if (!selectedId || model?.slides.find((x) => x.id === selectedId)?.text === text) return
+      editModel((m) => updateSlideText(m, selectedId, text))
+    },
     addSlide: (template: string) =>
       update((s) => {
         if (s.readOnly || !s.model) return s

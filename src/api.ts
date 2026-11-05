@@ -50,6 +50,8 @@ export const removeVault = (id: string) => request<VaultsState>(vaultPath(id), j
 /** Remember the vault as the one `/` opens next time. */
 export const openVault = (id: string) => request<VaultsState>(`${vaultPath(id)}/open`, jsonInit('POST'))
 export const fetchPresentations = () => request<PresentationInfo[]>('/api/presentations')
+/** A new deck with one title slide, to write by hand. */
+export const createPresentation = (vault: string, name: string) => request<DeckRef>('/api/presentations', jsonInit('POST', { vault, name }))
 export const fetchThemes = () => request<ContentThemeInfo[]>('/api/themes')
 export const fetchDeckSource = (deck: DeckRef) =>
   request<{ content: string; deck: DeckRef; readOnly: boolean }>(`/api/mdx/${encodeURIComponent(deckName(deck))}?${deckQuery(deck)}`)
