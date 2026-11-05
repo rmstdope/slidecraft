@@ -21,7 +21,7 @@ and the typography row).
 |---|---|
 | Direction | **Overhaul**, not a reskin: new layouts and a new component layer, page by page. |
 | Toolkit | **Tailwind CSS v4** plus **Radix** primitives in the shadcn/ui pattern: small components copied into `src/ui/`, owned by the repository, no component-library runtime. Icons from `lucide-react`. |
-| Slides stay untouched | Tailwind is **scoped to the app chrome**: no preflight, and every utility carries the `tw:` prefix, so no class a deck, a slide component or `presentation.css` uses can collide with a utility. The export viewer does not load Tailwind at all. |
+| Slides stay untouched | Tailwind is **scoped to the app chrome**: no preflight, and every utility carries the `tw:` prefix, so no class a deck, a slide component or `presentation.css` uses can collide with a utility. The export viewer never loads the Tailwind stylesheet. |
 | Themes | **Light, Dark and System**; System is the default and follows `prefers-color-scheme`. |
 | Accent | Brand yellow `#f5b400` in light mode. In dark mode a colour the user picks, **violet `#9b8afb`** by default, with indigo, coral and mint offered. The logo keeps brand yellow in both. |
 | Where the choice lives | **Per user, in the browser** (`localStorage`), not in `config.json`. Read before first paint so no page flashes the wrong theme. |
@@ -34,10 +34,12 @@ and the typography row).
 
 ## 2. Tokens
 
-Components name a role, never a colour. Each role is a CSS custom property with a light and a
-dark value, set on `:root` (light) and `:root[data-theme="dark"]`, and mapped into Tailwind's
-theme so `tw:bg-panel`, `tw:text-muted` and so on resolve to it. The prefix `--sc-` keeps them
-apart from the slide tokens (`--accent`, `--bg`, `--text`, `--muted`), which stay as they are.
+Components name a role, never a colour. Each role is a CSS custom property `--sc-<role>` with a
+light value (on `:root` and `[data-sc-theme="light"]`) and a dark value (on
+`[data-sc-theme="dark"]`), so a subtree such as the presenter can force a theme. They are mapped
+into Tailwind's theme so `tw:bg-panel`, `tw:text-muted` and so on resolve to them. The `sc`
+prefix keeps them apart from the slide tokens (`--accent`, `--bg`, `--text`, `--muted`) and from
+the `data-theme` attribute deck themes already set.
 
 | Role | Light | Dark | Use |
 |---|---|---|---|
@@ -45,21 +47,22 @@ apart from the slide tokens (`--accent`, `--bg`, `--text`, `--muted`), which sta
 | `panel` | `#ffffff` | `#121214` | sidebar cards, agent panel, main card |
 | `panel-alt` | `#f7f7f5` | `#17171a` | slide list, card headers |
 | `raised` | `#ffffff` | `#1c1c1f` | composer, floating bars, menus |
-| `fill` | `#f0f0ee` | `#1f1f23` | inputs, chips, message bubbles |
-| `ring` | `#e4e4e7` | `#26262b` | 1 px borders |
-| `text` | `#0a0a0a` | `#f4f4f5` | body and headings |
-| `text-2` | `#3f3f46` | `#d4d4d8` | secondary copy, buttons |
+| `field` | `#f0f0ee` | `#1f1f23` | inputs, chips, message bubbles |
+| `line` | `#e4e4e7` | `#26262b` | 1 px borders |
+| `fg` | `#0a0a0a` | `#f4f4f5` | body and headings |
+| `fg-2` | `#3f3f46` | `#d4d4d8` | secondary copy, buttons |
 | `muted` | `#6b6b70` | `#a1a1aa` | meta and captions (at least 4.5:1) |
 | `primary` / `on-primary` | `#0a0a0a` / `#ffffff` | `#f4f4f5` / `#0a0a0a` | the primary button inverts |
 | `accent` | `#f5b400` | user choice, `#9b8afb` | selection, focus, highlights |
 | `accent-tint` | `#fef7e0` | accent at 16 % | context chips, selected fills |
 | `on-accent-tint` | `#7a5600` | accent | text on the tint |
+| `focus` | `#a87b00` | accent | focus rings and selection outlines (yellow is 1.8:1 on white) |
 | `brand` | `#f5b400` | `#f5b400` | the logo only |
-| `agent` | `#0f8c78` | `#2bb39c` | agent presence, success |
-| `added` / `removed` | `#0f8c78` / `#b42318` | `#5fd3bf` / `#f87171` | diffs, errors |
+| `agent` | `#0a7363` | `#2bb39c` | agent presence, success |
+| `added` / `removed` | `#0a7363` / `#b42318` | `#5fd3bf` / `#f87171` | diffs, errors |
 | `canvas` / `canvas-dot` | `#e4e4e0` / `#d2d2cd` | `#0e0e10` / `#232327` | behind the slide preview |
 
-Rules: dark is not inverted light (surfaces get lighter as they rise, and 1 px rings replace
+Text roles meet 4.5:1 on every surface they sit on and outlines 3:1. Rules: dark is not inverted light (surfaces get lighter as they rise, and 1 px rings replace
 shadows); radii are 8 px for controls, 10–14 px for cards and panels; transitions keep the
 existing 150 / 300 / 500 ms scale.
 
@@ -67,18 +70,24 @@ existing 150 / 300 / 500 ms scale.
 
 ## 3. Architecture
 
-- **Tailwind:** `@tailwindcss/vite` in `vite.config.ts` only (not the viewer config).
-  `src/styles/app.css` imports `tailwindcss/theme.css` and `tailwindcss/utilities.css` with
-  `prefix(tw)`, never `preflight.css`, declares the tokens with `@theme inline`, and limits class
-  scanning to `src/` with `@source`. The few base rules the chrome needs (font, focus ring, form
-  controls inheriting font) are scoped to `.sc-app`.
+- **Tailwind:** `@tailwindcss/vite` in `vite.config.ts` (the viewer config inherits it, which is
+  harmless: only `src/styles/app.css` uses Tailwind, and only `main.tsx` imports it).
+  `app.css` imports `tailwindcss/theme.css` with `prefix(tw)` and `tailwindcss/utilities.css` with
+  `source(none)`, never `preflight.css`; `@source '../'` limits class scanning to `src/`, and
+  `@theme inline` maps the tokens. The few base rules the chrome needs (font, focus ring, form
+  controls inheriting font) are scoped to `.sc-app`, which the `src/ui` components also put on
+  their portalled content (Radix renders dialogs, menus and tooltips into `<body>`).
+- **Cascade layers:** CSS outside a layer beats every layered rule, so the global `*` reset (and
+  the bare `kbd` rule) move into the lowest layer, `sc-reset`, declared first in `global.css`;
+  `main.tsx` imports `global.css` before `app.css` so that order holds. Slides are unaffected,
+  since the reset has zero specificity anyway.
 - **Components:** `src/ui/` holds the primitives (button, icon button, input, select, segmented
   control, switch, badge, card, dialog, dropdown menu, tooltip) built on `radix-ui`, with
   `class-variance-authority` for variants and a `cn()` helper (`clsx` plus `tailwind-merge`
   configured for the `tw` prefix).
 - **Appearance:** `src/appearance/` holds the store: `{ theme: 'light' | 'dark' | 'system',
   darkAccent }` under the `localStorage` key `slidecraft.appearance`, a resolver that turns the
-  choice and the media query into `data-theme` and the accent variables on `<html>`, and a
+  choice and the media query into `data-sc-theme` and `data-sc-accent` on `<html>`, and a
   `useAppearance()` hook. An inline script in `index.html` applies the stored choice before the
   app loads. Storage failures fall back to System and violet.
 - **Old CSS:** `tool.css`, `editor.css` and `chat.css` stay until the pages that use them are
@@ -94,7 +103,7 @@ existing 150 / 300 / 500 ms scale.
 
 Tailwind, the tokens, the `src/ui/` primitives, the appearance store with the pre-paint script,
 Geist Mono, and tests for the store and the resolver. No page changes yet; nothing a user sees
-changes except that `color-scheme` follows the theme.
+changes.
 
 **Done when:** a utility such as `tw:bg-panel` renders with the right colour in both themes, the
 slide CSS and the export viewer are unchanged, and typecheck, tests and build pass.
