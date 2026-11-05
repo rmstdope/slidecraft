@@ -2,7 +2,7 @@ import { cloneElement, forwardRef, isValidElement, useId, type InputHTMLAttribut
 import { cn } from './cn'
 
 const fieldClass =
-  'tw:w-full tw:min-w-0 tw:rounded-[9px] tw:bg-field tw:text-fg tw:placeholder:text-muted tw:outline-none tw:transition-shadow tw:duration-150 tw:focus-visible:shadow-[0_0_0_2px_var(--sc-focus)] tw:disabled:opacity-50'
+  'tw:w-full tw:min-w-0 tw:rounded-[9px] tw:border-0 tw:bg-field tw:text-fg tw:placeholder:text-muted tw:outline-none tw:transition-shadow tw:duration-150 tw:focus-visible:shadow-[0_0_0_2px_var(--sc-focus)] tw:disabled:opacity-50'
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
   { className, ...props },

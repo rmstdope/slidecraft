@@ -834,6 +834,20 @@ import docsShot from './images/docs.png'
   <Notes>Add vaults on the Vaults page. An older config with content folders becomes vaults on the next start, with a backup of the original file. The MCP server works in one vault: --vault work.</Notes>
 </Slide>
 
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Appearance</Subtitle>
+  <Title>Light, dark or your system's choice</Title>
+  <ComparisonTable
+    headers={["Setting", "Choices", "Kept in"]}
+    rows={[
+      ["Theme", "Light, Dark, System", "this browser"],
+      ["Accent in dark mode", "Violet, Indigo, Coral, Mint", "this browser"],
+    ]}
+  />
+  <Callout label="Slides:">keep their deck's theme. Only the app around them changes.</Callout>
+  <Notes>Settings, Appearance. System is the default and follows the operating system. Light mode always uses Slidecraft yellow; dark mode uses the accent you pick. The choice lives in the browser, not in config.json, so every computer can have its own. The pages move to the new look one at a time.</Notes>
+</Slide>
+
 <Slide scheme="dark" accent="navy" layout="document">
   <Subtitle>Skills</Subtitle>
   <Title>Agents work from three skills</Title>
