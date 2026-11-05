@@ -177,6 +177,16 @@ The gallery, the presenter window chrome, dialogs and pickers (image picker, ins
 command palette, help), error and empty screens. Then `tool.css` and `editor.css` are
 removed, and `docs/slidecraft-styleguide.md` is rewritten for the new system.
 
+**Status (2026-11-05): done, in two pull requests.** R5a: the command palette, shortcuts modal,
+insert palette and image picker on a shared `Sheet` overlay in `src/ui` (the player and presenter
+force it dark), the deck error screen, the render-error box and a `LoadingScreen`; `editor.css`
+removed. R5b: the gallery (header with search, tabs and the preview settings; cards; the detail
+panel on `Sheet`) and the presenter window (forced dark, keeping its class names as hooks for the
+tests); `tool.css` removed and the presenter rules pruned from `presentation.css`; the style guide
+rewritten. The full-screen player's own chrome (overview, reader view, dev toolbar, drawing
+toolbar, progress) stays in `presentation.css`: it is always dark and sits over the slides. The
+welcome deck's gallery, presenter and error screenshots are retaken.
+
 ### Phase R6: Design view (later)
 
 The click-to-edit Design view of the mockups: selecting an element on the slide, the floating
