@@ -54,7 +54,7 @@ import docsShot from './images/docs.png'
     <Text align="left">↓ skips the remaining beats. Home and End jump to the ends.</Text>
   </Step>
   <Step at={3}>
-    <Text align="left">M opens the overview, D the dev view, ? the shortcuts, Cmd+K every command.</Text>
+    <Text align="left">M opens the overview, G the guides, E the editor, ? the shortcuts, Cmd+K every command.</Text>
   </Step>
   <Notes>0:30-1:10. This slide builds in three beats. Press M to show the overview, then Esc.</Notes>
 </Slide>
@@ -250,7 +250,7 @@ import docsShot from './images/docs.png'
 <Slide scheme="dark" accent="teal" layout="document">
   <Subtitle>Process</Subtitle>
   <Title>Phases, ranges and splits</Title>
-  <PhaseRow phases={[{ title: "Draft", items: ["Outline in MDX", "Pick templates"] }, { title: "Refine", items: ["Steps and morphs", "Check in dev mode"] }, { title: "Share", items: ["Present", "Export"] }]} />
+  <PhaseRow phases={[{ title: "Draft", items: ["Outline in MDX", "Pick templates"] }, { title: "Refine", items: ["Steps and morphs", "Check with the guides"] }, { title: "Share", items: ["Present", "Export"] }]} />
   <ProgressBar segments={[{ label: "Built 80%", flex: 8, color: "teal" }, { label: "To do 20%", flex: 2, color: "yellow" }]} />
 </Slide>
 
@@ -540,8 +540,8 @@ import docsShot from './images/docs.png'
 <Slide scheme="dark" accent="yellow" gradient="radial-accent">
   <Subtitle>Editor</Subtitle>
   <Title>Edit any slide in the browser</Title>
-  <Text muted>Press Esc while presenting and the editor opens on that slide.</Text>
-  <Notes>9:40-10:00. Section opener for the editor. Press Esc now to jump into it and come back with Present.</Notes>
+  <Text muted>Press E while presenting and the editor opens on that slide.</Text>
+  <Notes>9:40-10:00. Section opener for the editor. Press E now to jump into it and come back with Present.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="yellow" layout="document">
@@ -608,7 +608,7 @@ import docsShot from './images/docs.png'
   <Subtitle>Home</Subtitle>
   <Title>Each card shows its deck's first slide</Title>
   <ContentImage src={homeShot} alt="The home page: vaults in the sidebar, the question box for the agent, and a grid of deck cards" width={1150} />
-  <Notes>The sidebar switches vaults and the theme. Filter by name or folder and sort by date or name; the filters stay in the URL. Cmd+K presents, edits or opens dev mode for any deck. A deck that does not compile says so on its card.</Notes>
+  <Notes>The sidebar switches vaults and the theme. Filter by name or folder and sort by date or name; the filters stay in the URL. Cmd+K presents or edits any deck. A deck that does not compile says so on its card.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="teal" layout="document">
@@ -868,9 +868,9 @@ import docsShot from './images/docs.png'
 </Slide>
 
 <Slide scheme="dark" accent="yellow" layout="document">
-  <Subtitle>Dev mode</Subtitle>
+  <Subtitle>Guides</Subtitle>
   <Title>A document title that runs on far too long becomes a signal to rewrite it shorter, because the eyebrow already names the subject and the title should only assert</Title>
-  <Text align="left">Press D to see the outline: amber for two lines, red for three or more.</Text>
+  <Text align="left">Press G to see the outline: amber for two lines, red for three or more.</Text>
 </Slide>
 
 <Slide scheme="dark" accent="red" layout="document">
@@ -878,7 +878,7 @@ import docsShot from './images/docs.png'
   <Title>Crowded bodies shrink to fit</Title>
   <Text align="left" size="lg">First paragraph of a deliberately crowded slide that holds more text than the body can show at full size.</Text>
   <Text align="left" size="lg">Second paragraph. The header band never scales; only the body below it does.</Text>
-  <Text align="left" size="lg">Third paragraph. Press D and a badge reports the scale that was applied.</Text>
+  <Text align="left" size="lg">Third paragraph. Press G and a badge reports the scale that was applied.</Text>
   <Text align="left" size="lg">Fourth paragraph. F switches between fit and actual size, which shows the overflow instead.</Text>
   <Text align="left" size="lg">Fifth paragraph. Split a slide like this one in two.</Text>
 </Slide>

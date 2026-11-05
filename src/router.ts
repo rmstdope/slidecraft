@@ -105,8 +105,11 @@ export function isSameDeckView(view: ViewState, route: Route): boolean {
   return false
 }
 
+/** `?mode=guides` turns the player's guides on; `?mode=dev` is the old name, kept so old links work. */
+export const isGuidesMode = (mode: string | null): boolean => mode === 'guides' || mode === 'dev'
+
 export interface PresentationUrlOptions {
-  dev?: boolean
+  guides?: boolean
   presenter?: boolean
   readOnly?: boolean
   slide?: number // 1-based
@@ -116,7 +119,7 @@ const deckBase = (deck: DeckRef) => `/v/${encodeURIComponent(deck.source)}`
 
 export function presentationUrl(deck: DeckRef, options: PresentationUrlOptions = {}): string {
   const params = new URLSearchParams()
-  if (options.dev) params.set('mode', 'dev')
+  if (options.guides) params.set('mode', 'guides')
   if (options.readOnly) params.set('readOnly', '1')
   if (options.presenter) params.set('presenter', 'true')
   const query = params.toString() ? `?${params}` : ''

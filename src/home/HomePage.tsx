@@ -25,7 +25,7 @@ export interface HomePageProps {
   error?: string
   defaultSource?: string
   loadDeck(deck: DeckRef): Promise<ComponentType>
-  onPresent(deck: DeckRef, dev: boolean): void
+  onPresent(deck: DeckRef): void
   onEdit(deck: DeckRef): void
   onGallery(): void
   onSwitchVault(id: string): void
@@ -71,8 +71,7 @@ export function HomePage(props: HomePageProps) {
         .filter((v) => v.id !== vault.id)
         .map((v): CommandItem => ({ id: `vault:${v.id}`, name: `Switch to Vault: ${v.name}`, description: v.path, category: 'navigation', action: () => onSwitchVault(v.id) })),
       ...decks.flatMap((d): CommandItem[] => [
-        { id: `present:${d.source}:${d.path}`, name: `Present: ${displayName(d.path)}`, description: d.path, category: 'navigation', action: () => onPresent(d, false) },
-        { id: `dev:${d.source}:${d.path}`, name: `Dev Mode: ${displayName(d.path)}`, description: d.path, category: 'navigation', action: () => onPresent(d, true) },
+        { id: `present:${d.source}:${d.path}`, name: `Present: ${displayName(d.path)}`, description: d.path, category: 'navigation', action: () => onPresent(d) },
         ...(d.readOnly || isStatic
           ? []
           : [{ id: `edit:${d.source}:${d.path}`, name: `Edit: ${displayName(d.path)}`, description: d.path, category: 'navigation' as const, action: () => onEdit(d) }]),
@@ -232,8 +231,7 @@ export function HomePage(props: HomePageProps) {
                   index={i}
                   defaultSource={defaultSource}
                   load={loaderFor(deck)}
-                  onPresent={() => onPresent(deck, false)}
-                  onDev={() => onPresent(deck, true)}
+                  onPresent={() => onPresent(deck)}
                   onEdit={deck.readOnly || isStatic ? undefined : () => onEdit(deck)}
                   canExport={!isStatic}
                 />

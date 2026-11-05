@@ -48,8 +48,8 @@ export interface SlideProps {
   _skipAnimation?: boolean
   /** Internal: use this scale instead of fitting the window (canvas, PDF). */
   _fixedScale?: number
-  _devMode?: boolean
-  _devFitMode?: boolean
+  _guides?: boolean
+  _fitMode?: boolean
 }
 
 const displayNameOf = (node: ReactNode): string | undefined => {
@@ -127,8 +127,8 @@ function SlideComponent({
   direction = 1,
   _skipAnimation = false,
   _fixedScale,
-  _devMode = false,
-  _devFitMode = true,
+  _guides = false,
+  _fitMode = true,
 }: SlideProps) {
   const theme = useResolvedTheme(themeProp)
   useThemeFonts(theme)
@@ -193,10 +193,10 @@ function SlideComponent({
     }
   }, [measure])
 
-  const actualMode = _devMode && !_devFitMode
+  const actualMode = _guides && !_fitMode
   const appliedFit = actualMode ? 1 : fit.scale
   const fitTransform = appliedFit < 1 ? `scale(${appliedFit})` : undefined
-  const fitBadge = _devMode && fit.scale < 0.99
+  const fitBadge = _guides && fit.scale < 0.99
 
   const backgroundStyle: CSSProperties = background ? { background } : { backgroundImage: gradientFor(scheme, gradient) }
   const padding = frame?.padding ? frame.padding.map((v) => `${v}px`).join(' ') : isDocument ? '72px 90px 132px' : 80
@@ -213,7 +213,7 @@ function SlideComponent({
     : { variants: slideVariants[transition], initial: 'initial', animate: 'animate', exit: 'exit', custom: direction }
 
   const content = (
-    <SlideLayoutContext.Provider value={{ layout, devMode: _devMode, accent, scheme, frame, align: alignLeft ? 'left' : 'center' }}>
+    <SlideLayoutContext.Provider value={{ layout, guides: _guides, accent, scheme, frame, align: alignLeft ? 'left' : 'center' }}>
       {isDocument ? (
         <>
           {hasHeader && (
@@ -284,9 +284,9 @@ function SlideComponent({
       >
         {/* Frame art is drawn in design space behind the content and never scales with the body. */}
         {frame?.svg && <img className="slide__frame" src={frame.svg} alt="" aria-hidden />}
-        {(fitBadge || (_devMode && unknownFrame)) && (
-          <div className="slide__dev-badge" role="status">
-            {_devMode && unknownFrame
+        {(fitBadge || (_guides && unknownFrame)) && (
+          <div className="slide__guides-badge" role="status">
+            {_guides && unknownFrame
               ? `Unknown frame "${frameName}" in theme ${theme.spec.name}`
               : actualMode
                 ? 'Content overflows slide bounds'

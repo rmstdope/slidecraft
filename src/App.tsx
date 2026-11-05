@@ -225,7 +225,7 @@ export function App() {
           error={loadError}
           defaultSource={assetSource}
           loadDeck={loadContent}
-          onPresent={(deck, dev) => go(presentationUrl(deck, { dev }))}
+          onPresent={(deck) => go(presentationUrl(deck))}
           onEdit={(deck) => go(editorUrl(deck))}
           onGallery={() => go(galleryUrl(vault.id))}
           onSwitchVault={(id) => go(homeUrl(id))}

@@ -23,7 +23,6 @@ export interface PresentationCardProps {
   defaultSource?: string
   load: () => Promise<ComponentType>
   onPresent(): void
-  onDev(): void
   onEdit?: () => void
   /** Export buttons need the server (hidden in static builds). */
   canExport?: boolean
@@ -58,7 +57,7 @@ function ExportButton({ kind, deck }: { kind: 'html' | 'pdf'; deck: Presentation
 }
 
 /** One deck on the home grid: its first slide, launch buttons and actions (Part 3 §1.6). */
-export function PresentationCard({ deck, index, defaultSource, load, onPresent, onDev, onEdit, canExport = false }: PresentationCardProps) {
+export function PresentationCard({ deck, index, defaultSource, load, onPresent, onEdit, canExport = false }: PresentationCardProps) {
   const [ref, inView] = useInView<HTMLDivElement>()
   const [thumb, setThumb] = useState<Thumb>({ state: 'loading' })
   const key = `${deck.source}:${deck.path}:${deck.updatedAt}`
@@ -122,14 +121,17 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
               <Play className="tw:fill-current" aria-hidden />
               Present
             </button>
-            <button
-              type="button"
-              onClick={onDev}
-              title="Present with the dev overlay: outlines, overflow and timing"
-              className="tw:inline-flex tw:h-9 tw:items-center tw:rounded-[9px] tw:bg-black/50 tw:px-3.5 tw:font-medium tw:text-white tw:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)] tw:hover:bg-black/70"
-            >
-              Dev
-            </button>
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                title="Open in the workspace: the agent and the editor"
+                className="tw:inline-flex tw:h-9 tw:items-center tw:gap-1.5 tw:rounded-[9px] tw:bg-black/50 tw:px-3.5 tw:font-medium tw:text-white tw:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)] tw:hover:bg-black/70 tw:[&_svg]:size-3.5"
+              >
+                <PencilLine aria-hidden />
+                Edit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -143,11 +145,6 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
         <div className="tw:-mr-1 tw:flex tw:shrink-0 tw:items-center">
           {canExport && <ExportButton kind="html" deck={deck} />}
           {canExport && <ExportButton kind="pdf" deck={deck} />}
-          {onEdit && (
-            <Button size="icon-sm" variant="ghost" onClick={onEdit} title="Open in the workspace: the agent and the editor" aria-label="Open in the workspace">
-              <PencilLine aria-hidden />
-            </Button>
-          )}
         </div>
       </div>
     </motion.article>

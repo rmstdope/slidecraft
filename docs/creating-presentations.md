@@ -149,8 +149,8 @@ Put images beside the deck in `images/`. Supported: png, jpg, gif, webp, svg. Al
 
 - Stage: 1920 × 1080; content area about 1760 × 920.
 - Sizes: Title 100–120 px, Subtitle 32–40, body 28–36, list items 28–32, padding 40–80, gaps 24–80.
-- Keys while presenting: `→` next step, `↓` next slide, `M` overview, `D` dev mode, `P` presenter,
-  `A` draw, `Esc` edit this slide, `?` all shortcuts.
+- Keys while presenting: `→` next step, `↓` next slide, `M` overview, `G` guides, `P` presenter,
+  `A` draw, `E` edit this slide, `Esc` home, `?` all shortcuts.
 - Example decks: `welcome` (everything), `folio-tour` and `folio-minimal` (frames), `motion`
   (every motion tool), `safe-retries` (a full talk with notes), `ion-tour` (the ion theme and the
   wired components), `studio-tour` (video-style cuts the presenter paces with the right arrow).

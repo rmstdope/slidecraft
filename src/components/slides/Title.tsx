@@ -61,7 +61,7 @@ const GRADE_TOOLTIP = {
 } as const
 
 function TitleComponent({ children, size = 'hero', accent = false, nowrap = false, className = '' }: TitleProps) {
-  const { layout, devMode, frame, align, scheme } = useSlideLayout()
+  const { layout, guides, frame, align, scheme } = useSlideLayout()
   const { titleFinish } = useThemeEffects()
   const isDocument = layout === 'document'
   // A theme frame can fix the title size and colour, like a slide master's title placeholder.
@@ -77,7 +77,7 @@ function TitleComponent({ children, size = 'hero', accent = false, nowrap = fals
   const [fitted, setFitted] = useState<number | null>(null)
   const [lines, setLines] = useState(1)
   const signature = textSignature(children)
-  const grade = devMode && isDocument
+  const grade = guides && isDocument
 
   useLayoutEffect(() => {
     const el = ref.current

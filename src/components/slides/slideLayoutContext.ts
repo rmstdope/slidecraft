@@ -7,7 +7,7 @@ export type SlideLayout = 'centered' | 'document'
 /** Provided by Slide (Part 2 §1.8). Multi-item components resolve `accent ?? slideAccent`. */
 export interface SlideLayoutContextValue {
   layout: SlideLayout
-  devMode: boolean
+  guides: boolean
   accent: AccentColor
   /** The slide's resolved colour scheme. */
   scheme: Scheme
@@ -19,7 +19,7 @@ export interface SlideLayoutContextValue {
 
 export const SlideLayoutContext = createContext<SlideLayoutContextValue>({
   layout: 'centered',
-  devMode: false,
+  guides: false,
   accent: 'yellow',
   scheme: 'dark',
   align: 'center',

@@ -74,8 +74,8 @@
   color: rgba(26, 26, 26, 0.55);
 }
 
-/* Dev mode. */
-.dev-frame {
+/* Guides (dev mode in the spec). */
+.guides-frame {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -85,21 +85,18 @@
   z-index: 90;
 }
 
-.dev-toolbar {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 100;
-  display: flex;
-  gap: 8px;
+.presentation__controls {
   align-items: center;
 }
 
-.dev-toolbar .presentation-view-button {
+/* The Guides toggle, lit while the guides are on. */
+.presentation-view-button[aria-pressed='true'] {
   opacity: 1;
+  border-color: var(--brand-yellow);
+  color: var(--brand-yellow);
 }
 
-.dev-toolbar__badge {
+.guides-badge {
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   background: var(--brand-yellow);

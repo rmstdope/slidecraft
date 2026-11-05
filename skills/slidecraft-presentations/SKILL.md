@@ -106,7 +106,7 @@ import { Presentation, Slide, Title, Subtitle, Text, List, ListItem, Notes } fro
 ## Titles
 
 A document title is a single-line **assertion**: the point of the slide, not its topic. Two lines
-is the ceiling; dev mode (`D`) marks two lines amber and three red.
+is the ceiling; the guides (`G`) mark two lines amber and three red.
 
 - A wrapping title is a signal to rewrite it shorter, never to shrink the text.
 - The eyebrow carries the subject, so the title need not repeat it. Read the pair as one unit.
