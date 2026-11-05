@@ -1,7 +1,7 @@
 # Creating presentations
 
 The condensed authoring guide. The full version, with the reasons behind each rule, is the
-[presentation author guide](agents/presentation-author.md).
+[`slidecraft-presentations` skill](../skills/slidecraft-presentations/SKILL.md).
 
 ## Create a deck
 

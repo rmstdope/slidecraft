@@ -91,14 +91,22 @@ export async function buildSystemPrompt(deck: DeckContext | null, contentDir: st
 }
 
 /** Context for the CLI agents, which run in the content folder and edit files themselves (§A.6.4). */
-/** Standing instructions for an agent working in a vault folder: the guide, components, themes, house style. */
+/**
+ * Standing instructions for the in-app agent (UX overhaul U4): the rules live in the
+ * slidecraft-presentations skill, synced into the vault, so this only points at it and adds the
+ * vault's house style.
+ */
 export async function buildAgentInstructions(contentDir: string): Promise<string> {
   const parts = [
-    'You are editing presentations made with Slidecraft, an MDX presentation framework. Follow the presentation authoring guide below; it describes the components and the rules for using them.',
-    buildComponentSummary(),
-    buildTemplateExamples(),
-    await buildThemeSummary(),
-    `## Presentation authoring guide\n\n${readAuthorGuide() ?? 'Use the registered components only.'}`,
+    [
+      '# Slidecraft',
+      '',
+      'You work inside Slidecraft, an MDX presentation app, in one vault: the working directory. The person sees the deck in the app as you edit it, beside this conversation.',
+      '',
+      '- For any work on a presentation, use the `slidecraft-presentations` skill (`.claude/skills/slidecraft-presentations/SKILL.md`) and follow its workflow, including `validate_deck` and `screenshot_slide` from the `slidecraft` tools.',
+      '- Each message starts with a <slidecraft-context> block: the deck, its slides and the one on screen. It describes the screen; the request follows it.',
+      '- Keep replies short: what changed, and anything the person should decide.',
+    ].join('\n'),
   ]
   const folder = folderInstructions(contentDir, false)
   if (folder) parts.push(folder)
@@ -122,7 +130,17 @@ export function buildDeckContext(deck: DeckContext | null): string {
   return lines.join('\n')
 }
 
-/** The CLI chat providers' context: instructions and deck context in one prompt. */
+/** The older CLI chat providers' context (until U6): the guide, components and the deck in one prompt. */
 export async function buildAgentContext(deck: DeckContext | null, contentDir: string): Promise<string> {
-  return [await buildAgentInstructions(deck?.contentDir ?? contentDir), buildDeckContext(deck)].join('\n\n')
+  const parts = [
+    'You are editing presentations made with Slidecraft, an MDX presentation framework. Follow the presentation authoring guide below; it describes the components and the rules for using them.',
+    buildComponentSummary(),
+    buildTemplateExamples(),
+    await buildThemeSummary(),
+    `## Presentation authoring guide\n\n${readAuthorGuide() ?? 'Use the registered components only.'}`,
+  ]
+  const folder = folderInstructions(deck?.contentDir ?? contentDir, false)
+  if (folder) parts.push(folder)
+  parts.push(buildDeckContext(deck))
+  return parts.join('\n\n')
 }

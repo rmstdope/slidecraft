@@ -3,14 +3,21 @@
  * Content-directory resolution is the same as the HTTP server's (flag, env, config, fallback).
  * Everything here writes to stderr: stdout carries the protocol.
  *
- *   bun run mcp [--content <dir-or-name>]
+ *   bun run mcp [--vault <name>] [--content <dir>]
+ *
+ * `screenshot_slide` renders through the running app: SLIDECRAFT_APP_ORIGIN (set by the in-app
+ * agent to the page it was started from), else this server's own port.
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import { getContentDir, getDefaultContentSource } from './lib/contentSources.ts'
 import { exportRef, writeHtmlExport, writePdfExport } from './lib/exportFiles.ts'
-import { VERSION } from './lib/paths.ts'
+import { screenshotSlide } from './lib/exportPdf.ts'
+import { parseDeck } from '../shared/deckParser.ts'
+import { readDeckSource } from './lib/deckStore.ts'
+import { resolveDeckRefInSources } from './lib/decks.ts'
+import { PORT, VERSION } from './lib/paths.ts'
 import { executeTool, TOOL_DEFINITIONS, type ToolDefinition, type ToolResult } from './lib/tools.ts'
 
 type Shape = Record<string, z.ZodType>
@@ -75,6 +82,42 @@ export function createMcpServer(): McpServer {
     async ({ name, source, path, outDir, origin }) => {
       try {
         return text({ success: true, data: await writePdfExport(exportRef(name, source, path), outDir, origin) })
+      } catch (error) {
+        return text({ success: false, error: (error as Error).message })
+      }
+    },
+  )
+  server.registerTool(
+    'screenshot_slide',
+    {
+      description:
+        'Look at one slide as the audience will see it, every step shown, as a 960 × 540 image. Use it after editing a slide to check for overflow, wrapping titles and colour. Needs the Slidecraft app running and Chrome installed.',
+      inputSchema: {
+        name: z.string().describe('Presentation folder name'),
+        index: z.number().int().describe('0-based slide index in the file, as read_presentation numbers them'),
+        source: z.string().optional().describe('Vault id (default: this server\'s vault)'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ name, index, source }) => {
+      try {
+        const ref = exportRef(name, source, undefined)
+        const resolved = resolveDeckRefInSources(ref)
+        const mdx = resolved ? await readDeckSource(resolved) : null
+        if (mdx === null) return text({ success: false, error: `Presentation "${name}" not found` })
+        const slides = parseDeck(mdx).slides
+        const target = slides[index]
+        if (!target) return text({ success: false, error: `There is no slide ${index}; the deck has ${slides.length} (0-based)` })
+        if (target.hidden) return text({ success: false, error: `Slide ${index} is hidden, so it is never shown` })
+        const visible = slides.slice(0, index).filter((s) => !s.hidden).length + 1
+        const origin = process.env.SLIDECRAFT_APP_ORIGIN || `http://localhost:${PORT}`
+        const png = await screenshotSlide(ref, origin, visible)
+        return {
+          content: [
+            { type: 'image' as const, data: Buffer.from(png).toString('base64'), mimeType: 'image/png' },
+            { type: 'text' as const, text: `Slide ${index} of ${slides.length}${target.titleText ? `: "${target.titleText}"` : ''}` },
+          ],
+        }
       } catch (error) {
         return text({ success: false, error: (error as Error).message })
       }

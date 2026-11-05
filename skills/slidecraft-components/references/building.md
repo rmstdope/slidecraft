@@ -1,41 +1,7 @@
-# Component developer guide
+# Building a component
 
-You add or extend **slide components**: the React components a deck uses inside `<Slide>`. Every
-one is registered, and the registry feeds the gallery, the editor's palette, toolbar, help panel
-and completions, the docs-site catalogue, the chat prompt and the `AGENTS.md` the server writes
-into content folders. Register it once and all of those pick it up.
-
-Not your job: deck content (the [author guide](presentation-author.md)) or the editor, parser,
-server and runtime (the [framework guide](framework-developer.md)).
-
-## The workflow
-
-1. **Create** `src/components/slides/<Name>.tsx` with `defineComponent({ Component, registry, toolbar })`.
-   The registry metadata and toolbar configuration live inside the definition, next to the code.
-2. **Export** it from `src/components/slides/index.ts`. The MDX scope is built from that barrel,
-   so the component is immediately usable in decks.
-3. **Run** `bun test tests/registry.test.ts`, then the full `bun test` and `bun run build`.
-
-There is no third list to update: no hand-written docs table, no separate palette entry.
-
-## Technical requirements
-
-- **Motion:** the root is a `motion.*` element using the shared variants
-  (`src/animations/variants.ts`), so the slide's entry stagger orchestrates it.
-- **Fixed pixels:** every size in px on the 1920 × 1080 stage. No `%`, `vw`, `vh`, `clamp()`,
-  `rem`. The content area is about 1760 × 920; full-width components are 1760 px wide.
-- **Inline styles** (CSS-in-JS objects). No new global stylesheet for slide components.
-- **Theme variables, never hex colours:** `var(--text)`, `var(--muted)`, `var(--bg)`,
-  `var(--font-display)`, `var(--font-body)`, and accents through `accentColors[accent]` and
-  `tint(accent, alpha)` from `accents.ts`. Themes and schemes then work without extra code.
-- **Explicit TypeScript:** export a `<Name>Props` interface; no `any` in public props.
-- **Accent inheritance:** take `accent?: AccentColor` and resolve it with `useAccent(accent)`, so
-  an omitted accent means the slide's.
-- **Steps and morphs:** if the component can be staged, take `step?: number` and `morph?: string`
-  and spread `useStepMotion(step, morph)` on the root. Staging then never wraps the element, so
-  it keeps its place in a grid.
-- **Thumbnails:** `useInThumbnail()` is true in rails, overviews and handouts. Anything
-  interactive or timed (auto-scroll, count-up, video) must render its final state there.
+A worked example, the definition type, the animation helpers, and the components whose code is
+worth reading before you write your own.
 
 ## A complete component
 
@@ -122,7 +88,7 @@ interface ComponentDefinition<P> {
 - Templates are whole-slide snippets: `defineTemplate({ id, name, description, snippet, previewCode })`
   in `templates.ts`. They have no props and appear in the palette and "Add slide".
 
-More detail and conventions per field: [`docs/component-registry.md`](../component-registry.md).
+More detail and conventions per field: [`docs/component-registry.md`](../../../docs/component-registry.md).
 
 ## Animation building blocks
 
@@ -149,23 +115,3 @@ More detail and conventions per field: [`docs/component-registry.md`](../compone
 | `CycleDiagram` | ring geometry kept in pure functions that tests can check |
 | `ScatterChart` | an interactive component: tabs, keyboard, a draggable threshold, a frozen thumbnail |
 | `Code` | timed behaviour (auto-scroll) that stops in thumbnails |
-
-## Files
-
-- **Work in:** `src/components/slides/`, `src/animations/` (shared variants only),
-  `tests/components.test.tsx`, `tests/componentMath.test.ts`.
-- **Do not modify** for a component: the editor (`src/editor/`), the language service, the
-  server, the parser, the themes. If a component seems to need one of those, it is a framework
-  task; hand it over.
-
-## Testing
-
-1. `bun test tests/registry.test.ts`: the component is exported, named, in the MDX scope, its
-   metadata is complete and its `snippet` and `previewCode` compile.
-2. Put geometry and parsing in pure functions and test them in `tests/componentMath.test.ts`;
-   render tests go in `tests/components.test.tsx`.
-3. `bun run build`, then in the running app (`bun run dev:status` first; never restart it):
-   - open `/gallery`, search for the component, check the preview and the props table;
-   - open a deck in the editor, press `⌘K`, find it, insert it, change props from the toolbar;
-   - present the deck and check light and dark schemes, a framed theme, steps and thumbnails.
-4. If the component is a feature authors should know about, add a slide for it to the welcome deck.

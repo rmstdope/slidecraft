@@ -25,9 +25,9 @@ describe('docs site links', () => {
   const repo = 'https://github.com/example/slidecraft'
 
   test('links to pages become page URLs, from any folder', () => {
-    expect(resolveLink('docs/agents/presentation-author.md', 'README.md', pages, repo)).toBe('presentation-author.html')
-    expect(resolveLink('../../README.md#run-from-a-checkout', 'docs/agents/presentation-author.md', pages, repo)).toBe('./#run-from-a-checkout')
-    expect(resolveLink('../plans/implementation-plan.md', 'docs/agents/presentation-author.md', pages, repo)).toBe('implementation-plan.html')
+    expect(resolveLink('docs/creating-presentations.md', 'README.md', pages, repo)).toBe('creating-presentations.html')
+    expect(resolveLink('../../README.md#run-from-a-checkout', 'skills/slidecraft-dev/SKILL.md', pages, repo)).toBe('./#run-from-a-checkout')
+    expect(resolveLink('plans/implementation-plan.md', 'docs/creating-presentations.md', pages, repo)).toBe('implementation-plan.html')
   })
 
   test('other repo files go to the repository; absolute links and anchors stay', () => {

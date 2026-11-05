@@ -12,6 +12,7 @@
  * POST /api/agent/threads/<vault>/<id>/approvals/<approvalId> {allow}
  */
 import type { AgentBackendId, MessageContext } from '../../shared/agent.ts'
+import { localOrigin } from '../lib/agent/claudeCode.ts'
 import { getAgentSettings, setAgentSettings } from '../lib/contentSources.ts'
 import { createThread, defaultBackend, getBackends, getThread, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError } from '../lib/agent/threads.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
@@ -79,7 +80,7 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
     if (action === 'messages' && method === 'POST') {
       const body = await readJson<{ text?: unknown; context?: unknown }>(request)
       if (!body || typeof body.text !== 'string') return errorJson(400, 'Body must be JSON with a "text" string')
-      return json(await sendMessage(vault, id, body.text, contextOf(body.context)), 202)
+      return json(await sendMessage(vault, id, body.text, contextOf(body.context), { appOrigin: localOrigin(request.headers.get('origin')) }), 202)
     }
     if (action === 'stop' && method === 'POST') return json({ stopped: stopTurn(vault, id) })
     if (action === 'approvals' && parts[4] && method === 'POST') {

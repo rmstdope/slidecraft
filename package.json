@@ -16,7 +16,7 @@
     "dev:client": "vite",
     "dev:server": "bun --watch server/index.ts",
     "typecheck": "tsc",
-    "build": "tsc && vite build && vite build --config vite.viewer.config.ts",
+    "build": "bun scripts/generateSkills.ts && tsc && vite build && vite build --config vite.viewer.config.ts",
     "preview": "vite preview",
     "start": "bun server/index.ts",
     "test": "bun test",
@@ -24,6 +24,7 @@
     "export": "bun scripts/export.ts",
     "build:release": "bun scripts/buildRelease.ts",
     "build:site": "bun scripts/buildSite.ts",
+    "skills": "bun scripts/generateSkills.ts",
     "content-dir": "bun scripts/contentDir.ts"
   },
   "dependencies": {

@@ -8,7 +8,7 @@ single source of truth for everything that lists components:
 - the chat assistant's system prompt and the `AGENTS.md` the server writes into content folders;
 - `tests/registry.test.ts`.
 
-The workflow for adding a component is in the [component developer guide](agents/component-developer.md).
+The workflow for adding a component is in the [`slidecraft-components` skill](../skills/slidecraft-components/SKILL.md).
 This page is the reference for the fields.
 
 ## Where it lives

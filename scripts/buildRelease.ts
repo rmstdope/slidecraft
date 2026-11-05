@@ -32,12 +32,13 @@ function walk(dir: string): string[] {
 
 const rel = (file: string) => relative(ROOT, file).split(sep).join('/')
 
-/** Every app file the server reads: public/, dist/ (minus copies of public/), the author guide. */
+/** Every app file the server reads: public/, dist/ (minus copies of public/), the presentations skill. */
 export function embeddedFiles(): string[] {
   const publicFiles = walk(join(ROOT, 'public'))
   const publicNames = new Set(publicFiles.map((f) => relative(join(ROOT, 'public'), f)))
   const distFiles = walk(join(ROOT, 'dist')).filter((f) => !publicNames.has(relative(join(ROOT, 'dist'), f)))
-  return [...publicFiles, ...distFiles, join(ROOT, 'docs', 'agents', 'presentation-author.md')].map(rel).sort()
+  const skillFiles = walk(join(ROOT, 'skills', 'slidecraft-presentations'))
+  return [...publicFiles, ...distFiles, ...skillFiles].map(rel).sort()
 }
 
 export function embeddedModule(files: string[]): string {
@@ -47,7 +48,7 @@ export function embeddedModule(files: string[]): string {
 }
 
 async function main() {
-  for (const need of ['dist/index.html', 'dist/viewer/viewer.js', 'docs/agents/presentation-author.md']) {
+  for (const need of ['dist/index.html', 'dist/viewer/viewer.js', 'skills/slidecraft-presentations/SKILL.md']) {
     if (!existsSync(join(ROOT, need))) {
       console.error(`Missing ${need}. Run "bun run build" first.`)
       process.exit(1)

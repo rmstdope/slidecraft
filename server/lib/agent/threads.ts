@@ -194,7 +194,7 @@ async function promptFor(vault: ContentSource, thread: StoredThread, text: strin
 }
 
 /** Start a turn; it runs in the background and reports through events. */
-export async function sendMessage(vaultId: string, id: string, text: string, context?: MessageContext): Promise<ThreadInfo> {
+export async function sendMessage(vaultId: string, id: string, text: string, context?: MessageContext, options: { appOrigin?: string } = {}): Promise<ThreadInfo> {
   const vault = vaultOf(vaultId)
   const thread = load(vault, id)
   if (!thread) throw new ThreadError(404, 'No such conversation')
@@ -227,6 +227,7 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
         instructions,
         sessionId: thread.sessionId,
         model: getAgentSettings().model,
+        appOrigin: options.appOrigin,
         signal: run.abort.signal,
         emit: (body) => append(vault, thread, turn, body),
         requestApproval: (request) =>

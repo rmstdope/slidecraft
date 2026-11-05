@@ -1,12 +1,42 @@
-# Framework developer guide
+# Architecture
 
-You work on everything that is not deck content and not a slide component: the app router, the
-presentation engine, the editor, the parser, the language service, themes, the server, the agent
-tools, chat, the presenter view, drawing, export and packaging. The decisions behind all of it are
-recorded in [`docs/plans/implementation-plan.md`](../plans/implementation-plan.md); do not reopen
-them without asking.
+Where things live and how a deck travels from disk to screen. The decisions behind it are in
+`docs/plans/implementation-plan.md` and `docs/plans/ux-overhaul-plan.md`.
 
-## Architecture
+## Tech stack
+
+TypeScript (strict, ESM) · React 19 · motion 14 (`motion/react`) · MDX 3 · Vite 8 · Bun 1.4
+(package manager, test runner, server runtime) · Monaco 0.57 (bundled locally, editor route only).
+
+## Folders
+
+```
+src/            client: App router (src/router.ts), views, styles
+src/components/slides/   slide components, defineComponent registry, accents, contexts
+src/themes/     theme registry and the built-in themes (slidecraft, paper, folio, ion)
+src/animations/ springs and variant tables
+src/presenter/  presenter window, cross-window sync, navigation hook
+src/drawing/    annotations: canvas, toolbar, history, persistence
+src/home/       home page: deck cards, filters, vault switcher, home commands
+src/gallery/    component gallery: search, lazy preview scheduler
+src/agent/      agent conversation: panel, thread hook, event folding, markdown
+src/settings/   settings page: vaults and the agent
+src/editor/     deck workspace: EditorPage, usePresentation, Monaco setup, toolbars, palette, image picker
+src/language-service/        platform-agnostic MDX completion, diagnostics, hover, quick fixes
+src/language-service-monaco/ Monaco adapter for the language service
+shared/         code used by client and server: ports, deck refs, frontmatter, deckParser, deckModel, tagAttrs, themes, mdxImports
+server/         Bun server: router (index.ts), routes/, lib/ (vaults, decks, tools, agent/, skill sync, watcher, SSE, exports), mcp.ts
+scripts/        dev orchestrator, export, release and site builds, image and favicon scripts
+tests/          bun test suites
+content/        example decks (<name>/index.mdx) and the repo's own content-folder theme
+skills/         the three agent skills (source of truth; .claude/skills links to them)
+docs/           guides; docs/plans/ the implementation and UX overhaul plans
+```
+
+Path aliases: `@/*` → `src/*`, `@components` → `src/components/index.ts`, `@shared/*` →
+`shared/*`, `@server/*` → `server/*`, `@content/*` → `content/*`.
+
+## Module map
 
 ```
 src/main.tsx → App.tsx                      view state machine over src/router.ts routes
@@ -29,10 +59,12 @@ src/main.tsx → App.tsx                      view state machine over src/router
 
 shared/   deckParser (lossless, MDX AST based) · deckModel (head/slides/seps/tail) · tagAttrs
           frontmatter · mdxImports · themes · decks (refs, reserved names) · chat · exportPayload · ports
-server/   index.ts router · routes/ (mdx, content, images, export, chat, applyFix)
-          lib/ contentSources, decks, deckStore, fileWatcher, events (SSE), tools, mdxValidator,
-               mdxRepair, agentContext (generated AGENTS.md), themes, images, exports, chrome, chat/
-          mcp.ts (stdio MCP server over lib/tools)
+server/   index.ts router · routes/ (mdx, content, vaults, images, export, agent, chat, applyFix)
+          lib/ contentSources (vaults), decks, deckStore, fileWatcher, events (SSE), tools, mdxValidator,
+               mdxRepair, agentContext (generated AGENTS.md), skillSync, deckChecks, themes, images,
+               exports, chrome, agent/ (backend seam, Claude Code, threads), chat/
+          mcp.ts (stdio MCP server over lib/tools; the binary runs it with --mcp)
+skills/   slidecraft-presentations (synced into vaults), slidecraft-components, slidecraft-dev
 ```
 
 How a deck reaches the screen: in dev and on the static site, decks under `content/` are bundled
@@ -72,15 +104,15 @@ until it parses again. Saving adds newly used components to the import line
 
 | Mode | Where | Notes |
 |---|---|---|
-| home | `/v/<vault>/` (`/` opens the last vault) | cards, sort, vault switcher, create, HTML/PDF export |
-| settings | `/settings` | add, rename, remove vaults |
+| home | `/v/<vault>/` (`/` opens the last vault) | the vault conversation, cards, sort, vault switcher, new deck, HTML/PDF export |
+| settings | `/settings` | vaults; the agent's status and model |
 | presentation | `/v/<vault>/<deck path>` | the player; older `/<deck>?source=` links redirect |
 | dev | `D` in the player | overflow and title-length warnings, frame outline, `F` toggles fit |
 | overview | `M` / `Tab` | grid of every slide; `Tab` again for a large preview |
 | presenter | `/v/<vault>/<deck>?presenter` | current and next slide, notes, timer; synced over a `BroadcastChannel` |
 | thumbnail | inside cards, rails, overviews | every step shown, motion frozen (`ThumbnailContext`) |
 | PDF | `/v/<vault>/<deck>?pdf=1[&slide=n]` | every slide stacked for headless Chrome |
-| workspace | `/v/<vault>/edit/<deck>` | three panels, resizable |
+| workspace | `/v/<vault>/edit/<deck>` | agent panel, rail, Preview / Code / Split; resizable |
 | chat | `/v/<vault>/chat[/<deck>]` | redirects: to the deck's workspace, or to the vault's home page |
 | gallery | `/v/<vault>/gallery` | registry-driven; built-in themes plus the vault's |
 
@@ -88,18 +120,22 @@ The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothin
 
 ## Key files
 
-| File | Lines | What |
-|---|---|---|
-| `src/App.tsx` | ~235 | view state machine, deck loading, live reload |
-| `src/router.ts` | ~150 | vault routes, URL builders, redirects for older URLs |
-| `src/components/slides/Presentation.tsx` | ~470 | player, keyboard map, palette commands |
-| `src/components/slides/Slide.tsx` | ~350 | look resolution, layouts, frames, steps, auto-fit |
-| `src/editor/EditorPage.tsx` | ~420 | editor layout, keyboard, toolbars |
-| `src/editor/usePresentation.ts` | ~150 | editor state and actions |
-| `shared/deckParser.ts` | ~260 | lossless slide splitting |
-| `shared/themes.ts` | ~350 | theme format, validation, `extends` merging |
-| `server/lib/tools.ts` | ~260 | deck tools shared by chat and MCP, with fixed error texts |
-| `vite.config.ts` | ~70 | MDX plugin, frontmatter stripping, aliases, API proxy |
+| File | What |
+|---|---|
+| `src/App.tsx` | view state machine, deck loading, live reload |
+| `src/router.ts` | vault routes, URL builders, redirects for older URLs |
+| `src/components/slides/Presentation.tsx` | player, keyboard map, palette commands |
+| `src/components/slides/Slide.tsx` | look resolution, layouts, frames, steps, auto-fit |
+| `src/editor/EditorPage.tsx` | the workspace: agent panel, rail, code / preview, toolbars, keyboard |
+| `src/editor/usePresentation.ts` | workspace state and actions |
+| `src/agent/AgentChat.tsx`, `useAgentThread.ts`, `threadEvents.ts` | the conversation panel, its live thread, event folding |
+| `shared/deckParser.ts` | lossless slide splitting |
+| `shared/themes.ts` | theme format, validation, `extends` merging |
+| `shared/agent.ts` | the agent contract: threads, events, backends |
+| `server/lib/contentSources.ts` | vaults: config, migration, management, agent settings |
+| `server/lib/agent/` | `AgentBackend`, the Claude Code backend, thread store and runner |
+| `server/lib/tools.ts` | deck tools shared by chat and MCP, with fixed error texts |
+| `vite.config.ts` | MDX plugin, frontmatter stripping, aliases, API proxy |
 
 ## Vite configuration
 
@@ -111,46 +147,3 @@ The canvas is always 1920 × 1080 and scaled with a CSS transform to fit; nothin
   decks are bundled (dev, or `SLIDECRAFT_BUNDLE_CONTENT=1` for the static site).
 - The dev server proxies `/api`, `/content-source`, `/images/library` and non-module `/content`
   requests to the API on 6110; `strictPort` keeps it on 6100.
-
-## Common tasks
-
-- **A keyboard shortcut in the player:** add the case to the key handler in `Presentation.tsx`,
-  a palette command in the `commands` list beside it, and the row in the shortcut table
-  (`src/utils/keyboardShortcuts.ts`) that the `?` modal reads. The presenter window has its own map in
-  `src/presenter/PresenterView.tsx`.
-- **An editor feature:** state goes into `usePresentation` as an action that edits the
-  `DeckModel` (pure helpers in `shared/deckModel.ts` and `src/editor/sourceEdits.ts`, with tests in
-  `tests/deckModel.test.ts` and `tests/editorLogic.test.ts`); UI in `src/editor/components/`.
-- **A parser fix:** reproduce it in `tests/deckParser.test.ts` first. The parser must stay
-  lossless: `serializeModel(modelFromSource(x)) === x` for every input.
-- **An agent tool:** add it to `server/lib/tools.ts` (chat and MCP both use it), with its error
-  texts; MCP-only tools go in `server/mcp.ts`. Update `tests/mcp.test.ts`.
-- **An animation:** use the springs in `src/animations/springs.ts` and the variant tables in
-  `variants.ts`; respect reduced motion (the player sets `MotionConfig reducedMotion="user"`) and `ThumbnailContext`.
-- **A theme feature:** extend the format and validation in `shared/themes.ts`, resolution in
-  `src/themes/resolveSlideLook.ts`, and test in `tests/themes.test.tsx`.
-
-## Files
-
-- **Work in:** `src/` (except `src/components/slides/` component bodies), `shared/`, `server/`,
-  `scripts/`, `tests/`.
-- **Be careful with:** `shared/deckParser.ts` and `shared/deckModel.ts` (every editor and tool
-  write goes through them), `server/lib/tools.ts` error texts (agents match on them),
-  `src/editor/monacoCore.ts` (generated from Monaco's own entry), `src/bundledDecks.ts`.
-- **Do not modify:** deck content in `content/` beyond the welcome deck's showcase slides, and
-  `package.json` versions outside a release.
-
-## Testing
-
-```sh
-bun run typecheck
-bun test                      # everything; bun test tests/<file> for one suite
-bun run build
-```
-
-Manual check in the running app (`bun run dev:status` first; reuse it, never restart it):
-
-- home: cards render, sorting and filters, export buttons;
-- a deck: arrows walk steps, `↓` skips, `M` overview, `D` dev mode, `P` presenter, `A` draw;
-- the editor: select, edit, reorder with `Alt+↑/↓`, insert with `⌘K`, save with `⌘S`, reload from disk;
-- an external edit (another editor or an agent) reloads the deck and the editor.

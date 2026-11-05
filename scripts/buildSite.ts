@@ -25,13 +25,18 @@ export const PAGES: Page[] = [
   { file: 'docs/getting-started-with-agents.md', slug: 'getting-started-with-agents', title: 'Getting started with agents', group: 'Start' },
   { file: 'docs/guide.md', slug: 'guide', title: 'User guide', group: 'Start' },
   { file: 'docs/creating-presentations.md', slug: 'creating-presentations', title: 'Creating presentations', group: 'Authoring' },
-  { file: 'docs/agents/presentation-author.md', slug: 'presentation-author', title: 'Presentation author guide', group: 'Authoring' },
+  { file: 'skills/slidecraft-presentations/SKILL.md', slug: 'presentations-skill', title: 'Presentations skill', group: 'Authoring' },
+  { file: 'skills/slidecraft-presentations/references/choosing.md', slug: 'choosing-components', title: 'Choosing components', group: 'Authoring' },
+  { file: 'skills/slidecraft-presentations/references/themes-and-colour.md', slug: 'themes-and-colour', title: 'Themes, frames and colour', group: 'Authoring' },
+  { file: 'skills/slidecraft-presentations/references/motion.md', slug: 'motion', title: 'Motion', group: 'Authoring' },
+  { file: 'skills/slidecraft-presentations/references/examples.md', slug: 'example-decks', title: 'Example decks', group: 'Authoring' },
   { file: null, slug: 'components', title: 'Component catalogue', group: 'Components' },
-  { file: 'docs/agents/component-developer.md', slug: 'component-developer', title: 'Component developer guide', group: 'Components' },
+  { file: 'skills/slidecraft-components/SKILL.md', slug: 'components-skill', title: 'Components skill', group: 'Components' },
+  { file: 'skills/slidecraft-components/references/building.md', slug: 'building-components', title: 'Building a component', group: 'Components' },
   { file: 'docs/component-registry.md', slug: 'component-registry', title: 'Component registry', group: 'Components' },
   { file: 'AGENTS.md', slug: 'agents', title: 'Instructions for coding agents', group: 'Framework' },
-  { file: 'docs/agents/framework-developer.md', slug: 'framework-developer', title: 'Framework developer guide', group: 'Framework' },
-  { file: 'docs/agent-personas.md', slug: 'agent-personas', title: 'Agent personas', group: 'Framework' },
+  { file: 'skills/slidecraft-dev/SKILL.md', slug: 'dev-skill', title: 'Development skill', group: 'Framework' },
+  { file: 'skills/slidecraft-dev/references/architecture.md', slug: 'architecture', title: 'Architecture', group: 'Framework' },
   { file: 'docs/slidecraft-styleguide.md', slug: 'styleguide', title: 'Style guide', group: 'Framework' },
   { file: 'docs/ROADMAP.md', slug: 'roadmap', title: 'Roadmap', group: 'Framework' },
   { file: 'docs/plans/implementation-plan.md', slug: 'implementation-plan', title: 'Implementation plan', group: 'Framework' },
@@ -40,6 +45,9 @@ export const PAGES: Page[] = [
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string; repository?: { url?: string } }
 const REPO_URL = (pkg.repository?.url ?? '').replace(/\.git$/, '')
+
+/** Skills open with YAML frontmatter (name, description); the page shows only the body. */
+const withoutFrontmatter = (md: string) => md.replace(/^---\n[\s\S]*?\n---\n+/, '')
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
@@ -193,7 +201,7 @@ async function main() {
   // 2–3. Markdown pages and the catalogue.
   const pages = PAGES.filter((p) => p.file === null || existsSync(join(ROOT, p.file)))
   for (const page of pages) {
-    const body = page.file ? renderMarkdown(readFileSync(join(ROOT, page.file), 'utf8'), page.file, pages) : await catalogueHtml(`${base}app/gallery`)
+    const body = page.file ? renderMarkdown(withoutFrontmatter(readFileSync(join(ROOT, page.file), 'utf8')), page.file, pages) : await catalogueHtml(`${base}app/gallery`)
     const out = join(OUT, `${page.slug}.html`)
     mkdirSync(dirname(out), { recursive: true })
     writeFileSync(out, shell(page, body, pages, base))

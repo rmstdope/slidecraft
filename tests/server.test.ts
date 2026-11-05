@@ -211,13 +211,12 @@ describe('deck tools', () => {
 })
 
 describe('AGENTS.md for the content folder', () => {
-  test('is generated with components, templates, themes and the author guide', async () => {
+  test('is generated as a pointer to the presentations skill, with the vault\'s themes', async () => {
     const text = await buildFolderInstructions(6110)
     expect(text.startsWith(GENERATED_PREFIX)).toBe(true)
-    expect(text).toContain('| Data Visualization | Stat')
-    expect(text).toContain('### Folio Title Slide')
+    expect(text).toContain('.claude/skills/slidecraft-presentations/SKILL.md')
     expect(text).toContain('| `acme` | this folder |')
-    expect(text).toContain('# Presentation author guide')
+    expect(text).toContain('http://localhost:6110/v/<vault>/<name>')
   })
   test('is written once, refreshed when stale, and never replaces a hand-written file', async () => {
     rmSync(join(local, 'AGENTS.md'), { force: true })

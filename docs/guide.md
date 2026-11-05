@@ -193,7 +193,7 @@ or frame. Previews start dark; "Example's own" uses what each example was writte
 for some components is light. The choice is remembered. Opening a component
 plays it live, with **Replay** and ← → for its build steps, and its **Settings** change the props:
 the preview and the snippet follow, so **Copy** copies what you see.
-The [presentation author guide](agents/presentation-author.md) has a table for choosing one.
+[Choosing components](../skills/slidecraft-presentations/references/choosing.md) has a table for choosing one.
 
 ## Presenting
 
