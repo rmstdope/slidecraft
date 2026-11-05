@@ -108,6 +108,14 @@ changes.
 **Done when:** a utility such as `tw:bg-panel` renders with the right colour in both themes, the
 slide CSS and the export viewer are unchanged, and typecheck, tests and build pass.
 
+**Status (2026-11-05): done.** `src/styles/app.css` (Tailwind without preflight, `tw:` prefix,
+the tokens), `src/appearance/` (store, resolver, `useAppearance`), the pre-paint script in
+`index.html` (tested against the module in `tests/appearance.test.ts`), and `src/ui/` (button,
+input and field, select, segmented control, switch, badge, card, status dot, kbd, tooltip, dialog,
+menu, logo). The `*` reset and the palette's `kbd` rule moved into the `sc-reset` layer. Checked in
+the browser: `tw:bg-panel` and `tw:px-3` apply over the reset and follow the theme, the existing
+pages are unchanged, and the legacy `.text-accent` class still works.
+
 ### Phase R2: Settings
 
 The settings page in the new layout: a settings sidebar (Appearance, Vaults, Agent) with the

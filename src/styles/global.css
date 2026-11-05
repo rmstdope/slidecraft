@@ -3,6 +3,11 @@
  * --bg, --font-display and --font-body, so a re-brand is a token swap in this file plus the
  * hex table in src/components/slides/accents.ts.
  */
+/*
+ * Cascade layers: the resets below sit in sc-reset, the lowest layer, so the app chrome's
+ * Tailwind utilities (app.css) can override them. Everything else here stays unlayered.
+ */
+@layer sc-reset;
 @import '@fontsource/zilla-slab/latin-600.css';
 @import '@fontsource/source-sans-3/latin-400.css';
 @import '@fontsource/source-sans-3/latin-400-italic.css';
@@ -107,10 +112,12 @@
   color: var(--muted);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer sc-reset {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 /* The stage never scrolls. Reader view and print override this (Phase 9). */

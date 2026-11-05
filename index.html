@@ -8,6 +8,27 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>Slidecraft</title>
+    <script>
+      // The app theme before the first paint (src/appearance/appearance.ts; kept in step by tests).
+      ;(function () {
+        var a = {}
+        try {
+          a = JSON.parse(localStorage.getItem('slidecraft.appearance') || '{}') || {}
+        } catch (e) {}
+        var t = a.theme === 'light' || a.theme === 'dark' ? a.theme : 'system'
+        if (t === 'system') {
+          try {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          } catch (e) {
+            t = 'light'
+          }
+        }
+        var accents = ['violet', 'indigo', 'coral', 'mint']
+        var r = document.documentElement
+        r.setAttribute('data-sc-theme', t)
+        r.setAttribute('data-sc-accent', accents.indexOf(a.darkAccent) >= 0 ? a.darkAccent : 'violet')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

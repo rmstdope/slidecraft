@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { stripMdxFrontmatter } from './shared/frontmatter.ts'
@@ -33,6 +34,8 @@ export default defineConfig(({ command }) => {
       stripFrontmatterPlugin(),
       { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react' }) },
       react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
+      // Only src/styles/app.css uses Tailwind; the export viewer inherits the plugin but never imports it.
+      tailwindcss(),
     ],
     resolve: {
       dedupe: ['react', 'react-dom'],
