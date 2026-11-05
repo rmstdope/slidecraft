@@ -1,0 +1,167 @@
+/*
+ * The redesigned app chrome (docs/plans/ui-redesign-plan.md): Tailwind v4 without preflight, every
+ * utility prefixed `tw:` so no class a deck or slide uses can collide with one, and the colour
+ * roles as --sc-* custom properties with a light and a dark value. Slides never read these; they
+ * keep --accent, --bg, --text and --muted from global.css and their deck theme.
+ *
+ * Loaded by main.tsx only, after global.css (which declares the lowest layer, sc-reset), never by
+ * the export viewer.
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme) prefix(tw);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+/* Class names come from the app's own source only; decks under content/ are never scanned. */
+@source '../';
+
+@custom-variant dark (&:where([data-sc-theme='dark'], [data-sc-theme='dark'] *));
+
+@theme {
+  /* Only the roles below exist as colours: no stray palette colours in the chrome. */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+}
+
+@theme inline {
+  --color-ground: var(--sc-ground);
+  --color-panel: var(--sc-panel);
+  --color-panel-alt: var(--sc-panel-alt);
+  --color-raised: var(--sc-raised);
+  --color-field: var(--sc-field);
+  --color-line: var(--sc-line);
+  --color-fg: var(--sc-fg);
+  --color-fg-2: var(--sc-fg-2);
+  --color-muted: var(--sc-muted);
+  --color-primary: var(--sc-primary);
+  --color-on-primary: var(--sc-on-primary);
+  --color-accent: var(--sc-accent);
+  --color-accent-tint: var(--sc-accent-tint);
+  --color-on-accent-tint: var(--sc-on-accent-tint);
+  --color-focus: var(--sc-focus);
+  --color-brand: var(--sc-brand);
+  --color-agent: var(--sc-agent);
+  --color-agent-glow: var(--sc-agent-glow);
+  --color-added: var(--sc-added);
+  --color-removed: var(--sc-removed);
+  --color-canvas: var(--sc-canvas);
+  --color-canvas-dot: var(--sc-canvas-dot);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-mono: var(--sc-font-mono);
+
+  --shadow-elev: var(--sc-elev);
+  --shadow-line: 0 0 0 1px var(--sc-line);
+}
+
+/* The dark-mode accent the person picked (src/appearance); light mode always uses brand yellow. */
+:root {
+  --sc-font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+  --sc-dark-accent: #9b8afb;
+}
+:root[data-sc-accent='indigo'] {
+  --sc-dark-accent: #818cf8;
+}
+:root[data-sc-accent='coral'] {
+  --sc-dark-accent: #ff8a65;
+}
+:root[data-sc-accent='mint'] {
+  --sc-dark-accent: #5eead4;
+}
+
+/* Light values; the selectors also let a subtree force a theme (the presenter stays dark). */
+:root,
+[data-sc-theme='light'] {
+  --sc-ground: #ededea;
+  --sc-panel: #ffffff;
+  --sc-panel-alt: #f7f7f5;
+  --sc-raised: #ffffff;
+  --sc-field: #f0f0ee;
+  --sc-line: #e4e4e7;
+  --sc-fg: #0a0a0a;
+  --sc-fg-2: #3f3f46;
+  --sc-muted: #6b6b70;
+  --sc-primary: #0a0a0a;
+  --sc-on-primary: #ffffff;
+  --sc-accent: #f5b400;
+  --sc-accent-tint: #fef7e0;
+  --sc-on-accent-tint: #7a5600;
+  /* Yellow is too light for a ring on white (1.8:1); focus and selection outlines use this. */
+  --sc-focus: #a87b00;
+  --sc-brand: #f5b400;
+  --sc-agent: #0a7363;
+  --sc-agent-glow: rgba(10, 115, 99, 0.15);
+  --sc-added: #0a7363;
+  --sc-removed: #b42318;
+  --sc-canvas: #e4e4e0;
+  --sc-canvas-dot: #d2d2cd;
+  --sc-elev: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-sc-theme='dark'] {
+  --sc-ground: #09090b;
+  --sc-panel: #121214;
+  --sc-panel-alt: #17171a;
+  --sc-raised: #1c1c1f;
+  --sc-field: #1f1f23;
+  --sc-line: #26262b;
+  --sc-fg: #f4f4f5;
+  --sc-fg-2: #d4d4d8;
+  --sc-muted: #a1a1aa;
+  --sc-primary: #f4f4f5;
+  --sc-on-primary: #0a0a0a;
+  --sc-accent: var(--sc-dark-accent);
+  --sc-accent-tint: color-mix(in srgb, var(--sc-dark-accent) 16%, transparent);
+  --sc-on-accent-tint: var(--sc-dark-accent);
+  --sc-focus: var(--sc-dark-accent);
+  --sc-brand: #f5b400;
+  --sc-agent: #2bb39c;
+  --sc-agent-glow: rgba(43, 179, 156, 0.18);
+  --sc-added: #5fd3bf;
+  --sc-removed: #f87171;
+  --sc-canvas: #0e0e10;
+  --sc-canvas-dot: #232327;
+  --sc-elev: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/*
+ * The chrome's base. A redesigned page puts .sc-app on its root; the src/ui components put it on
+ * their portalled content too (dialogs, menus, tooltips render into <body>).
+ */
+@layer base {
+  .sc-app {
+    color: var(--sc-fg);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    color-scheme: light;
+  }
+  [data-sc-theme='dark'] .sc-app,
+  .sc-app[data-sc-theme='dark'] {
+    color-scheme: dark;
+  }
+  .sc-app :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+  }
+  .sc-app :where(button) {
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .sc-app :where(button:disabled) {
+    cursor: default;
+  }
+  .sc-app :where(a) {
+    color: inherit;
+    text-decoration: none;
+  }
+  .sc-app :where(:focus-visible),
+  .sc-app:focus-visible {
+    outline: 2px solid var(--sc-focus);
+    outline-offset: 2px;
+  }
+}
