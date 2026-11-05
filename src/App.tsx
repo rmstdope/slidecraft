@@ -228,7 +228,7 @@ export function App() {
           onEdit={(deck) => go(editorUrl(deck))}
           onGallery={() => go(galleryUrl(vault.id))}
           onSwitchVault={(id) => go(homeUrl(id))}
-          onSettings={() => go(settingsUrl())}
+          onSettings={(section) => go(settingsUrl(section))}
         />
       )
     }

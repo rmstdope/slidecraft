@@ -134,4 +134,5 @@ export const vaultChatUrl = (vault: string): string => appPath(`/v/${encodeURICo
 /** A vault's home page, or `/` (which opens the last vault) without one. */
 export const homeUrl = (vault?: string): string => appPath(vault ? `/v/${encodeURIComponent(vault)}/` : '/')
 export const galleryUrl = (vault: string): string => appPath(`/v/${encodeURIComponent(vault)}/gallery`)
-export const settingsUrl = (): string => appPath('/settings')
+/** Settings, optionally opened at a section (`appearance`, `vaults` or `agent`). */
+export const settingsUrl = (section?: string): string => appPath('/settings') + (section ? `#${section}` : '')

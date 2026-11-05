@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { appPath, stripBase } from '../src/basePath'
-import { canonicalUrl, chatUrl, editorUrl, galleryUrl, homeUrl, isSameDeckView, parseRoute, presentationUrl, routeVault, vaultChatUrl, type ViewState } from '../src/router'
+import { canonicalUrl, chatUrl, editorUrl, galleryUrl, homeUrl, isSameDeckView, parseRoute, presentationUrl, routeVault, settingsUrl, vaultChatUrl, type ViewState } from '../src/router'
 
 const deck = { source: 'examples', path: 'motion' }
 const Content = () => null
@@ -9,6 +9,8 @@ describe('parseRoute', () => {
   test('maps every vault URL shape to a route', () => {
     expect(parseRoute('', '')).toEqual({ type: 'root' })
     expect(parseRoute('settings', '')).toEqual({ type: 'settings' })
+    expect(settingsUrl()).toBe(appPath('/settings'))
+    expect(settingsUrl('vaults')).toBe(appPath('/settings') + '#vaults')
     expect(parseRoute('v/work', '')).toEqual({ type: 'home', vault: 'work' })
     expect(parseRoute('v/work/', '')).toEqual({ type: 'home', vault: 'work' })
     expect(parseRoute('v/work/gallery', '')).toEqual({ type: 'gallery', vault: 'work' })

@@ -27,7 +27,8 @@ export interface HomePageProps {
   onEdit(deck: DeckRef): void
   onGallery(): void
   onSwitchVault(id: string): void
-  onSettings(): void
+  /** Opens settings, at a section when given (`vaults`). */
+  onSettings(section?: 'vaults'): void
 }
 
 const SORTS: { value: DeckSort; label: string }[] = [
@@ -69,7 +70,7 @@ export function HomePage(props: HomePageProps) {
     () => [
       { id: 'shortcuts', name: 'Keyboard Shortcuts', category: 'action', shortcut: ['?'], action: () => setShortcutsOpen(true) },
       { id: 'gallery', name: 'Component Gallery', description: 'Every component and template with a live preview', category: 'action', action: onGallery },
-      ...(isStatic ? [] : [{ id: 'settings', name: 'Manage Vaults', description: 'Add, rename or remove vaults', category: 'action' as const, action: onSettings }]),
+      ...(isStatic ? [] : [{ id: 'settings', name: 'Manage Vaults', description: 'Add, rename or remove vaults', category: 'action' as const, action: () => onSettings('vaults') }]),
       ...vaults
         .filter((v) => v.id !== vault.id)
         .map((v): CommandItem => ({ id: `vault:${v.id}`, name: `Switch to Vault: ${v.name}`, description: v.path, category: 'navigation', action: () => onSwitchVault(v.id) })),
@@ -133,7 +134,7 @@ export function HomePage(props: HomePageProps) {
         <div className="home-topbar">
           <VaultSwitcher vault={vault} vaults={vaults} onSwitch={onSwitchVault} />
           {!isStatic && (
-            <button type="button" className="tool-button" onClick={onSettings}>
+            <button type="button" className="tool-button" onClick={() => onSettings()}>
               Settings
             </button>
           )}
@@ -167,7 +168,7 @@ export function HomePage(props: HomePageProps) {
                   : 'A vault is a folder of your own presentations, kept apart from the others: one for work, one for private talks.'}
               </span>
             </div>
-            <button type="button" className="tool-button is-primary" onClick={onSettings}>
+            <button type="button" className="tool-button is-primary" onClick={() => onSettings('vaults')}>
               {vault.temporary ? 'Save as a vault' : 'Create a vault'}
             </button>
           </div>

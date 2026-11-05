@@ -12,7 +12,7 @@ export const buttonVariants = cva(
         secondary: 'tw:bg-panel tw:text-fg tw:shadow-hairline tw:hover:bg-field',
         ghost: 'tw:text-fg-2 tw:hover:bg-field tw:hover:text-fg',
         quiet: 'tw:bg-field tw:text-fg-2 tw:hover:text-fg',
-        danger: 'tw:bg-removed tw:text-white tw:hover:opacity-90',
+        danger: 'tw:bg-removed tw:text-on-primary tw:hover:opacity-90',
       },
       size: {
         sm: 'tw:h-[30px] tw:px-2.5 tw:text-[13px]',

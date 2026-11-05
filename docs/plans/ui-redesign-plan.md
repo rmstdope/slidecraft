@@ -126,6 +126,14 @@ components.
 **Done when:** changing the theme or the accent applies at once and survives a reload, and every
 existing vault action still works.
 
+**Status (2026-11-05): done.** `src/settings/SettingsPage.tsx` is rebuilt on `src/ui`: a sidebar
+with Appearance, Vaults and Agent (the section is in the address, `/settings#vaults`, which the
+home page's vault actions open), theme cards whose previews are drawn with the real tokens by
+forcing `data-sc-theme` on a subtree, the dark accent swatches with a dark preview, vault rows with
+a read-only switch and a confirmation dialog for removing, and the agent picker as radio cards.
+The settings rules in `tool.css` are gone. The welcome deck has an Appearance slide after Vaults.
+Checked in the browser in light and dark: theme and accent apply at once and survive a reload.
+
 ### Phase R3: Home
 
 The home page in the new layout: the app sidebar (sections, vaults with the vault switcher, agent
