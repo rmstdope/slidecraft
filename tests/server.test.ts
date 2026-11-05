@@ -86,16 +86,6 @@ describe('decks', () => {
     expect((await call('/content-source/nope/x.png')).status).toBe(404)
     expect((await call('/content/..%2F..%2Fetc%2Fpasswd')).status).toBe(404)
   })
-
-  test('apply-fix validates the whole deck before writing', async () => {
-    const bad = await body(await call('/api/apply-fix', { method: 'POST', body: JSON.stringify({ presentationName: 'alpha', slideIndex: 1, content: '<Slide>\n  <Text>broken</Txt>\n</Slide>' }) }))
-    expect(bad).toMatchObject({ success: false, error: 'Validation failed' })
-    expect(readFileSync(join(local, 'alpha', 'index.mdx'), 'utf8')).toBe(DECK)
-    const good = await body(await call('/api/apply-fix', { method: 'POST', body: JSON.stringify({ presentationName: 'alpha', slideIndex: 1, content: '<Slide>\n  <Text>Fixed</Text>\n</Slide>' }) }))
-    expect(good).toEqual({ success: true })
-    expect(readFileSync(join(local, 'alpha', 'index.mdx'), 'utf8')).toContain('Fixed')
-    writeFileSync(join(local, 'alpha', 'index.mdx'), DECK)
-  })
 })
 
 describe('sources and themes', () => {

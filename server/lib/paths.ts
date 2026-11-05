@@ -63,8 +63,6 @@ export interface AppConfig {
   contents?: Record<string, string | SourceDescriptor>
   /** The in-app agent (UX overhaul U3): which backend new conversations use, and its model. */
   agent?: { backend?: string; model?: string }
-  /** Defaults for the Copilot CLI chat provider (Phase 10). */
-  copilot?: { model?: string; effort?: string }
 }
 
 /** Forgiving: a missing or malformed file is an empty config. */

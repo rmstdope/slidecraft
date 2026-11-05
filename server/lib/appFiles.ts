@@ -53,16 +53,3 @@ export function listAppFiles(prefix: string): string[] {
   walk(root)
   return out
 }
-
-/**
- * The presentation author guide, assembled from the slidecraft-presentations skill: its SKILL.md
- * without frontmatter, then the hand-written references. The HTTP chat prompt uses it (the
- * component catalogue it builds itself); agents that load skills read the files directly.
- */
-export function readAuthorGuide(): string | null {
-  const skill = readAppText('skills/slidecraft-presentations/SKILL.md')
-  if (!skill) return null
-  const body = skill.replace(/^---\n[\s\S]*?\n---\n/, '').trim()
-  const references = ['choosing', 'themes-and-colour', 'motion'].map((name) => readAppText(`skills/slidecraft-presentations/references/${name}.md`)?.trim()).filter(Boolean)
-  return [body, ...references].join('\n\n')
-}

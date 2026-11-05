@@ -50,7 +50,7 @@ export and packaging. Module map, data model, routes and key files:
   `tests/deckModel.test.ts` and `tests/editorLogic.test.ts`); UI in `src/editor/components/`.
 - **The parser:** it must stay lossless, `serializeModel(modelFromSource(x)) === x` for every
   input.
-- **An agent tool:** `server/lib/tools.ts` (the chat and MCP share it), with fixed error texts;
+- **An agent tool:** `server/lib/tools.ts` (the MCP server serves them), with fixed error texts;
   MCP-only tools in `server/mcp.ts`; tests in `tests/mcp.test.ts`.
 - **The agent backend:** `server/lib/agent/` (the `AgentBackend` seam, backends, threads); events in
   `shared/agent.ts`; the panel in `src/agent/`. Backend message mapping is tested against recorded

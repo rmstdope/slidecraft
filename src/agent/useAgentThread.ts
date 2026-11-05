@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AgentBackendInfo, AgentEvent, MessageContext, ThreadInfo } from '@shared/agent.ts'
+import type { AgentBackendId, AgentBackendInfo, AgentEvent, MessageContext, ThreadInfo } from '@shared/agent.ts'
 import type { DeckRef } from '@shared/decks.ts'
 import { subscribeServerEvents } from '../hooks/useSSE'
 import * as api from './api'
@@ -16,7 +16,8 @@ export interface AgentThreadState {
   error?: string
   sending: boolean
   select(id: string | null): void
-  send(text: string, context?: MessageContext): Promise<boolean>
+  /** `backend` applies when the message starts a new conversation. */
+  send(text: string, context?: MessageContext, backend?: AgentBackendId): Promise<boolean>
   stop(): void
   answer(approvalId: string, allow: boolean): void
 }
@@ -93,12 +94,12 @@ export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent
   )
 
   const send = useCallback(
-    async (text: string, context?: MessageContext) => {
+    async (text: string, context?: MessageContext, backend?: AgentBackendId) => {
       setSending(true)
       setError(undefined)
       let id = idRef.current
       if (!id) {
-        const created = await api.createThread(vault, deckPath ? { source: vault, path: deckPath } : undefined)
+        const created = await api.createThread(vault, deckPath ? { source: vault, path: deckPath } : undefined, backend)
         if (!created.data) {
           setSending(false)
           setError(created.error)

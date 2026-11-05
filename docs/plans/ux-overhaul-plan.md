@@ -290,7 +290,33 @@ image upload into a deck's `images/` are covered by `tests/agent.test.ts`. Devia
 **Done when:** both backends pass the same recorded-stream test suite and a real create-and-edit
 run, and no code or doc mentions the HTTP provider.
 
----
+**Status (2026-11-05): done.** `server/lib/agent/copilot.ts` runs `copilot -p --output-format json
+--stream on` and maps its JSON lines (`assistant.message_delta`, `tool.execution_start` /
+`_complete` with `fileEdits`, `result`) onto the same events; `tests/copilot.test.ts` replays a
+recorded run (`tests/fixtures/agent/copilot-edit-and-shell.jsonl`). The HTTP provider, the old CLI
+runners, `/api/chat`, `/api/apply-fix` and `shared/chat.ts` are gone; the prompt builder moved to
+`server/lib/agent/prompt.ts`. Checked in the browser with Copilot CLI 1.0.105: a Copilot
+conversation chosen in the panel loaded the skill, read the vault's `AGENTS.md`, edited the slide
+(the preview followed), and offered Diff and Undo. Deviations and findings:
+
+- **Copilot reads `.claude/skills/`** (its `skill list` names it as a project location, and a
+  prompt-mode session in a vault reports the skill as available), so the skill needs no second
+  copy.
+- **Copilot cannot ask.** Prompt mode has no permission channel: it gets `--allow-tool write` and
+  `--allow-tool slidecraft`, and Copilot refuses anything else itself ("Permission denied because
+  no interactive user response was available"). The conversation shows such a tool as refused, the
+  panel says "cannot ask: edits in the vault only", and `AgentBackendInfo.approvals` carries the
+  difference.
+- **Copilot may run without the Slidecraft tools:** on the account used for testing, the
+  organisation's Copilot policy (`allowedMcpServers`) does not allow a local MCP server, so
+  `validate_deck` and `screenshot_slide` were missing. Hence a new, backend-neutral **check after
+  every turn**: Slidecraft runs the deck check on every deck a turn changed, shows any problem in
+  the conversation (`deck-check` event) and passes errors to the agent with the next message. The
+  skill tells an agent without the tools to rely on it.
+- `--trust-folder` cannot be combined with `--session-id`, and is not needed: the vault's skill
+  loads without it.
+- The per-conversation choice of backend is a selector in the panel when starting a conversation
+  (shown when more than one agent is ready); Settings sets the default.
 
 ## 4. Risks
 
@@ -300,3 +326,12 @@ run, and no code or doc mentions the HTTP provider.
 - **Permission flags differ per CLI.** Copilot may not offer the same allow-list as Claude. The
   `AgentBackend` exposes its abilities, and the UI shows what it cannot enforce.
 - **Migrating existing configs.** Write a backup of `config.json` before the first rewrite.
+
+## 5. Outcome
+
+All six phases are done. The deck workspace, the vault conversation on the home page, two agent
+backends behind one interface, three skills, per-turn checkpoints and attachments replace the chat
+page and the persona guides; vaults replace mounting every content folder at once. What is left is
+listed in `docs/ROADMAP.md`.
+
+---

@@ -7,18 +7,23 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFile
 import { join } from 'node:path'
 import type { AgentBackendId, AgentEvent, AgentEventBody, MessageContext, ThreadDetail, ThreadInfo, TurnDiff } from '../../../shared/agent.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
-import { buildAgentInstructions, buildDeckContext } from '../chat/prompt.ts'
+import { buildAgentInstructions, buildDeckContext } from './prompt.ts'
 import { getAgentSettings, getContentSource, type ContentSource } from '../contentSources.ts'
 import { readDeckSource } from '../deckStore.ts'
 import { resolveDeckRefInSources } from '../decks.ts'
 import { broadcast } from '../events.ts'
 import type { AgentBackend } from './backend.ts'
+import { checkDeck } from '../deckChecks.ts'
 import { beginCheckpoint, CheckpointError, finishCheckpoint, turnDiff, undoTurn } from './checkpoints.ts'
 import { claudeCodeBackend } from './claudeCode.ts'
+import { copilotBackend } from './copilot.ts'
 
 // ---- Backends ------------------------------------------------------------------------------
 
-const backends = new Map<AgentBackendId, AgentBackend>([[claudeCodeBackend.id, claudeCodeBackend]])
+const backends = new Map<AgentBackendId, AgentBackend>([
+  [claudeCodeBackend.id, claudeCodeBackend],
+  [copilotBackend.id, copilotBackend],
+])
 
 export const getBackends = (): AgentBackend[] => [...backends.values()]
 export const getBackend = (id: AgentBackendId): AgentBackend | undefined => backends.get(id)
@@ -266,6 +271,7 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
     try {
       const files = finishCheckpoint(vault.path, id, turn)
       if (files.length) append(vault, thread, turn, { type: 'changes', files })
+      await checkChangedDecks(vault, thread, turn, files.filter((f) => f.status !== 'deleted' && f.path.endsWith('/index.mdx')).map((f) => f.path))
     } catch (error) {
       console.warn(`Could not finish the checkpoint: ${(error as Error).message}`)
     }
@@ -276,6 +282,26 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
     announce(thread)
   })()
   return infoOf(thread)
+}
+
+/**
+ * Check every deck a turn changed, whatever the backend could check itself (Copilot may run
+ * without the Slidecraft tools). Problems go into the conversation; errors also go to the agent
+ * with the next message.
+ */
+async function checkChangedDecks(vault: ContentSource, thread: StoredThread, turn: number, paths: string[]): Promise<void> {
+  for (const path of paths) {
+    const resolved = resolveDeckRefInSources({ source: vault.id, path: path.slice(0, -'/index.mdx'.length) })
+    const source = resolved ? await readDeckSource(resolved) : null
+    if (source === null) continue
+    const result = await checkDeck(source)
+    if (result.problems.length === 0) continue
+    append(vault, thread, turn, { type: 'deck-check', path, ok: result.ok, problems: result.problems.slice(0, 20) })
+    if (!result.ok) {
+      const errors = result.problems.filter((p) => p.severity === 'error').map((p) => `${p.line ? `line ${p.line}: ` : ''}${p.message}`)
+      thread.notes = [...(thread.notes ?? []), `After your last turn, ${path} has problems to fix: ${errors.join('; ')}`]
+    }
+  }
 }
 
 /** What one turn changed, file by file. */

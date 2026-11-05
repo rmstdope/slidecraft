@@ -12,7 +12,7 @@ What Slidecraft does today, and what may come next. The detailed build history i
 - Vaults: named content folders shown one at a time, with read-only vaults and live reload.
 - Presenter view with notes, next slide and timer; drawing and annotations in both windows.
 - Single-file HTML export with reader mode; PDF export through headless Chrome.
-- AI chat with an OpenAI-compatible API, Claude Code or Copilot CLI; MCP server for any agent.
+- The agent in the app: Claude Code or the Copilot CLI streaming into a deck workspace, with approvals, per-turn undo, attachments and three skills; an MCP server for any other agent.
 - Release binaries for macOS, Linux and Windows; a static docs site with the example decks.
 
 ## Planned

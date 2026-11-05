@@ -163,7 +163,7 @@ export const claudeCodeBackend: AgentBackend = {
   name: 'Claude Code',
 
   async detect(): Promise<AgentBackendInfo> {
-    const base = { id: 'claude-code' as const, name: 'Claude Code' }
+    const base = { id: 'claude-code' as const, name: 'Claude Code', approvals: true }
     const binary = claudeBinary()
     if (!binary) return { ...base, available: false, detail: 'Install Claude Code, then run `claude` once in a terminal to sign in.' }
     const [versionText, authText] = await Promise.all([output([binary, '--version']), output([binary, 'auth', 'status'])])

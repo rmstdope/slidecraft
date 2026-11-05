@@ -10,9 +10,7 @@ import { startFileWatcher } from './lib/fileWatcher.ts'
 import { errorJson, json, preflight } from './lib/http.ts'
 import { APP_ID, DIST_DIR, hasFlag, IS_BUNDLED, PORT, VERSION } from './lib/paths.ts'
 import { serveAppFile, serveFileFrom } from './lib/static.ts'
-import { handleApplyFix } from './routes/applyFix.ts'
 import { handleAgent } from './routes/agent.ts'
-import { handleChat } from './routes/chat.ts'
 import { handleExport } from './routes/export.ts'
 import { handleCreatePresentation, handlePresentations, handleThemes, handleVaults } from './routes/content.ts'
 import { handleDeleteImage, handleListImages, handleUpload } from './routes/images.ts'
@@ -40,8 +38,6 @@ export async function router(request: Request): Promise<Response> {
   if (pathname === '/api/vaults' || pathname.startsWith('/api/vaults/')) return handleVaults(request, url)
   if (method === 'GET' && pathname === '/api/themes') return handleThemes(url)
   if (pathname.startsWith('/api/agent/')) return handleAgent(request, url)
-  if (method === 'POST' && pathname === '/api/chat') return handleChat(request)
-  if (method === 'POST' && pathname === '/api/apply-fix') return handleApplyFix(request)
   if (method === 'POST' && (pathname === '/api/images/upload' || pathname === '/api/images')) return handleUpload(request)
   if (method === 'DELETE' && pathname === '/api/images') return handleDeleteImage(request)
   if (method === 'GET' && pathname.startsWith('/api/images/')) return handleListImages(url)
@@ -77,8 +73,6 @@ async function main() {
     process.exit(0)
   }
   if (persistMigratedConfig()) console.log('Moved the content folders in the config file to vaults (the old file is kept as config.json.bak)')
-  const key = process.env.AI_API_KEY
-  console.log(key ? `AI_API_KEY: ${key.slice(0, 8)}…${key.slice(-4)}` : 'AI_API_KEY is not set: the HTTP chat provider is unavailable (CLI providers still work).')
   console.log(`Slidecraft ${VERSION}`)
   for (const s of getContentSources()) console.log(`Vault ${s.name} (${s.id}): ${s.path}${s.readOnly ? ', read-only' : ''}${s.temporary ? ', this run only' : ''}`)
   await startFileWatcher()

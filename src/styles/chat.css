@@ -482,3 +482,33 @@
 .agent-diff__line.is-remove {
   background: rgba(224, 69, 43, 0.18);
 }
+.agent-chat__backend {
+  height: 32px;
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--dark-text);
+  font: inherit;
+  font-size: 0.75rem;
+}
+.agent-check {
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 180, 0, 0.35);
+  background: rgba(245, 180, 0, 0.06);
+  font-size: 0.75rem;
+  color: var(--dark-muted);
+}
+.agent-check.is-bad {
+  border-color: rgba(224, 69, 43, 0.45);
+  background: rgba(224, 69, 43, 0.08);
+}
+.agent-check strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--dark-text);
+}
+.agent-check ul {
+  padding-left: 1.1rem;
+}

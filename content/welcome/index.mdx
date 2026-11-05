@@ -699,8 +699,8 @@ import docsShot from './images/docs.png'
 <Slide scheme="dark" accent="navy" gradient="radial-accent">
   <Subtitle>Agent</Subtitle>
   <Title>Describe the deck, the agent writes it</Title>
-  <Text muted>Claude Code works in your vault, next to the slides, the code and the preview.</Text>
-  <Notes>11:20-11:40. Section opener for the agent. It uses your own Claude Code and its login; nothing else to set up.</Notes>
+  <Text muted>Claude Code or the Copilot CLI works in your vault, next to the code and the preview.</Text>
+  <Notes>11:20-11:40. Section opener for the agent. It uses your own Claude Code or Copilot CLI and its login; Settings picks which one new conversations use.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="navy" layout="document">
@@ -745,7 +745,7 @@ import docsShot from './images/docs.png'
       ["Wait for an answer when you press Stop", "The turn ends and the question is denied"],
     ]}
   />
-  <Notes>Claude Code streams into the chat: its text, each tool call and each changed file, as they happen. Conversations are kept in the vault's .slidecraft folder and pick up where they left off after a restart.</Notes>
+  <Notes>Claude Code streams into the chat: its text, each tool call and each changed file, as they happen. The Copilot CLI cannot ask from inside Slidecraft, so it may only edit files in the vault and everything else is refused. After every turn Slidecraft checks the decks that changed. Conversations are kept in the vault's .slidecraft folder and pick up where they left off after a restart.</Notes>
 </Slide>
 
 <Slide scheme="dark" accent="teal" gradient="radial-accent">

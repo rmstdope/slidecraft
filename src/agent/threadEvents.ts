@@ -2,7 +2,7 @@
  * Folding a thread's events into what the chat shows (UX overhaul U2). Pure, so it is tested
  * without a browser. Live text arrives as deltas; the stored thread has them merged.
  */
-import type { AgentEvent, FileChange, ToolCallInfo } from '@shared/agent.ts'
+import type { AgentEvent, DeckProblem, FileChange, ToolCallInfo } from '@shared/agent.ts'
 
 /** Add a live event to the list: skip what is already there, merge text deltas of one turn. */
 export function addEvent(events: AgentEvent[], event: AgentEvent): AgentEvent[] {
@@ -28,6 +28,8 @@ export interface Turn {
   files: string[]
   /** What the turn changed, from its checkpoint; undo is offered for these. */
   changes: FileChange[]
+  /** Slidecraft's own check of the decks the turn changed, when it found something. */
+  checks: { path: string; ok: boolean; problems: DeckProblem[] }[]
   undone?: boolean
   done?: { ok: boolean; error?: string; costUsd?: number; stopped?: boolean }
 }
@@ -38,7 +40,7 @@ export function toTurns(events: AgentEvent[]): Turn[] {
   for (const event of events) {
     let turn = turns.get(event.turn)
     if (!turn) {
-      turn = { turn: event.turn, items: [], files: [], changes: [] }
+      turn = { turn: event.turn, items: [], files: [], changes: [], checks: [] }
       turns.set(event.turn, turn)
     }
     const lastItem = turn.items[turn.items.length - 1]
@@ -72,6 +74,9 @@ export function toTurns(events: AgentEvent[]): Turn[] {
         break
       case 'changes':
         turn.changes = event.files
+        break
+      case 'deck-check':
+        turn.checks.push({ path: event.path, ok: event.ok, problems: event.problems })
         break
       case 'turn-undone':
         turn.undone = true
