@@ -91,7 +91,7 @@ const MODES: Record<AppMode, { label: string; shortcuts: Shortcut[] }> = {
       { keys: ['↑', '↓'], action: 'Previous or next slide (outside the editor)', category: 'Slides' },
       { keys: ['Alt', '↑'], action: 'Move slide up', category: 'Slides' },
       { keys: ['Alt', '↓'], action: 'Move slide down', category: 'Slides' },
-      { keys: ['Esc'], action: 'Leave the text editor', category: 'Editing' },
+      { keys: ['Esc'], action: 'Back to the home page', category: 'File' },
       { keys: ['Enter'], action: 'Focus the text editor', category: 'Editing' },
     ],
   },

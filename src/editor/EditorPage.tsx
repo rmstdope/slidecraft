@@ -13,7 +13,7 @@ import { presentationUrl } from '../router'
 import { listThemes, resolveTheme } from '../themes/registry'
 import { DeckLookContext, useThemesVersion } from '../themes/ThemeContext'
 import { ACCEPTED_IMAGE_TYPES, uploadImage } from './api'
-import type { CompileTarget } from './compileSlide'
+import { compileSlidePreview, type CompileTarget } from './compileSlide'
 import { ContextualToolbar } from './components/ContextualToolbar'
 import { HelpPanel } from './components/HelpPanel'
 import { ImagePickerModal } from './components/ImagePickerModal'
@@ -25,8 +25,9 @@ import { SlideSidebar } from './components/SlideSidebar'
 import { getCursorContext, type CursorContext } from './cursorContext'
 import { deleteElementAt, formatMdx, setPropAt } from './sourceEdits'
 import { usePresentation } from './usePresentation'
+import { useAutosave } from './useAutosave'
 import { StillPlaceholder } from './components/SlideStill'
-import { Badge, Button, cn, Field, LoadingScreen, NativeSelect, Popover, SegmentedControl } from '../ui'
+import { Badge, Button, cn, Dialog, Field, LoadingScreen, NativeSelect, Popover, SegmentedControl, Switch } from '../ui'
 
 export interface EditorPageProps {
   deck: DeckRef
@@ -45,6 +46,7 @@ const VIEWS: { value: WorkspaceView; label: string }[] = [
 ]
 const VIEW_KEY = 'slidecraft-workspace-view'
 const CHAT_KEY = 'slidecraft-workspace-chat'
+const AUTOSAVE_KEY = 'slidecraft-workspace-autosave'
 function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
     const value = localStorage.getItem(key)
@@ -87,6 +89,9 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   const [palette, setPalette] = useState<'insert' | 'add-slide' | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  // Leaving with unsaved changes asks first: save, discard or stay.
+  const [leaving, setLeaving] = useState<'asking' | 'saving' | 'failed' | null>(null)
+  const saveAndLeaveRef = useRef<HTMLButtonElement>(null)
   const [imageProp, setImageProp] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -96,6 +101,11 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   const [view, setView] = useState<WorkspaceView>(() => stored(VIEW_KEY, ['preview', 'code', 'split'], 'preview'))
   const [chatOpen, setChatOpen] = useState(() => stored(CHAT_KEY, ['open', 'closed'], 'open') === 'open')
   const [agentRunning, setAgentRunning] = useState(false)
+  const [autosave, setAutosave] = useState(() => stored(AUTOSAVE_KEY, ['on', 'off'], 'on') === 'on')
+  const chooseAutosave = (on: boolean) => {
+    setAutosave(on)
+    store(AUTOSAVE_KEY, on ? 'on' : 'off')
+  }
   const resizing = useRef<'sidebar' | 'editor' | 'chat' | null>(null)
   const chooseView = (next: WorkspaceView) => {
     setView(next)
@@ -153,17 +163,55 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   /** Before a message goes to the agent: save, so it works on what is on screen. */
   const beforeSend = useCallback(async () => (state.isDirty ? actions.save() : true), [state.isDirty, actions])
 
-  const exit = () => {
-    if (state.isDirty && !window.confirm('You have unsaved changes. Leave anyway?')) return
+  // Autosave writes only what compiles: half-typed MDX would break the deck's card, an open
+  // presenter window and what the agent reads. A deck in whole-file mode does not parse at all.
+  const latestText = useRef<string | null>(null)
+  latestText.current = selected?.text ?? null
+  const slideCompiles = async (): Promise<boolean> => {
+    if (state.raw) return false
+    if (!selected) return true
+    const slideText = selected.text
+    try {
+      await compileSlidePreview(slideText, target)
+    } catch {
+      return false
+    }
+    return latestText.current === slideText // typed on meanwhile: the next edit's timer saves
+  }
+  const autosaveNow = async () => {
+    if (!state.isDirty || state.isSaving || readOnly || leaving) return
+    if (await slideCompiles()) await actions.save()
+  }
+  useAutosave({ enabled: autosave && !deckReadOnly, dirty: state.isDirty, version: state.model ?? state.raw, save: () => void autosaveNow() })
+
+  const exiting = useRef(false)
+  const leave = () => {
     navigatingAway.current = true
     onExit()
+  }
+  const exit = async () => {
+    if (exiting.current) return
+    if (!state.isDirty) return leave()
+    // With autosave on, leaving saves what is pending; it asks only when that cannot be saved.
+    if (autosave && !readOnly) {
+      exiting.current = true
+      const saved = (await slideCompiles()) && (await actions.save())
+      exiting.current = false
+      if (saved) return leave()
+    }
+    setLeaving('asking')
+  }
+  const saveAndLeave = async () => {
+    setLeaving('saving')
+    if (await actions.save()) leave()
+    else setLeaving('failed')
   }
 
   // Keyboard (Part 3 §2.5): capture phase, so these run before Monaco.
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {})
   keyHandler.current = (e) => {
     const mod = e.metaKey || e.ctrlKey
-    if (palette || imageProp || shortcutsOpen) return
+    if (palette || imageProp || shortcutsOpen || leaving) return
     if (mod && e.key.toLowerCase() === 's') {
       e.preventDefault()
       e.stopPropagation() // e.g. ⌘K would otherwise start a Monaco chord
@@ -191,10 +239,6 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
       actions.selectByOffset(e.key === 'PageUp' ? -1 : 1)
       return
     }
-    if (e.key === 'Escape' && inMonaco(e.target)) {
-      ;(document.activeElement as HTMLElement | null)?.blur()
-      return
-    }
     if (e.key === 'Enter' && !inMonaco(e.target) && !inField(e.target) && selected) {
       e.preventDefault()
       editorRef.current?.focus()
@@ -212,6 +256,21 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
     const onKey = (e: KeyboardEvent) => keyHandler.current(e)
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+
+  // Esc goes home from anywhere in the workspace, like the back arrow. It listens in the bubble
+  // phase and skips an Esc that something already handled: a menu or dialog, or Monaco's
+  // suggestions and find widget.
+  const escapeHandler = useRef<(e: KeyboardEvent) => void>(() => {})
+  escapeHandler.current = (e) => {
+    if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing || palette || imageProp || shortcutsOpen || leaving) return
+    e.preventDefault()
+    void exit()
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => escapeHandler.current(e)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   useEffect(() => {
@@ -308,7 +367,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
       <DeckLookContext.Provider value={deckLook}>
         <div className="sc-app tw:flex tw:h-full tw:flex-col tw:bg-ground">
           <header className="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5 tw:px-3.5 tw:py-2.5">
-            <Button size="icon" onClick={exit} aria-label="Back to presentations" title="Back to presentations">
+            <Button size="icon" onClick={() => void exit()} aria-label="Back to presentations" title="Back to presentations">
               <ArrowLeft aria-hidden />
             </Button>
             <div className="tw:flex tw:min-w-0 tw:flex-col">
@@ -384,6 +443,12 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
             <Button size="icon" variant={helpOpen ? 'quiet' : 'ghost'} aria-pressed={helpOpen} onClick={() => setHelpOpen((h) => !h)} aria-label="Help" title="Component reference and shortcuts">
               <CircleHelp aria-hidden />
             </Button>
+            {!deckReadOnly && (
+              <label className="tw:flex tw:cursor-pointer tw:items-center tw:gap-2 tw:px-1 tw:text-[13px] tw:text-fg-2 tw:select-none" title="Save a moment after each change, once the slide compiles">
+                <Switch checked={autosave} onCheckedChange={chooseAutosave} />
+                Autosave
+              </label>
+            )}
             {!deckReadOnly && (
               <Button disabled={!state.isDirty || state.isSaving || agentRunning} onClick={() => void actions.save()} title="Save (⌘S)">
                 {state.isSaving ? 'Saving…' : 'Save'}
@@ -581,6 +646,29 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
             onSelect={(path) => imageProp && context.type === 'component' && applyText(setPropAt(text, context.tagStart, imageProp, path))}
           />
           <KeyboardShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} mode="editor" />
+          <Dialog
+            open={leaving !== null}
+            onOpenChange={(open) => !open && leaving !== 'saving' && setLeaving(null)}
+            title={`Save changes to ${deckName(deck)}?`}
+            description="Your changes are lost if you leave without saving."
+            onOpenAutoFocus={(e) => {
+              e.preventDefault()
+              saveAndLeaveRef.current?.focus()
+            }}
+          >
+            {leaving === 'failed' && <p className="tw:m-0 tw:text-removed">Saving failed{state.error ? `: ${state.error}` : '.'}</p>}
+            <div className="tw:flex tw:justify-end tw:gap-2">
+              <Button variant="ghost" disabled={leaving === 'saving'} onClick={() => setLeaving(null)}>
+                Cancel
+              </Button>
+              <Button disabled={leaving === 'saving'} onClick={leave}>
+                Don't save
+              </Button>
+              <Button ref={saveAndLeaveRef} variant="primary" disabled={leaving === 'saving'} onClick={() => void saveAndLeave()}>
+                {leaving === 'saving' ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </Dialog>
         </div>
       </DeckLookContext.Provider>
     </DeckContext.Provider>

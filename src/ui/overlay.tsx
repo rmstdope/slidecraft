@@ -11,6 +11,7 @@ export function Dialog({
   description,
   children,
   className,
+  onOpenAutoFocus,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -18,12 +19,15 @@ export function Dialog({
   description?: ReactNode
   children?: ReactNode
   className?: string
+  /** Called as the dialog opens; `preventDefault()` and focus something else to move the initial focus. */
+  onOpenAutoFocus?: (event: Event) => void
 }) {
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
         <D.Overlay className="tw:fixed tw:inset-0 tw:z-50 tw:bg-black/40" />
         <D.Content
+          onOpenAutoFocus={onOpenAutoFocus}
           className={cn(
             'sc-app tw:fixed tw:top-1/2 tw:left-1/2 tw:z-50 tw:flex tw:max-h-[85vh] tw:w-[min(480px,calc(100vw-32px))] tw:-translate-x-1/2 tw:-translate-y-1/2 tw:flex-col tw:gap-4 tw:overflow-auto tw:rounded-2xl tw:bg-raised tw:p-6 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)]',
             className,
