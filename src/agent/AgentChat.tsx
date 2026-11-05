@@ -156,9 +156,10 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
         </div>
       )}
 
+      {/* The live region is always rendered (a region that appears with its first update is often not announced); its padding goes when it is empty. */}
       <div
         ref={listRef}
-        className={cn('tw:flex tw:flex-col tw:gap-3.5 tw:overflow-y-auto tw:px-4 tw:text-[14px] tw:empty:hidden', compact ? 'tw:max-h-[360px] tw:py-3' : 'tw:flex-1 tw:py-4')}
+        className={cn('tw:flex tw:flex-col tw:gap-3.5 tw:overflow-y-auto tw:px-4 tw:text-[14px]', compact ? 'tw:max-h-[360px] tw:py-3 tw:empty:py-0' : 'tw:flex-1 tw:py-4')}
         aria-live="polite"
       >
         {unavailable && (

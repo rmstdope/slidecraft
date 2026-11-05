@@ -60,7 +60,10 @@ function store(key: string, value: string): void {
 /** Inside Monaco, including its floating widgets (quick-fix menu, suggest list, hovers), which render outside the editor. */
 const inMonaco = (el: EventTarget | null) =>
   el instanceof Element && !!el.closest('.monaco-editor, .context-view, .action-widget, .monaco-hover, .overflowingContentWidgets, .monaco-menu-container')
-const inField = (el: EventTarget | null) => el instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)
+/** A form control, including Radix selects and menus (a button trigger and role=option items), which need the arrow keys and Enter. */
+const inField = (el: EventTarget | null) =>
+  el instanceof HTMLElement &&
+  (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable || !!el.closest('[role=combobox],[role=listbox],[role=option],[role=menu],[role=menuitem]'))
 
 /**
  * The deck workspace (UX overhaul U3; the editor of Part 3 §2): the agent conversation, the slide
