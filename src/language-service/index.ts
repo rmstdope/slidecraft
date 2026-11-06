@@ -13,6 +13,6 @@ export function registryLanguageService(dynamicValues?: DynamicValues, vault?: s
     components: getAllComponents(vault).map((c) => convertRegistryConfig(c.registry)),
     toolbar: (name) => convertToolbarConfig(getToolbarConfig(name, vault)),
     dynamicValues,
-    unavailable: getSourceProblems(vault).map(({ name, message }) => ({ name, message })),
+    unavailable: getSourceProblems(vault).filter((p) => !p.template).map(({ name, message }) => ({ name, message })),
   })
 }

@@ -5,7 +5,8 @@
  * built-in of the same name stays in use.
  */
 import { checkFolderDefinitions } from '@shared/vaultComponents.ts'
-import { captureDefinitions, registerSource, type ComponentDefinition, type ComponentProblem } from '../components/slides/defineComponent'
+import { parseVaultTemplate, type VaultTemplateFile } from '@shared/vaultTemplates.ts'
+import { captureDefinitions, getAllTemplates, registerSource, type ComponentDefinition, type ComponentProblem, type RegistryConfig } from '../components/slides/defineComponent'
 
 export interface LoadedFolder {
   name: string
@@ -41,11 +42,48 @@ export async function loadFolder(name: string, hash: string, load: () => Promise
 export const BLOCKED_MESSAGE = "this vault's components are blocked (Settings › Vaults)"
 export const UNDECIDED_MESSAGE = "this vault's components have not been allowed to run yet"
 
-/** Registers a vault's folders as its source; the ones with an error become problems. */
-export function registerFolders(vault: string, folders: readonly LoadedFolder[], blocked: readonly string[] = [], blockedMessage = BLOCKED_MESSAGE): void {
+export interface VaultEntries {
+  /** Folders whose code may not run yet: listed as problems, so their slides get placeholders. */
+  blocked?: readonly string[]
+  blockedMessage?: string
+  /** The vault's template files; they load whether or not its components may run. */
+  templates?: readonly VaultTemplateFile[]
+}
+
+/**
+ * The vault's templates as registry entries. A broken file, a name used twice, or an id another
+ * entry already has under a different name (the gallery and palette key by id) is a problem.
+ */
+export function templateEntries(templates: readonly VaultTemplateFile[]): { templates: RegistryConfig[]; problems: ComponentProblem[] } {
+  const entries: RegistryConfig[] = []
+  const problems: ComponentProblem[] = []
+  const parsed = templates.map((file) => ({ folder: file.id, ...parseVaultTemplate(file) }))
+  // Built-ins the vault replaces by name are out of the merged view, so their ids are free.
+  const replaced = new Set(parsed.flatMap((p) => (p.template ? [p.template.name] : [])))
+  const builtins = getAllTemplates(null).filter((b) => !replaced.has(b.name))
+  for (const p of parsed) {
+    if (p.error !== undefined) {
+      problems.push({ name: p.name, message: p.error, template: true, folder: p.folder })
+      continue
+    }
+    const t = p.template
+    const clash = builtins.find((b) => b.id === t.id)
+    const problem = (message: string) => problems.push({ name: t.name, message, template: true, folder: p.folder })
+    if (clash) problem(`Its id ${t.id} (from the folder name) is the built-in template ${clash.name}'s; rename the folder, or name it ${clash.name} to replace that one`)
+    else if (entries.some((e) => e.name === t.name)) problem(`Another template in this vault is also named ${t.name}`)
+    else entries.push({ ...t, category: 'template', props: [] })
+  }
+  return { templates: entries, problems }
+}
+
+/** Registers a vault: its loaded component folders and its templates; failures become problems. */
+export function registerFolders(vault: string, folders: readonly LoadedFolder[], options: VaultEntries = {}): void {
+  const { blocked = [], blockedMessage = BLOCKED_MESSAGE } = options
+  const templates = templateEntries(options.templates ?? [])
   const problems: ComponentProblem[] = [
     ...folders.filter((f) => f.error !== undefined).map((f) => ({ name: f.name, message: f.error! })),
     ...blocked.map((name) => ({ name, message: blockedMessage, blocked: true })),
+    ...templates.problems,
   ]
-  registerSource(vault, { components: folders.flatMap((f) => f.components) }, problems)
+  registerSource(vault, { components: folders.flatMap((f) => f.components), templates: templates.templates }, problems)
 }

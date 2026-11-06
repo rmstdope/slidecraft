@@ -7,6 +7,8 @@ import { stripMdxFrontmatter } from '../shared/frontmatter.ts'
 import { resolveDeckRelative, rewriteDeckImports } from '../shared/mdxImports.ts'
 import { getMdxScope } from '../src/components/mdxScope'
 import { loadFolder, registerFolders } from '../src/vault-api/loadComponents'
+import { getAllTemplates, getSourceProblems } from '../src/components/slides/defineComponent'
+import { registryLanguageService } from '../src/language-service/index'
 
 const contentDir = join(import.meta.dir, '..', 'content')
 const decks = readdirSync(contentDir, { withFileTypes: true })
@@ -23,11 +25,30 @@ const componentsDir = join(contentDir, 'components')
 const folders = await Promise.all(
   (existsSync(componentsDir) ? readdirSync(componentsDir) : []).map((name) => loadFolder(name, 'test', () => import(join(componentsDir, name, 'index.tsx')))),
 )
-registerFolders(EXAMPLES, folders)
+const templatesDir = join(contentDir, 'templates')
+const templates = (existsSync(templatesDir) ? readdirSync(templatesDir) : [])
+  .filter((id) => existsSync(join(templatesDir, id, 'index.mdx')))
+  .map((id) => ({ id, text: readFileSync(join(templatesDir, id, 'index.mdx'), 'utf8') }))
+registerFolders(EXAMPLES, folders, { templates })
 
 test("the Examples vault's components load", () => {
   expect(folders.length).toBeGreaterThan(0)
   expect(folders.filter((f) => f.error).map((f) => `${f.name}: ${f.error}`)).toEqual([])
+})
+
+test("the Examples vault's templates parse and compile in its scope", async () => {
+  expect(templates.length).toBeGreaterThan(0)
+  expect(getSourceProblems(EXAMPLES)).toEqual([])
+  const own = getAllTemplates(EXAMPLES).filter((t) => templates.some((f) => t.id === `template-${f.id}`))
+  expect(own.length).toBe(templates.length)
+  const ls = registryLanguageService(undefined, EXAMPLES)
+  for (const t of own) {
+    expect(ls.diagnostics(t.snippet).filter((d) => d.severity === 'error')).toEqual([])
+    await compile(t.previewCode, {
+      jsx: true,
+      remarkPlugins: [[rewriteDeckImports, { deckName: t.id, knownComponents: Object.keys(getMdxScope(EXAMPLES)), resolveAsset: (_d: string, s: string) => s }]],
+    })
+  }
 })
 
 describe('example decks', () => {

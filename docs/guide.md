@@ -220,6 +220,14 @@ gallery's **This vault** filter shows only the vault's own, and a component that
 gets a card with the error. Until it is fixed, decks use the built-in of that name, or show a
 placeholder on the slides that use it.
 
+A vault can have its own slide **templates** too, in `templates/<id>/index.mdx`: frontmatter with a
+`name`, a `description` and optionally `keywords`, `useCases` and a `theme` (a frame template
+previews in it), then exactly one `<Slide>`. Write each value on one line, and quote one that
+contains ` #` (as in YAML, the rest would be a comment). They appear in **Add slide**, the palette and the
+gallery while the vault is open, and one with a built-in template's name replaces it there. The
+Examples vault's `templates/funnel-slide/` is one to copy. Templates are only text, so they load
+whether or not the vault's components may run.
+
 Components are code that runs with Slidecraft's access, so a vault you add asks once before
 they run; **Settings › Vaults** changes the choice (**Run its components**). Vaults created in the
 app, and the Examples vault, are trusted from the start. Until a vault is allowed, its slides

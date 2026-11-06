@@ -15,7 +15,8 @@ function stripFrontmatterPlugin(): Plugin {
     name: 'slidecraft:strip-mdx-frontmatter',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.split('?')[0].endsWith('.mdx')) return null
+      // ?raw imports (the Examples vault's templates in the static site) keep their frontmatter.
+      if (!id.split('?')[0].endsWith('.mdx') || /[?&]raw\b/.test(id)) return null
       const body = stripMdxFrontmatter(code)
       return body === code ? null : { code: body, map: null }
     },
@@ -33,7 +34,8 @@ export default defineConfig(({ command }) => {
     base: process.env.VITE_BASE ?? '/',
     plugins: [
       stripFrontmatterPlugin(),
-      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [dropComponentImports] }) },
+      // Vault templates (content/templates/) are read as text (?raw), never compiled as decks.
+      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [dropComponentImports], exclude: ['**/content/templates/**'] }) },
       react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
       // Only src/styles/app.css uses Tailwind; the export viewer inherits the plugin but never imports it.
       tailwindcss(),

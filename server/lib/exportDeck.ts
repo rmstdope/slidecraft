@@ -100,7 +100,7 @@ export interface ExportOptions {
 async function vaultComponentNames(vault: string): Promise<string[]> {
   await ensureServerComponents(vault)
   const own = getAllComponents(vault).filter((c) => sourceOfEntry(c.registry) !== BUILTIN_SOURCE).map((c) => c.registry.name)
-  return [...new Set([...own, ...getSourceProblems(vault).map((p) => p.name)])]
+  return [...new Set([...own, ...getSourceProblems(vault).filter((p) => !p.template).map((p) => p.name)])]
 }
 
 export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Promise<{ html: string; name: string }> {

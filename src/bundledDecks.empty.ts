@@ -4,3 +4,4 @@ export const presentationModules: Record<string, DeckModuleLoader> = {}
 export const bundledThemeSpecs: Record<string, unknown> = {}
 export const bundledThemeAssets: Record<string, string> = {}
 export const bundledComponentModules: Record<string, () => Promise<unknown>> = {}
+export const bundledTemplateTexts: Record<string, string> = {}

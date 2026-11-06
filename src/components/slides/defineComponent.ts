@@ -77,6 +77,10 @@ export interface ComponentProblem {
   name: string
   message: string
   blocked?: boolean
+  /** A template's problem (V3); it has no placeholder, since no slide uses a template by name. */
+  template?: boolean
+  /** The template's folder, which tells two problems with the same name apart. */
+  folder?: string
 }
 
 const builtins: SourceEntries = { components: [], templates: [] }
@@ -198,7 +202,7 @@ export function clearSource(source: string): void {
   if (problems.delete(source) || had) changed()
 }
 
-/** The vault's components that are not in use, and why. */
+/** The vault's components (and templates) that are not in use, and why. */
 export const getSourceProblems = (vault?: string | null): readonly ComponentProblem[] => {
   const resolved = vault === undefined ? activeVault : vault
   return (resolved && problems.get(resolved)) || []

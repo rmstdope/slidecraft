@@ -7,9 +7,10 @@
 import { useSyncExternalStore } from 'react'
 import { BUILT_IN_SOURCE_ID } from '@shared/decks.ts'
 import type { ComponentTrust, VaultComponentInfo } from '@shared/vaultComponents.ts'
+import type { VaultTemplateFile } from '@shared/vaultTemplates.ts'
 import { fetchVaultComponents, setVaultComponentTrust } from '../api'
 import { appPath, IS_STATIC } from '../basePath'
-import { bundledComponentModules } from '../bundledDecks'
+import { bundledComponentModules, bundledTemplateTexts } from '../bundledDecks'
 import { setActiveVault } from '../components/slides/defineComponent'
 import { subscribeServerEvents } from '../hooks/useSSE'
 import { BLOCKED_MESSAGE, loadFolder, registerFolders, reusable, UNDECIDED_MESSAGE, type LoadedFolder } from './loadComponents'
@@ -17,6 +18,7 @@ import { BLOCKED_MESSAGE, loadFolder, registerFolders, reusable, UNDECIDED_MESSA
 export interface VaultComponentsState {
   trust: ComponentTrust
   components: VaultComponentInfo[]
+  templates?: VaultTemplateFile[]
   /** The listing could not be fetched. */
   error?: string
 }
@@ -53,7 +55,7 @@ async function refresh(vault: string, entry: Entry): Promise<void> {
     notify()
     return
   }
-  const { trust, components } = result.data
+  const { trust, components, templates = [] } = result.data
   const folders = new Map<string, LoadedFolder>()
   for (const info of components) {
     const previous = entry.folders.get(info.name)
@@ -61,9 +63,9 @@ async function refresh(vault: string, entry: Entry): Promise<void> {
     folders.set(info.name, same ? previous! : trust === 'trusted' ? await importFolder(info) : { name: info.name, hash: info.hash, components: [] })
   }
   entry.folders = folders
-  entry.state = { trust, components }
-  if (trust === 'trusted') registerFolders(vault, [...folders.values()])
-  else registerFolders(vault, [], components.map((c) => c.name), trust === 'blocked' ? BLOCKED_MESSAGE : UNDECIDED_MESSAGE)
+  entry.state = { trust, components, templates }
+  if (trust === 'trusted') registerFolders(vault, [...folders.values()], { templates })
+  else registerFolders(vault, [], { blocked: components.map((c) => c.name), blockedMessage: trust === 'blocked' ? BLOCKED_MESSAGE : UNDECIDED_MESSAGE, templates })
   notify()
 }
 
@@ -92,9 +94,13 @@ function staticExamples(entry: Entry): Promise<void> {
       const name = /\/components\/([^/]+)\/index\.tsx$/.exec(file)?.[1]
       if (name) folders.push(await loadFolder(name, 'bundled', load))
     }
+    const templates = Object.entries(bundledTemplateTexts).flatMap(([file, text]) => {
+      const id = /\/templates\/([^/]+)\/index\.mdx$/.exec(file)?.[1]
+      return id ? [{ id, text }] : []
+    })
     entry.folders = new Map(folders.map((f) => [f.name, f]))
-    entry.state = { trust: 'trusted', components: folders.map((f) => ({ name: f.name, hash: f.hash, ...(f.error ? { error: f.error } : {}) })) }
-    registerFolders(BUILT_IN_SOURCE_ID, folders)
+    entry.state = { trust: 'trusted', components: folders.map((f) => ({ name: f.name, hash: f.hash, ...(f.error ? { error: f.error } : {}) })), templates }
+    registerFolders(BUILT_IN_SOURCE_ID, folders, { templates })
     notify()
   })()
 }

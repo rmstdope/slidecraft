@@ -20,7 +20,9 @@ import { exportDeck } from '../server/lib/exportDeck.ts'
 import { PAYLOAD_ELEMENT_ID, type ExportPayload } from '../shared/exportPayload.ts'
 import { getAllComponents, getSourceProblems, registerSource, clearSource } from '../src/components/slides/defineComponent'
 import { getMdxScope } from '../src/components/mdxScope'
-import { registerFolders } from '../src/vault-api/loadComponents'
+import { registerFolders, templateEntries } from '../src/vault-api/loadComponents'
+import { parseTemplateFrontmatter, parseVaultTemplate } from '../shared/vaultTemplates.ts'
+import { getAllTemplates } from '../src/components/slides/defineComponent'
 
 const root = mkdtempSync(join(tmpdir(), 'slidecraft-vault-components-'))
 const acme = join(root, 'acme')
@@ -39,6 +41,8 @@ function write(file: string, text: string) {
   writeFileSync(file, text)
 }
 
+const template = (name: string, body = '<Slide>\n  <Title>Thanks</Title>\n</Slide>') => `---\nname: ${name}\ndescription: Ends a pitch.\nkeywords: [close, end]\n---\n${body}\n`
+
 const deck = (body: string) => `import { Presentation, Slide, Title } from '@components'\n\n<Presentation>\n\n<Slide>\n  <Title>T</Title>\n  ${body}\n</Slide>\n\n</Presentation>\n`
 
 beforeAll(() => {
@@ -49,6 +53,7 @@ beforeAll(() => {
   write(join(acme, 'pitch', 'index.mdx'), deck('<Funnel label="x" />'))
   write(join(stranger, 'components', 'Funnel', 'index.tsx'), component('Funnel'))
   write(join(stranger, 'talk', 'index.mdx'), deck('<Funnel />'))
+  write(join(stranger, 'templates', 'pitch-close', 'index.mdx'), template('Pitch Close'))
   initContentSources(
     {
       vaults: [
@@ -201,9 +206,84 @@ describe('review fixes', () => {
   })
 })
 
+describe('templates', () => {
+  test('frontmatter: values, inline lists and dash lists', () => {
+    expect(parseTemplateFrontmatter('name: "A b"\nkeywords: [x, \'y\']\nuseCases:\n  - one\n  - two\ntheme: folio # frame').values).toEqual({
+      name: 'A b',
+      keywords: ['x', 'y'],
+      useCases: ['one', 'two'],
+      theme: 'folio',
+    })
+  })
+
+  test('frontmatter: # and commas inside quotes are text; multi-line values are reported', () => {
+    // As in YAML, an unquoted " #" starts a comment; quotes keep it.
+    const { values, problems } = parseTemplateFrontmatter('name: "Issue #3"\ndescription: Step #2 of 3\nkeywords: ["a, b", c]')
+    expect(values).toEqual({ name: 'Issue #3', description: 'Step', keywords: ['a, b', 'c'] })
+    expect(problems).toEqual([])
+    expect(parseTemplateFrontmatter('description: >\n  folded text').problems.join('\n')).toContain('multi-line')
+  })
+
+  test('a byte-order mark and CRLF line ends are not part of the template', () => {
+    const parsed = parseVaultTemplate({ id: 'w', text: `\uFEFF${template('Windows')}`.replace(/\n/g, '\r\n') })
+    expect(parsed.template?.name).toBe('Windows')
+    expect(parsed.template?.snippet).not.toContain('\r')
+  })
+
+  test('a template file becomes a registry entry; a theme wraps the preview', () => {
+    const parsed = parseVaultTemplate({ id: 'close', text: template('Pitch Close').replace('---\n<Slide', 'theme: folio\n---\n<Slide') })
+    expect(parsed.template).toMatchObject({ id: 'template-close', name: 'Pitch Close', description: 'Ends a pitch.', keywords: ['close', 'end'] })
+    expect(parsed.template!.snippet).toBe('<Slide>\n  <Title>Thanks</Title>\n</Slide>')
+    expect(parsed.template!.previewCode).toStartWith('<Presentation theme="folio">')
+  })
+
+  test('a template needs a name, a description and exactly one slide', () => {
+    expect(parseVaultTemplate({ id: 'a', text: '<Slide />' }).error).toContain('frontmatter')
+    expect(parseVaultTemplate({ id: 'a', text: '---\nname: A\n---\n<Slide></Slide>' }).error).toContain('no description')
+    expect(parseVaultTemplate({ id: 'a', text: template('A', '<Slide></Slide>\n<Slide></Slide>') }).error).toContain('exactly one')
+  })
+
+  test('one named like a built-in replaces it; an id taken by another name is a problem', () => {
+    const builtin = getAllTemplates(null)[0]
+    const clashing = templateEntries([{ id: builtin.id.replace(/^template-/, ''), text: template('Something Else') }])
+    expect(clashing.problems.map((p) => p.message).join('\n')).toContain(`is the built-in template ${builtin.name}'s`)
+    const { templates, problems } = templateEntries([
+      { id: 'mine', text: template(builtin.name) },
+      { id: 'twice', text: template('Pitch Close') },
+      { id: 'twice-again', text: template('Pitch Close') },
+    ])
+    expect(templates.map((t) => t.name)).toEqual([builtin.name, 'Pitch Close'])
+    expect(problems.map((p) => p.message).join('\n')).toContain('also named Pitch Close')
+    // Once the vault replaces that built-in by name, its id is free for a folder named after it.
+    const freed = templateEntries([
+      { id: 'mine', text: template(builtin.name) },
+      { id: builtin.id.replace(/^template-/, ''), text: template('Something Else') },
+    ])
+    expect(freed.problems).toEqual([])
+    registerFolders('template-test', [], { templates: [{ id: 'mine', text: template(builtin.name) }] })
+    const view = getAllTemplates('template-test')
+    expect(view.length).toBe(getAllTemplates(null).length)
+    expect(view.find((t) => t.name === builtin.name)?.description).toBe('Ends a pitch.')
+    // A template problem is not a component: no placeholder in the scope.
+    registerFolders('template-test', [], { templates: [{ id: 'bad', text: 'nothing' }] })
+    expect(getSourceProblems('template-test')[0]).toMatchObject({ template: true })
+    expect('bad' in (getMdxScope('template-test') as Record<string, unknown>)).toBe(false)
+    clearSource('template-test')
+  })
+
+  test("templates load in a vault whose components may not run", async () => {
+    setComponentTrust('stranger', 'blocked')
+    const listing = await listVaultComponents(getContentSource('stranger')!)
+    expect(listing.templates.map((t) => t.id)).toEqual(['pitch-close'])
+    await ensureServerComponents('stranger')
+    expect(getAllTemplates('stranger').some((t) => t.name === 'Pitch Close')).toBe(true)
+    setComponentTrust('stranger', 'trusted')
+  })
+})
+
 describe('the app side', () => {
   test('a component that is not loaded gets a placeholder in the scope, unless a built-in has its name', () => {
-    registerFolders('placeholder-test', [{ name: 'Gone', hash: 'h', components: [], error: 'boom' }], ['Stat'])
+    registerFolders('placeholder-test', [{ name: 'Gone', hash: 'h', components: [], error: 'boom' }], { blocked: ['Stat'] })
     const scope = getMdxScope('placeholder-test') as Record<string, unknown>
     expect(typeof scope.Gone).toBe('function')
     expect((scope.Gone as { displayName?: string }).displayName).toBe('Unavailable(Gone)')

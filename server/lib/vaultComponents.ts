@@ -12,6 +12,7 @@ import { join, relative, resolve, sep } from 'node:path'
 import type { BunPlugin } from 'bun'
 import { VAULT_MODULE_NAMES } from '../../shared/vaultRuntime.ts'
 import { COMPONENT_ENTRY, COMPONENT_NAME_RE, COMPONENTS_DIR, componentBundleUrl, type ComponentTrust, type VaultComponentInfo, type VaultComponentsListing } from '../../shared/vaultComponents.ts'
+import { TEMPLATE_ENTRY, TEMPLATE_ID_RE, TEMPLATES_DIR, type VaultTemplateFile } from '../../shared/vaultTemplates.ts'
 import { getComponentTrust, type ContentSource } from './contentSources.ts'
 
 const CODE_FILE = /\.(tsx?|jsx?|mjs)$/
@@ -29,6 +30,27 @@ export function componentFolders(source: ContentSource): string[] {
     return []
   }
   return names.filter((n) => COMPONENT_NAME_RE.test(n) && existsSync(join(dir, n, COMPONENT_ENTRY))).sort()
+}
+
+/** A vault's templates: `templates/<id>/index.mdx`, sorted by id. */
+export function templateFiles(source: ContentSource): VaultTemplateFile[] {
+  const dir = join(source.path, TEMPLATES_DIR)
+  if (!existsSync(dir)) return []
+  let ids: string[]
+  try {
+    ids = readdirSync(dir)
+  } catch {
+    return []
+  }
+  const out: VaultTemplateFile[] = []
+  for (const id of ids.filter((n) => TEMPLATE_ID_RE.test(n)).sort()) {
+    try {
+      out.push({ id, text: readFileSync(join(dir, id, TEMPLATE_ENTRY), 'utf8') })
+    } catch {
+      /* a folder without index.mdx is not a template */
+    }
+  }
+  return out
 }
 
 function codeFiles(dir: string): string[] {
@@ -75,20 +97,23 @@ export function folderHash(dir: string): string {
 
 /**
  * What changed on disk, cheaply: every code file's path, size and mtime in a vault's
- * `components/`. The watcher compares it on each poll (macOS directory watchers miss edits).
+ * `components/`, and its templates' text. The watcher compares it on each poll (macOS directory watchers miss edits).
  */
 export function componentsSignature(source: ContentSource): string {
-  const dir = componentsDir(source)
-  if (!existsSync(dir)) return ''
   const parts: string[] = []
-  for (const file of codeFiles(dir)) {
-    try {
-      const s = statSync(file)
-      parts.push(`${relative(dir, file)}:${s.size}:${s.mtimeMs}`)
-    } catch {
-      /* gone */
+  const dir = componentsDir(source)
+  if (existsSync(dir)) {
+    for (const file of codeFiles(dir)) {
+      try {
+        const s = statSync(file)
+        parts.push(`${relative(dir, file)}:${s.size}:${s.mtimeMs}`)
+      } catch {
+        /* gone */
+      }
     }
   }
+  // Templates (V3) reload the same way.
+  for (const t of templateFiles(source)) parts.push(`${TEMPLATES_DIR}/${t.id}:${t.text.length}:${t.text}`)
   return parts.join('|')
 }
 
@@ -180,7 +205,7 @@ export async function listVaultComponents(source: ContentSource): Promise<VaultC
     const bundle = await bundleComponent(source, name)
     components.push(bundle.error !== undefined ? { name, hash: bundle.hash, error: bundle.error } : { name, hash: bundle.hash, url: componentBundleUrl(source.id, name, bundle.hash) })
   }
-  return { vault: source.id, trust, components }
+  return { vault: source.id, trust, components, templates: templateFiles(source) }
 }
 
 /** `GET /content-source/<vault>/components/<Name>/index.js`: the bundle, for a trusted vault only. */

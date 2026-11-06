@@ -74,7 +74,8 @@ const SOURCE_FILTERS: { value: SourceFilter; label: string }[] = [
 
 const isVaultEntry = (item: RegistryConfig) => sourceOfEntry(item) !== BUILTIN_COMPONENTS
 /** A vault entry with a built-in's name replaces it in this vault. */
-const overridesBuiltin = (item: RegistryConfig) => isVaultEntry(item) && (item.category === 'component' ? !!getBuiltinComponent(item.name) : false)
+const overridesBuiltin = (item: RegistryConfig) =>
+  isVaultEntry(item) && (item.category === 'component' ? !!getBuiltinComponent(item.name) : getAllTemplates(null).some((t) => t.name === item.name))
 
 /** Where an entry comes from: Built-in, or the vault's name (and whether it replaces a built-in). */
 function SourceBadge({ item, vaultName }: { item: RegistryConfig; vaultName: string }) {
@@ -189,7 +190,7 @@ function GalleryCard({ item, vaultName, settings, theme, onOpen }: { item: Regis
 
 /** A vault component that is not in use: it failed to compile or load (board 5). */
 function ProblemCard({ problem, vaultName }: { problem: ComponentProblem; vaultName: string }) {
-  const fallback = getBuiltinComponent(problem.name)
+  const fallback = problem.template ? getAllTemplates(null).find((t) => t.name === problem.name) : getBuiltinComponent(problem.name)
   const [first, ...rest] = problem.message.split('\n')
   return (
     <div className="tw:flex tw:w-[380px] tw:max-w-full tw:flex-col tw:gap-2.5 tw:rounded-xl tw:bg-field tw:p-2.5 tw:shadow-[inset_0_0_0_1px_var(--sc-removed)]" role="group" aria-label={`${problem.name}: not loaded`}>
@@ -208,7 +209,9 @@ function ProblemCard({ problem, vaultName }: { problem: ComponentProblem; vaultN
           </Badge>
         </span>
         <span className="tw:text-[13px] tw:text-muted">
-          {fallback ? `Decks use the built-in ${problem.name} until this is fixed.` : `Slides that use it show a placeholder until this is fixed.`} The code is in components/{problem.name}/.
+          {problem.template
+            ? `${fallback ? `The built-in ${problem.name} stays in use` : 'It is left out of Add slide and the palette'} until this is fixed. It is in templates/.`
+            : `${fallback ? `Decks use the built-in ${problem.name}` : 'Slides that use it show a placeholder'} until this is fixed. The code is in components/${problem.name}/.`}
         </span>
       </span>
     </div>
@@ -634,7 +637,9 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
   const items = useMemo(() => allItems(vault), [registryVersion, vault])
   const parts = useMemo(() => allParts(vault), [registryVersion, vault])
   const problems = useMemo(() => (vault ? getSourceProblems(vault) : []), [registryVersion, vault])
-  const broken = problems.filter((p) => !p.blocked && (tab !== 'template') && (!query || p.name.toLowerCase().includes(query.toLowerCase())))
+  const broken = problems.filter(
+    (p) => !p.blocked && (tab === 'all' || (tab === 'template') === !!p.template) && (!query || p.name.toLowerCase().includes(query.toLowerCase())),
+  )
   const blocked = problems.filter((p) => p.blocked)
   const hasOwn = items.some(isVaultEntry) || problems.length > 0
   const open = openName ? items.find((i) => i.name === openName.name && i.category === openName.category) ?? null : null
@@ -712,7 +717,7 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
             </h2>
             <div className="tw:flex tw:flex-wrap tw:gap-5">
               {broken.map((p) => (
-                <ProblemCard key={p.name} problem={p} vaultName={vaultName} />
+                <ProblemCard key={p.template ? `t:${p.folder ?? p.name}` : `c:${p.name}`} problem={p} vaultName={vaultName} />
               ))}
             </div>
           </section>

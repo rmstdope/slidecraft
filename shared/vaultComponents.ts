@@ -4,6 +4,8 @@
  * server itself, for the tools and checks).
  */
 
+import type { VaultTemplateFile } from './vaultTemplates.ts'
+
 /** Whether a vault's components may run: set per vault in config.json, or not decided yet. */
 export type ComponentTrust = 'trusted' | 'blocked' | 'ask'
 
@@ -28,6 +30,8 @@ export interface VaultComponentsListing {
   vault: string
   trust: ComponentTrust
   components: VaultComponentInfo[]
+  /** `templates/<id>/index.mdx` files (V3): text, listed whatever the trust. */
+  templates: VaultTemplateFile[]
 }
 
 const encodeSegment = (s: string) => encodeURIComponent(s)

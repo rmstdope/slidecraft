@@ -58,7 +58,7 @@ export function buildComponentSummary(): string {
 export async function buildVaultComponentSummary(vault: string): Promise<string | null> {
   await ensureServerComponents(vault)
   const own = getTopLevelComponents(vault).filter((c) => sourceOfEntry(c.registry) !== BUILTIN_SOURCE)
-  const problems = getSourceProblems(vault)
+  const problems = getSourceProblems(vault).filter((p) => !p.template)
   if (!own.length && !problems.length) return null
   const lines = ['## This vault\'s own components', '', 'Besides the built-ins in the skill\'s reference, decks in this vault can use these (their code is in `components/<Name>/`). Import them from `@components` like the others.', '']
   for (const { registry: r } of own) {
