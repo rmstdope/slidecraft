@@ -194,13 +194,6 @@ export function HomePage(props: HomePageProps) {
                 {visible.length === decks.length ? decks.length : `${visible.length} of ${decks.length}`}
               </span>
               <span className="tw:flex-1" />
-              <Input
-                value={filters.path}
-                onChange={(e) => set('path', e.target.value)}
-                placeholder="Folder, e.g. talks/"
-                aria-label="Folder"
-                className="tw:h-8 tw:w-44 tw:text-[13px]"
-              />
               <Select aria-label="Sort" className="tw:h-8 tw:text-[13px]" value={filters.sort} onValueChange={(v) => set('sort', v)} options={SORTS} />
             </div>
           )}

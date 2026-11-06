@@ -22,8 +22,8 @@ describe('home deck filters', () => {
     expect(displayName('talks/deck-10')).toBe('Deck 10')
   })
 
-  test('path and text filters combine; text matches the display name', () => {
-    expect(filterDecks(decks, { ...DEFAULT_FILTERS, path: 'TALKS/' }).map((d) => d.path)).toEqual(['talks/deck-9', 'talks/deck-10'])
+  test('the filter matches the folder, the name and the display name', () => {
+    expect(filterDecks(decks, { ...DEFAULT_FILTERS, q: 'TALKS/' }).map((d) => d.path)).toEqual(['talks/deck-9', 'talks/deck-10'])
     expect(filterDecks(decks, { ...DEFAULT_FILTERS, q: 'quarterly review' }).map((d) => d.path)).toEqual(['quarterly-review'])
   })
 
@@ -34,8 +34,9 @@ describe('home deck filters', () => {
   })
 
   test('filters round-trip through the URL and defaults stay out of it', () => {
-    const f = { q: 'q r', path: 'talks/', sort: 'alphabetical' as const }
+    const f = { q: 'q r', sort: 'alphabetical' as const }
     expect(filtersFromSearch(searchFromFilters(f))).toEqual(f)
+    expect(filtersFromSearch('?filterPath=talks/').q).toBe('talks/') // links from the old folder box
     expect(searchFromFilters(DEFAULT_FILTERS)).toBe('')
     expect(filtersFromSearch('?sort=nonsense').sort).toBe('updated')
   })

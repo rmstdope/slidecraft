@@ -3,14 +3,12 @@ import type { PresentationInfo } from '@shared/decks.ts'
 export type DeckSort = 'updated' | 'created' | 'alphabetical'
 
 export interface DeckFilters {
-  /** Free text over name, path and display name. */
+  /** Free text over name, path (so also the folder) and display name. */
   q: string
-  /** Case-insensitive substring of the path. */
-  path: string
   sort: DeckSort
 }
 
-export const DEFAULT_FILTERS: DeckFilters = { q: '', path: '', sort: 'updated' }
+export const DEFAULT_FILTERS: DeckFilters = { q: '', sort: 'updated' }
 
 /** "quarterly-review" → "Quarterly Review" (the last path segment of nested decks). */
 export function displayName(nameOrPath: string): string {
@@ -27,24 +25,18 @@ const byName = (a: PresentationInfo, b: PresentationInfo) => a.name.localeCompar
 /** The decks the home grid shows (Part 3 §1.5 visiblePresentations). */
 export function filterDecks(decks: readonly PresentationInfo[], f: DeckFilters): PresentationInfo[] {
   const q = f.q.trim().toLowerCase()
-  const path = f.path.trim().toLowerCase()
-  const visible = decks.filter(
-    (d) =>
-      (!path || d.path.toLowerCase().includes(path)) &&
-      (!q || [d.name, d.path, displayName(d.path)].some((s) => s.toLowerCase().includes(q))),
-  )
+  const visible = decks.filter((d) => !q || [d.name, d.path, displayName(d.path)].some((s) => s.toLowerCase().includes(q)))
   if (f.sort === 'alphabetical') return visible.sort(byName)
   const key = f.sort === 'created' ? 'createdAt' : 'updatedAt'
   return visible.sort((a, b) => b[key] - a[key] || byName(a, b))
 }
 
-/** Filters from the home URL (`?q=&filterPath=&sort=`). */
+/** Filters from the home URL (`?q=&sort=`). The old folder box's `?filterPath=` reads as `q`. */
 export function filtersFromSearch(search: string): DeckFilters {
   const p = new URLSearchParams(search)
   const sort = p.get('sort')
   return {
-    q: p.get('q') ?? '',
-    path: p.get('filterPath') ?? '',
+    q: p.get('q') ?? p.get('filterPath') ?? '',
     sort: sort === 'created' || sort === 'alphabetical' ? sort : 'updated',
   }
 }
@@ -53,7 +45,6 @@ export function filtersFromSearch(search: string): DeckFilters {
 export function searchFromFilters(f: DeckFilters): string {
   const p = new URLSearchParams()
   if (f.q) p.set('q', f.q)
-  if (f.path) p.set('filterPath', f.path)
   if (f.sort !== 'updated') p.set('sort', f.sort)
   const s = p.toString()
   return s ? `?${s}` : ''

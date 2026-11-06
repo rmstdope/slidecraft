@@ -74,8 +74,8 @@ imports for you when you save.
 The home page lists the decks of one **vault** as cards showing their first slide. The sidebar
 switches vaults and the light, dark or system theme; **Settings** adds, renames or removes vaults (a
 removed vault's files stay where they are) and holds the appearance choices. Sort by update date,
-creation date or name, or filter by name and folder. Hover a card's preview for **Present** and
-**Edit** (the deck's workspace); the icons below it export HTML or PDF.
+creation date or name, or filter by name or folder in the search box. Hover a card's preview for
+**Present** and **Edit** (the deck's workspace); the icons below it export HTML or PDF.
 
 The box at the top asks the agent for something: describe a talk or paste your notes, and when it
 writes the new deck, the deck's workspace opens with the conversation. **New deck** starts from a
