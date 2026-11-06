@@ -22,3 +22,6 @@ export const bundledThemeAssets: Record<string, string> = import.meta.glob('/con
  * with a server they are bundled and served like any vault's.
  */
 export const bundledComponentModules: Record<string, () => Promise<unknown>> = import.meta.glob('/content/components/*/index.tsx')
+
+/** The Examples vault's templates (V3), as text, for the static site only. */
+export const bundledTemplateTexts: Record<string, string> = import.meta.glob('/content/templates/*/index.mdx', { eager: true, query: '?raw', import: 'default' })

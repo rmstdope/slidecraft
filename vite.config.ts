@@ -15,7 +15,8 @@ function stripFrontmatterPlugin(): Plugin {
     name: 'slidecraft:strip-mdx-frontmatter',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.split('?')[0].endsWith('.mdx')) return null
+      // ?raw imports (the Examples vault's templates in the static site) keep their frontmatter.
+      if (!id.split('?')[0].endsWith('.mdx') || /[?&]raw\b/.test(id)) return null
       const body = stripMdxFrontmatter(code)
       return body === code ? null : { code: body, map: null }
     },

@@ -1,0 +1,12 @@
+---
+name: Funnel Slide
+description: A conversion funnel with a one-line takeaway, built on the vault's FunnelBars component.
+keywords: [funnel, conversion, drop-off, stages]
+useCases:
+  - Where people drop out of a sign-up or sales flow
+---
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Conversion</Subtitle>
+  <Title>Most visitors leave before signing up</Title>
+  <FunnelBars unit="%" stages={[{ label: "Visited", value: 100 }, { label: "Signed up", value: 42 }, { label: "Paid", value: 9 }]} />
+</Slide>

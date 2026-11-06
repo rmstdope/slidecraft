@@ -180,6 +180,19 @@ vault loads none.
 **Done when** a vault template appears in Add slide and in the gallery, and one with a built-in's
 name replaces it.
 
+**Status:** done (2026-11-06).
+- **Listing:** the server lists `templates/<id>/index.mdx` as text with the components listing,
+  whatever the trust.
+- **Parsing:** `shared/vaultTemplates.ts` parses a template the same way in the app, on the server
+  and in the static site, which imports the files `?raw`. The frontmatter parser understands only
+  values and lists.
+- **Ids and problems:** the registry id is `template-<folder>`. These are registry problems marked
+  `template`, so they get no placeholder:
+  - a broken file;
+  - a name used twice in the vault;
+  - an id that belongs to a built-in of another name.
+- **Reloading:** template changes reload through the same `components-changed` event.
+
 ### Phase V4: The agent creates and edits vault components
 
 - Skill: a vault part in `slidecraft-components` (layout, imports, registry fields, validation),

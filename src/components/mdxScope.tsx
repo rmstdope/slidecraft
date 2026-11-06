@@ -31,7 +31,7 @@ export function getMdxScope(vault?: string | null): MdxComponentScope {
   if (hit && hit.version === version) return hit.scope
   const own: Record<string, FC<any>> = {}
   for (const c of getAllComponents(resolved)) if (sourceOfEntry(c.registry) !== BUILTIN_SOURCE) own[c.registry.name] = c.Component
-  for (const p of getSourceProblems(resolved)) if (!(p.name in builtinScope) && !own[p.name]) own[p.name] = unavailableComponent(p.name, p.message)
+  for (const p of getSourceProblems(resolved)) if (!p.template && !(p.name in builtinScope) && !own[p.name]) own[p.name] = unavailableComponent(p.name, p.message)
   const scope = Object.keys(own).length ? { ...builtinScope, ...own } : builtinScope
   cache.set(key, { version, scope })
   return scope

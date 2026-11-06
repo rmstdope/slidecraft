@@ -95,7 +95,7 @@ function onFsEvent(source: ContentSource, filename: string | null): void {
   if (!filename) return
   const rel = filename.split(sep).join('/')
   const file = join(source.path, rel)
-  if (rel.startsWith('components/')) return debounce(`components:${source.id}`, () => checkComponents(source))
+  if (rel.startsWith('components/') || rel.startsWith('templates/')) return debounce(`components:${source.id}`, () => checkComponents(source))
   if (tracked.has(file)) return debounce(file, () => check(file))
   // Unknown path: a new deck or theme, or a change inside a theme folder (assets): rescan.
   if ((rel.endsWith('/index.mdx') && matchesSourceInclude(source, rel)) || rel.startsWith('themes/')) {
