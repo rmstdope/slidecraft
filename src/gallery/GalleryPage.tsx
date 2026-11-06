@@ -717,7 +717,7 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
             </h2>
             <div className="tw:flex tw:flex-wrap tw:gap-5">
               {broken.map((p) => (
-                <ProblemCard key={`${p.template ? "t" : "c"}:${p.name}`} problem={p} vaultName={vaultName} />
+                <ProblemCard key={p.template ? `t:${p.folder ?? p.name}` : `c:${p.name}`} problem={p} vaultName={vaultName} />
               ))}
             </div>
           </section>

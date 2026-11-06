@@ -57,17 +57,20 @@ export interface VaultEntries {
 export function templateEntries(templates: readonly VaultTemplateFile[]): { templates: RegistryConfig[]; problems: ComponentProblem[] } {
   const entries: RegistryConfig[] = []
   const problems: ComponentProblem[] = []
-  const builtins = getAllTemplates(null)
-  for (const file of templates) {
-    const parsed = parseVaultTemplate(file)
-    if (parsed.error !== undefined) {
-      problems.push({ name: parsed.name, message: parsed.error, template: true })
+  const parsed = templates.map((file) => ({ folder: file.id, ...parseVaultTemplate(file) }))
+  // Built-ins the vault replaces by name are out of the merged view, so their ids are free.
+  const replaced = new Set(parsed.flatMap((p) => (p.template ? [p.template.name] : [])))
+  const builtins = getAllTemplates(null).filter((b) => !replaced.has(b.name))
+  for (const p of parsed) {
+    if (p.error !== undefined) {
+      problems.push({ name: p.name, message: p.error, template: true, folder: p.folder })
       continue
     }
-    const t = parsed.template
-    const clash = builtins.find((b) => b.id === t.id && b.name !== t.name)
-    if (clash) problems.push({ name: t.name, message: `Its id ${t.id} (from the folder name) is the built-in template ${clash.name}'s; rename the folder, or name it ${clash.name} to replace that one`, template: true })
-    else if (entries.some((e) => e.name === t.name)) problems.push({ name: t.name, message: `Another template in this vault is also named ${t.name}`, template: true })
+    const t = p.template
+    const clash = builtins.find((b) => b.id === t.id)
+    const problem = (message: string) => problems.push({ name: t.name, message, template: true, folder: p.folder })
+    if (clash) problem(`Its id ${t.id} (from the folder name) is the built-in template ${clash.name}'s; rename the folder, or name it ${clash.name} to replace that one`)
+    else if (entries.some((e) => e.name === t.name)) problem(`Another template in this vault is also named ${t.name}`)
     else entries.push({ ...t, category: 'template', props: [] })
   }
   return { templates: entries, problems }

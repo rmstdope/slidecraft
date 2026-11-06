@@ -79,6 +79,8 @@ export interface ComponentProblem {
   blocked?: boolean
   /** A template's problem (V3); it has no placeholder, since no slide uses a template by name. */
   template?: boolean
+  /** The template's folder, which tells two problems with the same name apart. */
+  folder?: string
 }
 
 const builtins: SourceEntries = { components: [], templates: [] }

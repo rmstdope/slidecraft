@@ -208,12 +208,26 @@ describe('review fixes', () => {
 
 describe('templates', () => {
   test('frontmatter: values, inline lists and dash lists', () => {
-    expect(parseTemplateFrontmatter('name: "A b"\nkeywords: [x, \'y\']\nuseCases:\n  - one\n  - two\ntheme: folio # frame')).toEqual({
+    expect(parseTemplateFrontmatter('name: "A b"\nkeywords: [x, \'y\']\nuseCases:\n  - one\n  - two\ntheme: folio # frame').values).toEqual({
       name: 'A b',
       keywords: ['x', 'y'],
       useCases: ['one', 'two'],
       theme: 'folio',
     })
+  })
+
+  test('frontmatter: # and commas inside quotes are text; multi-line values are reported', () => {
+    // As in YAML, an unquoted " #" starts a comment; quotes keep it.
+    const { values, problems } = parseTemplateFrontmatter('name: "Issue #3"\ndescription: Step #2 of 3\nkeywords: ["a, b", c]')
+    expect(values).toEqual({ name: 'Issue #3', description: 'Step', keywords: ['a, b', 'c'] })
+    expect(problems).toEqual([])
+    expect(parseTemplateFrontmatter('description: >\n  folded text').problems.join('\n')).toContain('multi-line')
+  })
+
+  test('a byte-order mark and CRLF line ends are not part of the template', () => {
+    const parsed = parseVaultTemplate({ id: 'w', text: `\uFEFF${template('Windows')}`.replace(/\n/g, '\r\n') })
+    expect(parsed.template?.name).toBe('Windows')
+    expect(parsed.template?.snippet).not.toContain('\r')
   })
 
   test('a template file becomes a registry entry; a theme wraps the preview', () => {
@@ -231,15 +245,21 @@ describe('templates', () => {
 
   test('one named like a built-in replaces it; an id taken by another name is a problem', () => {
     const builtin = getAllTemplates(null)[0]
+    const clashing = templateEntries([{ id: builtin.id.replace(/^template-/, ''), text: template('Something Else') }])
+    expect(clashing.problems.map((p) => p.message).join('\n')).toContain(`is the built-in template ${builtin.name}'s`)
     const { templates, problems } = templateEntries([
       { id: 'mine', text: template(builtin.name) },
-      { id: builtin.id.replace(/^template-/, ''), text: template('Something Else') },
       { id: 'twice', text: template('Pitch Close') },
       { id: 'twice-again', text: template('Pitch Close') },
     ])
     expect(templates.map((t) => t.name)).toEqual([builtin.name, 'Pitch Close'])
-    expect(problems.map((p) => p.message).join('\n')).toContain(`is the built-in template ${builtin.name}'s`)
     expect(problems.map((p) => p.message).join('\n')).toContain('also named Pitch Close')
+    // Once the vault replaces that built-in by name, its id is free for a folder named after it.
+    const freed = templateEntries([
+      { id: 'mine', text: template(builtin.name) },
+      { id: builtin.id.replace(/^template-/, ''), text: template('Something Else') },
+    ])
+    expect(freed.problems).toEqual([])
     registerFolders('template-test', [], { templates: [{ id: 'mine', text: template(builtin.name) }] })
     const view = getAllTemplates('template-test')
     expect(view.length).toBe(getAllTemplates(null).length)

@@ -34,7 +34,8 @@ export default defineConfig(({ command }) => {
     base: process.env.VITE_BASE ?? '/',
     plugins: [
       stripFrontmatterPlugin(),
-      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [dropComponentImports] }) },
+      // Vault templates (content/templates/) are read as text (?raw), never compiled as decks.
+      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [dropComponentImports], exclude: ['**/content/templates/**'] }) },
       react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
       // Only src/styles/app.css uses Tailwind; the export viewer inherits the plugin but never imports it.
       tailwindcss(),
