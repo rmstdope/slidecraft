@@ -20,17 +20,24 @@ import {
 } from '../../shared/builtinCopies.ts'
 import manifest from '../../shared/builtinCopies.json'
 import { COMPONENT_ENTRY, COMPONENT_NAME_RE, COMPONENTS_DIR } from '../../shared/vaultComponents.ts'
-import { parseVaultTemplate, TEMPLATE_ENTRY, TEMPLATE_ID_RE, TEMPLATES_DIR } from '../../shared/vaultTemplates.ts'
+import { parseVaultTemplate, TEMPLATE_ENTRY, TEMPLATE_ID_RE, TEMPLATES_DIR, type VaultTemplateFile } from '../../shared/vaultTemplates.ts'
 import { getAllTemplates, getBuiltinComponent, type RegistryConfig } from '../../src/components/slides/defineComponent.ts'
 import '../../src/components/slides/index.ts'
 import { readAppText } from './appFiles.ts'
 import { VaultError, type ContentSource } from './contentSources.ts'
 import { discoverSource } from './decks.ts'
 import { VERSION } from './paths.ts'
+import { templateFiles } from './vaultComponents.ts'
 
 const copies = manifest as BuiltinCopiesManifest
 
 export type { CopyPlan, EntryKind }
+
+/** The name a vault template file registers under (or would, once it parses). */
+function templateName(file: VaultTemplateFile): string {
+  const parsed = parseVaultTemplate(file)
+  return parsed.template ? parsed.template.name : parsed.name
+}
 
 const builtinTemplate = (name: string): RegistryConfig | undefined => getAllTemplates(null).find((t) => t.name === name || templateFolderOf(t) === name)
 
@@ -66,11 +73,21 @@ export async function copyPlan(source: ContentSource, kind: EntryKind, name: str
     const template = builtinTemplate(name)
     if (!template) throw new VaultError(404, `No built-in template "${name}"`)
     const id = templateFolderOf(template)
-    return { kind, name: template.name, folder: `${TEMPLATES_DIR}/${id}`, copyable: true, parts: [], decks: 0, exists: existsSync(folderPath(source, kind, id)) }
+    const exists = existsSync(folderPath(source, kind, id))
+    // Templates replace by name: another folder with this name would make two of them.
+    const named = templateFiles(source).find((t) => t.id !== id && templateName(t) === template.name)
+    const conflict = exists
+      ? `templates/${id}/ already holds one of this vault's templates. Rename that folder to copy the built-in.`
+      : named
+        ? `templates/${named.id}/ already uses the name "${template.name}" in this vault. Open it from the gallery instead.`
+        : undefined
+    return { kind, name: template.name, folder: `${TEMPLATES_DIR}/${id}`, copyable: true, parts: [], decks: 0, exists, ...(conflict ? { conflict } : {}) }
   }
   const entry = copies.components[name]
   if (!entry || !getBuiltinComponent(name)) throw new VaultError(404, `No built-in component "${name}"`)
-  const base = { kind, name, folder: `${COMPONENTS_DIR}/${name}`, exists: existsSync(folderPath(source, kind, name)), decks: await decksUsing(source, kind, name) }
+  const exists = existsSync(folderPath(source, kind, name))
+  const conflict = exists ? `${COMPONENTS_DIR}/${name}/ is already in this vault but does not load. Fix it from its card under Not loaded, or reset it there.` : undefined
+  const base = { kind, name, folder: `${COMPONENTS_DIR}/${name}`, exists, decks: await decksUsing(source, kind, name), ...(conflict ? { conflict } : {}) }
   if (entry.reason !== undefined) return { ...base, copyable: false, reason: entry.reason, parts: [] }
   if (currentText(kind, name) === undefined) return { ...base, copyable: false, reason: `This build of Slidecraft does not carry ${name}'s source.`, parts: entry.parts }
   return { ...base, copyable: true, parts: entry.parts }
@@ -81,15 +98,28 @@ export async function copyBuiltin(source: ContentSource, kind: EntryKind, name: 
   if (source.readOnly) throw new VaultError(403, `The vault "${source.name}" is read-only`)
   const plan = await copyPlan(source, kind, name)
   if (!plan.copyable) throw new VaultError(400, plan.reason ?? `${name} cannot be copied`)
-  if (plan.exists) throw new VaultError(409, `${plan.folder}/ already exists in this vault`)
+  if (plan.conflict) throw new VaultError(409, plan.conflict)
   const text = currentText(kind, plan.name)!
   const folder = plan.folder.split('/')[1]
   const dir = folderPath(source, kind, folder)
-  mkdirSync(dir, { recursive: true })
-  const origin: ComponentOrigin = { kind, builtin: plan.name, appVersion: VERSION, hash: textHash(text), copiedAt: new Date().toISOString() }
-  // The origin first: the folder's code appearing is what reloads the vault.
-  writeFileSync(join(dir, ORIGIN_FILE), `${JSON.stringify(origin, null, 2)}\n`)
-  writeFileSync(join(dir, kind === 'component' ? COMPONENT_ENTRY : TEMPLATE_ENTRY), kind === 'component' ? copySource(text, plan.name, VERSION) : text)
+  mkdirSync(join(dir, '..'), { recursive: true })
+  // Created exclusively: a second copy at the same moment, or the agent writing the folder, gets a 409.
+  try {
+    mkdirSync(dir)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new VaultError(409, `${plan.folder}/ already exists in this vault`)
+    throw error
+  }
+  try {
+    const origin: ComponentOrigin = { kind, builtin: plan.name, appVersion: VERSION, hash: textHash(text), copiedAt: new Date().toISOString() }
+    // The origin first: the folder's code appearing is what reloads the vault.
+    writeFileSync(join(dir, ORIGIN_FILE), `${JSON.stringify(origin, null, 2)}\n`, { flag: 'wx' })
+    writeFileSync(join(dir, kind === 'component' ? COMPONENT_ENTRY : TEMPLATE_ENTRY), kind === 'component' ? copySource(text, plan.name, VERSION) : text, { flag: 'wx' })
+  } catch (error) {
+    // Half a copy would block the next one: take it away again.
+    rmSync(dir, { recursive: true, force: true })
+    throw error
+  }
   return { ...plan, exists: true }
 }
 
@@ -109,24 +139,23 @@ export function originInfo(source: ContentSource, kind: EntryKind, folder: strin
   const origin = readOrigin(source, kind, folder)
   if (!origin) return undefined
   const now = currentText(kind, origin.builtin)
-  return { builtin: origin.builtin, appVersion: origin.appVersion, copiedAt: origin.copiedAt, changed: now !== undefined && textHash(now) !== origin.hash }
+  // No source now: the app's built-in was removed or can no longer be copied, so it has changed too.
+  return { builtin: origin.builtin, appVersion: origin.appVersion, copiedAt: origin.copiedAt, changed: now === undefined || textHash(now) !== origin.hash }
 }
 
 /** The built-in a vault folder replaces: by name for a component, by its origin (or id) for a template. */
 export function replacedBuiltin(source: ContentSource, kind: EntryKind, folder: string): string | undefined {
   if (kind === 'component') return COMPONENT_NAME_RE.test(folder) && getBuiltinComponent(folder) ? folder : undefined
   if (!TEMPLATE_ID_RE.test(folder)) return undefined
-  const origin = readOrigin(source, kind, folder)
-  if (origin && builtinTemplate(origin.builtin)) return builtinTemplate(origin.builtin)!.name
-  // Templates replace by name: whatever the folder is called, its frontmatter name decides.
+  // Templates replace by name, so the frontmatter name decides, whatever the folder is called.
   let name: string | undefined
   try {
-    const parsed = parseVaultTemplate({ id: folder, text: readFileSync(join(folderPath(source, kind, folder), TEMPLATE_ENTRY), 'utf8') })
-    name = parsed.template ? parsed.template.name : parsed.name
+    name = templateName({ id: folder, text: readFileSync(join(folderPath(source, kind, folder), TEMPLATE_ENTRY), 'utf8') })
   } catch {
-    /* no index.mdx */
+    // No index.mdx left: a copy is still known by its origin record.
+    name = readOrigin(source, kind, folder)?.builtin
   }
-  return getAllTemplates(null).find((t) => t.name === name || templateFolderOf(t) === folder)?.name
+  return getAllTemplates(null).find((t) => t.name === name)?.name
 }
 
 /** Deletes a vault folder that replaces a built-in, so the built-in is used again. */

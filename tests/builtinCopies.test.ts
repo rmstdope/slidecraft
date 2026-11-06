@@ -185,6 +185,49 @@ describe('reset', () => {
   })
 })
 
+describe('review fixes', () => {
+  const builtinTitle = () => getAllTemplates(null).find((t) => templateFolderOf(t) !== 'funnel-slide')!
+
+  test('reset leaves a template that only shares a folder name with a built-in', () => {
+    const t = getAllTemplates(null)[1]
+    const dir = join(acme, 'templates', templateFolderOf(t))
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'index.mdx'), '---\nname: Our own\ndescription: Ours.\n---\n<Slide>\n  <Title>Ours</Title>\n</Slide>\n')
+    expect(() => resetToBuiltin(acmeSource(), 'template', templateFolderOf(t))).toThrow('does not replace a built-in')
+    // A copy the agent renamed no longer replaces the built-in either.
+    writeFileSync(join(dir, ORIGIN_FILE), JSON.stringify({ kind: 'template', builtin: t.name, hash: 'x' }))
+    expect(() => resetToBuiltin(acmeSource(), 'template', templateFolderOf(t))).toThrow('does not replace a built-in')
+    expect(existsSync(dir)).toBe(true)
+  })
+
+  test('the copy plan says when the folder or the name is taken', async () => {
+    const t = getAllTemplates(null)[1]
+    expect((await copyPlan(acmeSource(), 'template', t.name)).conflict).toContain('already holds one of this vault')
+    const other = getAllTemplates(null)[2]
+    const dir = join(acme, 'templates', 'renamed')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'index.mdx'), `---\nname: ${other.name}\ndescription: Ours.\n---\n<Slide>\n  <Title>Ours</Title>\n</Slide>\n`)
+    expect((await copyPlan(acmeSource(), 'template', other.name)).conflict).toContain('templates/renamed/ already uses the name')
+    expect(copyBuiltin(acmeSource(), 'template', other.name)).rejects.toMatchObject({ status: 409 })
+    expect(builtinTitle()).toBeDefined()
+  })
+
+  test('two copies at once: one wins, the other gets a 409', async () => {
+    rmSync(join(acme, 'components', 'Quote'), { recursive: true, force: true })
+    const results = await Promise.allSettled([copyBuiltin(acmeSource(), 'component', 'Quote'), copyBuiltin(acmeSource(), 'component', 'Quote')])
+    expect(results.filter((r) => r.status === 'fulfilled').length).toBe(1)
+    expect(results.find((r) => r.status === 'rejected')).toMatchObject({ reason: { status: 409 } })
+  })
+
+  test('a built-in that can no longer be copied counts as changed', () => {
+    const dir = join(acme, 'components', 'Gauge')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, ORIGIN_FILE), JSON.stringify({ kind: 'component', builtin: 'Gauge', hash: 'abc' }))
+    expect(originInfo(acmeSource(), 'component', 'Gauge')?.changed).toBe(true)
+    rmSync(dir, { recursive: true })
+  })
+})
+
 describe('the routes', () => {
   const call = (method: string, path: string, body?: unknown) =>
     handleVaults(new Request(`http://x/api/vaults/acme/components/${path}`, { method, body: body ? JSON.stringify(body) : undefined }), new URL(`http://x/api/vaults/acme/components/${path}`))

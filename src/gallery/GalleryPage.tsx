@@ -176,6 +176,7 @@ function CopyDialog({ vault, vaultName, item, onCancel, onCopied }: { vault: str
     <Dialog
       open
       onOpenChange={(open) => !open && onCancel()}
+      raised
       className="tw:w-[min(560px,calc(100vw-32px))]"
       title={blocked ? `Can’t copy ${item.name} yet` : `Copy ${item.name} to the ${vaultName} vault?`}
       description={blocked ? undefined : `Built-in ${kind === 'component' ? 'components' : 'templates'} can’t be changed. The agent works on a copy in this vault, and that copy replaces the built-in for this vault’s decks.`}
@@ -218,12 +219,12 @@ function CopyDialog({ vault, vaultName, item, onCancel, onCopied }: { vault: str
           )}
         </ul>
       )}
-      {plan?.exists && !blocked && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{plan.folder}/ is already in this vault but does not load. Fix it from its card under Not loaded, or reset it there.</p>}
+      {plan?.conflict && !blocked && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{plan.conflict}</p>}
       {error && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{error}</p>}
       <div className="tw:flex tw:justify-end tw:gap-2">
         <Button onClick={onCancel}>{blocked ? 'Close' : 'Cancel'}</Button>
         {!blocked && (
-          <Button variant="primary" disabled={!plan || plan.exists || busy} onClick={() => void copy()}>
+          <Button variant="primary" disabled={!plan || !!plan.conflict || busy} onClick={() => void copy()}>
             Copy and edit with agent
           </Button>
         )}
@@ -245,7 +246,7 @@ function ResetDialog({ vault, entry, onCancel, onDone }: { vault: string; entry:
     onDone()
   }
   return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()} title={`Reset ${entry.name} to the built-in?`} description={<>This deletes {code(dir)} from the vault, with every change made to it. The vault’s decks use the built-in {entry.name} again.</>}>
+    <Dialog open raised onOpenChange={(open) => !open && onCancel()} title={`Reset ${entry.name} to the built-in?`} description={<>This deletes {code(dir)} from the vault, with every change made to it. The vault’s decks use the built-in {entry.name} again.</>}>
       {error && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{error}</p>}
       <div className="tw:flex tw:justify-end tw:gap-2">
         <Button onClick={onCancel}>Cancel</Button>
@@ -588,7 +589,8 @@ function DetailPanel({
     [item, isComponent, vault],
   )
   const withValues = (code: string) => Object.entries(values).reduce((text, [name, v]) => applyProps(text, name, v), code)
-  const source = useMemo(() => applySettings(withValues(shown.previewCode), settings), [shown, values, settings])
+  // The settings belong to the vault's entry; the built-in it is compared with shows its own example.
+  const source = useMemo(() => applySettings(shown === item ? withValues(shown.previewCode) : shown.previewCode, settings), [shown, item, values, settings])
   const snippet = useMemo(() => applySettings(withValues(item.snippet), settings), [item, values, settings])
   const { Component, error, isCompiling } = useLazyPreview(source, true, shown !== item)
   const total = useMemo(() => (Component ? countPreviewSteps(Component) : 0), [Component])
@@ -689,7 +691,10 @@ function DetailPanel({
             <SegmentedControl
               aria-label="Compare with the built-in"
               value={showBuiltin ? 'builtin' : 'vault'}
-              onValueChange={(v) => setShowBuiltin(v === 'builtin')}
+              onValueChange={(v) => {
+                setShowBuiltin(v === 'builtin')
+                setStep(0)
+              }}
               items={[
                 { value: 'vault', label: origin ? 'Vault copy' : vaultName },
                 { value: 'builtin', label: 'Built-in' },
@@ -1025,7 +1030,7 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
         ))}
       </main>
       <AnimatePresence>
-        {open && !workspace && !copying && !resetting && (
+        {open && !workspace && (
           <DetailPanel
             key={`${open.category}:${open.name}`}
             item={open}

@@ -57,6 +57,8 @@ export interface CopyPlan {
   decks: number
   /** The folder is there already. */
   exists: boolean
+  /** Why the copy cannot be written in this vault now (the folder or the name is taken). */
+  conflict?: string
 }
 
 /** The packages vault code may import as they are. */

@@ -12,6 +12,7 @@ export function Dialog({
   children,
   className,
   onOpenAutoFocus,
+  raised = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -21,15 +22,18 @@ export function Dialog({
   className?: string
   /** Called as the dialog opens; `preventDefault()` and focus something else to move the initial focus. */
   onOpenAutoFocus?: (event: Event) => void
+  /** Above the app's own sheets (z-index 1100), for a dialog opened from one. */
+  raised?: boolean
 }) {
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="tw:fixed tw:inset-0 tw:z-50 tw:bg-black/40" />
+        <D.Overlay className={cn('tw:fixed tw:inset-0 tw:bg-black/40', raised ? 'tw:z-[1200]' : 'tw:z-50')} />
         <D.Content
           onOpenAutoFocus={onOpenAutoFocus}
           className={cn(
-            'sc-app tw:fixed tw:top-1/2 tw:left-1/2 tw:z-50 tw:flex tw:max-h-[85vh] tw:w-[min(480px,calc(100vw-32px))] tw:-translate-x-1/2 tw:-translate-y-1/2 tw:flex-col tw:gap-4 tw:overflow-auto tw:rounded-2xl tw:bg-raised tw:p-6 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)]',
+            'sc-app tw:fixed tw:top-1/2 tw:left-1/2 tw:flex tw:max-h-[85vh] tw:w-[min(480px,calc(100vw-32px))] tw:-translate-x-1/2 tw:-translate-y-1/2 tw:flex-col tw:gap-4 tw:overflow-auto tw:rounded-2xl tw:bg-raised tw:p-6 tw:shadow-[0_0_0_1px_var(--sc-line),var(--sc-elev)]',
+            raised ? 'tw:z-[1200]' : 'tw:z-50',
             className,
           )}
           // Without a description Radix warns unless aria-describedby is explicitly unset.
