@@ -5,7 +5,8 @@ import { BUILT_IN_SOURCE_ID, BUILT_IN_VAULT_NAME, deckName, sameDeck, type DeckR
 import { fetchPresentations, fetchVaults, openVault } from './api'
 import { IS_STATIC, routePath } from './basePath'
 import { ErrorBoundary, PresentationErrorUI } from './components/ErrorBoundary'
-import { mdxComponentScope } from './components/mdxScope'
+import { getMdxScope } from './components/mdxScope'
+import { useRegistryVersion } from './hooks/useRegistryVersion'
 import { assetResolverFor, DeckContext } from './components/slides/deckContext'
 import { bundledDeckNames, DeckNotFoundError, deckModuleLoader } from './deckLoading'
 import { subscribeServerEvents, useSSE } from './hooks/useSSE'
@@ -271,14 +272,13 @@ function contentFrom(state: { vaults: VaultInfo[]; defaultVault: string }): Cont
   }
 }
 
-const scope = mdxComponentScope as MDXComponents
-
 /** A compiled deck with its component scope and asset resolver. */
 function DeckView({ deck, content: Content, defaultSource }: { deck: DeckRef; content: ComponentType; defaultSource?: string }) {
   const deckContext = useMemo(() => ({ deck, resolveAsset: assetResolverFor(deck, defaultSource) }), [deck, defaultSource])
+  useRegistryVersion()
   return (
     <DeckContext.Provider value={deckContext}>
-      <MDXProvider components={scope}>
+      <MDXProvider components={getMdxScope() as MDXComponents}>
         <Content />
       </MDXProvider>
     </DeckContext.Provider>

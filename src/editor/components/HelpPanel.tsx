@@ -1,3 +1,4 @@
+import { useRegistryVersion } from '../../hooks/useRegistryVersion'
 import { getParts, getTopLevelComponents, type RegistryProp } from '../../components/slides/defineComponent'
 import { getDisplayKey, getShortcutsForMode, groupShortcutsByCategory } from '../../utils/keyboardShortcuts'
 import { Kbd } from '../../ui'
@@ -18,6 +19,7 @@ function PropList({ props }: { props: RegistryProp[] }) {
 
 /** Component reference and editor shortcuts (Part 3 §2.14). */
 export function HelpPanel() {
+  useRegistryVersion()
   // Variants (names with a parenthesis) are left out; parts are shown inside their parent.
   const components = getTopLevelComponents()
     .map((c) => c.registry)

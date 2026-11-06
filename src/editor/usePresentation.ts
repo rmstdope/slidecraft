@@ -18,7 +18,7 @@ import {
   updateSlideText,
   type DeckModel,
 } from '@shared/deckModel.ts'
-import { mdxComponentScope } from '../components/mdxScope'
+import { getMdxScope } from '../components/mdxScope'
 import { loadMdx, saveMdx } from './api'
 
 export interface PresentationState {
@@ -176,7 +176,7 @@ export function usePresentation(deck: DeckRef) {
     save: async (): Promise<boolean> => {
       const s = stateRef.current
       if (s.readOnly || (!s.model && !s.raw)) return false
-      const model = s.model ? syncComponentImports(s.model, Object.keys(mdxComponentScope)) : null
+      const model = s.model ? syncComponentImports(s.model, Object.keys(getMdxScope())) : null
       update((x) => ({ ...x, isSaving: true, model: x.model && model && x.model === s.model ? model : x.model }))
       const content = model ? serializeModel(model) : s.raw!.text
       const before = onDisk.current

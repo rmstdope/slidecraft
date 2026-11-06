@@ -4,6 +4,7 @@
  * slides worth a screenshot.
  */
 import { parseDeck } from '../../shared/deckParser.ts'
+import { getRegistryVersion } from '../../src/components/slides/defineComponent.ts'
 import { registryLanguageService } from '../../src/language-service/index.ts'
 import { validateMdx } from './mdxValidator.ts'
 
@@ -20,7 +21,7 @@ export interface DeckCheck {
 /** About how many characters of an 88 px display title fit on one line of a document slide. */
 export const DOCUMENT_TITLE_CHARS = 46
 
-let service: ReturnType<typeof registryLanguageService> | null = null
+let service: { version: number; ls: ReturnType<typeof registryLanguageService> } | null = null
 
 export async function checkDeck(source: string): Promise<DeckCheck> {
   const problems: DeckProblem[] = []
@@ -37,8 +38,8 @@ export async function checkDeck(source: string): Promise<DeckCheck> {
 
   // Registry checks: raw HTML, unknown components and invalid values break the rules; an unknown
   // prop is ignored by the component, so it is a warning.
-  service ??= registryLanguageService()
-  for (const d of service.diagnostics(source)) {
+  if (service?.version !== getRegistryVersion()) service = { version: getRegistryVersion(), ls: registryLanguageService() }
+  for (const d of service.ls.diagnostics(source)) {
     const line = d.range.start.line + 1
     const slide = slideAt(line)
     problems.push({ severity: d.code === 'unknown-prop' ? 'warning' : 'error', line, slide: slide >= 0 ? slide : undefined, message: d.message })

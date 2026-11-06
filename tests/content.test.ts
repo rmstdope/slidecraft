@@ -5,7 +5,7 @@ import { compile } from '@mdx-js/mdx'
 import { parseDeck } from '../shared/deckParser.ts'
 import { stripMdxFrontmatter } from '../shared/frontmatter.ts'
 import { resolveDeckRelative, rewriteDeckImports } from '../shared/mdxImports.ts'
-import { mdxComponentScope } from '../src/components/mdxScope'
+import { builtinMdxScope } from '../src/components/mdxScope'
 
 const contentDir = join(import.meta.dir, '..', 'content')
 const decks = readdirSync(contentDir, { withFileTypes: true })
@@ -28,7 +28,7 @@ describe('example decks', () => {
             rewriteDeckImports,
             {
               deckName: deckDir.split('/').pop()!,
-              knownComponents: Object.keys(mdxComponentScope),
+              knownComponents: Object.keys(builtinMdxScope),
               unsupported: 'keep',
               resolveAsset: (_deck: string, src: string) => {
                 if (!existsSync(join(deckDir, resolveDeckRelative(src)))) missingAssets.push(src)

@@ -8,7 +8,8 @@ import { compile, run } from '@mdx-js/mdx'
 import { BUILT_IN_SOURCE_ID, deckName, type DeckRef } from '@shared/decks.ts'
 import { contentAssetUrl, rewriteDeckImports, sourceContentAssetUrl } from '@shared/mdxImports.ts'
 import { appPath } from '../basePath'
-import { mdxComponentScope } from '../components/mdxScope'
+import { getMdxScope } from '../components/mdxScope'
+import { getRegistryVersion } from '../components/slides/defineComponent'
 
 export interface CompileTarget {
   deck?: DeckRef
@@ -20,7 +21,8 @@ const cache = new Map<string, Promise<ComponentType>>()
 const MAX_CACHE = 300
 
 export function compileSlidePreview(slide: string, target: CompileTarget = {}): Promise<ComponentType> {
-  const key = `${target.deck?.source}:${target.deck?.path}\n${target.imports ?? ''}\n${slide}`
+  // The registry version: which names count as components depends on the vault's own.
+  const key = `${getRegistryVersion()}:${target.deck?.source}:${target.deck?.path}\n${target.imports ?? ''}\n${slide}`
   const cached = cache.get(key)
   if (cached) return cached
   const promise = (async () => {
@@ -33,7 +35,7 @@ export function compileSlidePreview(slide: string, target: CompileTarget = {}): 
           rewriteDeckImports,
           {
             deckName: deck ? deckName(deck) : 'preview',
-            knownComponents: Object.keys(mdxComponentScope),
+            knownComponents: Object.keys(getMdxScope()),
             unsupported: 'keep',
             resolveAsset: (_n: string, asset: string) =>
               deck ? appPath(deck.source === (target.defaultSource ?? BUILT_IN_SOURCE_ID) ? contentAssetUrl(deck.path, asset) : sourceContentAssetUrl(deck.source, deck.path, asset)) : asset,
@@ -42,7 +44,12 @@ export function compileSlidePreview(slide: string, target: CompileTarget = {}): 
       ],
     })
     const { default: Raw } = await run(compiled, { ...(jsxRuntime as Parameters<typeof run>[1]), baseUrl: import.meta.url })
-    const Component = () => <Raw components={mdxComponentScope} {...mdxComponentScope} />
+    // No hooks: countPreviewSteps calls this as a plain function. The scope is read on each
+    // render, and a registry change gives a new cache key, so a recompile picks up new components.
+    const Component = () => {
+      const scope = getMdxScope()
+      return <Raw components={scope} {...scope} />
+    }
     return Component
   })()
   cache.set(key, promise)
