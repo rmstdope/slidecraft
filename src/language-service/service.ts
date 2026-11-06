@@ -79,6 +79,7 @@ function propSnippet(p: PropInfo): string {
 export function createLanguageService(data: LanguageServiceData): LanguageService {
   const byName = new Map(data.components.map((c) => [c.name, c]))
   const names = data.components.map((c) => c.name)
+  const unavailable = new Map((data.unavailable ?? []).map((u) => [u.name, u.message]))
   const valuesFor = (component: string, prop: string) => data.dynamicValues?.(component, prop) ?? propValues(byName.get(component), prop, data.toolbar(component))
 
   function completions(text: string, position: Position): CompletionItem[] {
@@ -155,6 +156,10 @@ export function createLanguageService(data: LanguageServiceData): LanguageServic
         continue
       }
       const component = byName.get(name)
+      if (!component && unavailable.has(name)) {
+        out.push({ range: nameRange, message: `<${name}> is a component of this vault that is not loaded: ${unavailable.get(name)}`, severity: 'warning', code: 'unavailable-component', source: 'slidecraft', data: { name } })
+        continue
+      }
       if (!component) {
         const guess = closest(name, names)
         out.push({

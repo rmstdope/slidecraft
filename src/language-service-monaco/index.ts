@@ -170,8 +170,11 @@ export function registerMdxLanguageFeatures(monaco: M, getService: () => Languag
   ]
 }
 
-/** Keep markers current for one editor, recomputed 300 ms after each change. */
-export function setupDiagnostics(monaco: M, editor: Monaco.editor.IStandaloneCodeEditor, getService: () => LanguageService): () => void {
+/**
+ * Keep markers current for one editor, recomputed 300 ms after each change. Returns the cleanup
+ * and `refresh`, for when the service changes (a vault component registered).
+ */
+export function setupDiagnostics(monaco: M, editor: Monaco.editor.IStandaloneCodeEditor, getService: () => LanguageService): { dispose: () => void; refresh: () => void } {
   let timer: ReturnType<typeof setTimeout> | undefined
   const update = () => {
     const model = editor.getModel()
@@ -189,10 +192,13 @@ export function setupDiagnostics(monaco: M, editor: Monaco.editor.IStandaloneCod
     clearTimeout(timer)
     timer = setTimeout(update, 300)
   })
-  return () => {
-    clearTimeout(timer)
-    sub.dispose()
-    const model = editor.getModel()
-    if (model) monaco.editor.setModelMarkers(model, OWNER, [])
+  return {
+    refresh: update,
+    dispose: () => {
+      clearTimeout(timer)
+      sub.dispose()
+      const model = editor.getModel()
+      if (model) monaco.editor.setModelMarkers(model, OWNER, [])
+    },
   }
 }

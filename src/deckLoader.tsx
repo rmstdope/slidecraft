@@ -14,6 +14,7 @@ import { appPath } from './basePath'
 import { getMdxScope } from './components/mdxScope'
 import { useRegistryVersion } from './hooks/useRegistryVersion'
 import { DeckNotFoundError } from './deckLoading'
+import { ensureVaultComponents } from './vault-api/vaultComponents'
 import type { DeckModule } from './deckTypes'
 
 export async function compileDeck(deck: DeckRef, source: string, defaultSource = BUILT_IN_SOURCE_ID): Promise<ComponentType> {
@@ -25,7 +26,7 @@ export async function compileDeck(deck: DeckRef, source: string, defaultSource =
         rewriteDeckImports,
         {
           deckName: deckName(deck),
-          knownComponents: Object.keys(getMdxScope()),
+          knownComponents: Object.keys(getMdxScope(deck.source)),
           resolveAsset: (_name: string, asset: string) =>
             appPath(deck.source === defaultSource ? contentAssetUrl(deck.path, asset) : sourceContentAssetUrl(deck.source, deck.path, asset)),
         },
@@ -35,13 +36,14 @@ export async function compileDeck(deck: DeckRef, source: string, defaultSource =
   const { default: Raw } = await run(compiled, { ...(jsxRuntime as Parameters<typeof run>[1]), baseUrl: import.meta.url })
   const Deck = (props: Record<string, unknown>) => {
     useRegistryVersion()
-    return <Raw components={getMdxScope()} {...props} />
+    return <Raw components={getMdxScope(deck.source)} {...props} />
   }
   return Deck
 }
 
 export async function loadDeck(deck: DeckRef, defaultSource?: string): Promise<DeckModule> {
-  const result = await fetchDeckSource(deck)
+  // The vault's own components first: the import check and the scope need them.
+  const [result] = await Promise.all([fetchDeckSource(deck), ensureVaultComponents(deck.source)])
   if (result.status === 404) throw new DeckNotFoundError(deck)
   if (!result.data) throw new Error(result.error ?? 'Could not load the presentation')
   return { default: (await compileDeck(deck, result.data.content, defaultSource)) as DeckModule['default'] }

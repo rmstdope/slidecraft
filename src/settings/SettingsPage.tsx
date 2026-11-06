@@ -5,6 +5,7 @@ import type { AgentBackendInfo } from '@shared/agent.ts'
 import type { VaultInfo } from '@shared/decks.ts'
 import { fetchAgentSettings, fetchBackends, saveAgentSettings, type AgentSettings } from '../agent/api'
 import { createVault, removeVault, updateVault, type ApiResult } from '../api'
+import { setComponentTrust } from '../vault-api/vaultComponents'
 import { DARK_ACCENTS, type DarkAccent, type ThemeChoice } from '../appearance/appearance'
 import { useAppearance } from '../appearance/useAppearance'
 import { Badge, Button, Card, cn, Dialog, Field, Input, Logo, StatusDot, Switch } from '../ui'
@@ -275,6 +276,12 @@ function VaultsSection({ vaults, onChanged, onOpenVault }: { vaults: VaultInfo[]
   )
 }
 
+/** Allow or block a vault's components; the app loads or drops them at once. */
+async function changeTrust(id: string, trust: 'trusted' | 'blocked'): Promise<ApiResult<true>> {
+  const error = await setComponentTrust(id, trust)
+  return error ? { error } : { data: true }
+}
+
 function VaultRow({ vault, busy, run, onOpen, onRemoved }: { vault: VaultInfo; busy: boolean; run: Run; onOpen(): void; onRemoved(): void }) {
   const [name, setName] = useState(vault.name)
   const [confirming, setConfirming] = useState(false)
@@ -284,6 +291,7 @@ function VaultRow({ vault, busy, run, onOpen, onRemoved }: { vault: VaultInfo; b
     if (name.trim() && name.trim() !== vault.name) void run(() => updateVault(vault.id, { name: name.trim() }))
   }
   const readOnlyId = `read-only-${vault.id}`
+  const componentsId = `components-${vault.id}`
   return (
     <li>
       <Card className="tw:flex tw:flex-wrap tw:items-center tw:gap-x-6 tw:gap-y-3 tw:px-4 tw:py-3.5">
@@ -321,6 +329,21 @@ function VaultRow({ vault, busy, run, onOpen, onRemoved }: { vault: VaultInfo; b
                 onCheckedChange={(checked) => void run(() => updateVault(vault.id, { readOnly: checked }))}
               />
               Read-only
+            </label>
+          )}
+          {!vault.builtIn && (
+            <label
+              htmlFor={componentsId}
+              className="tw:mr-2 tw:flex tw:items-center tw:gap-2 tw:text-[13px] tw:text-fg-2"
+              title="The vault's own components (components/) are code that runs with Slidecraft's access. Allow them only for a vault you trust."
+            >
+              <Switch
+                id={componentsId}
+                checked={vault.components === 'trusted'}
+                disabled={busy}
+                onCheckedChange={(checked) => void run(() => changeTrust(vault.id, checked ? 'trusted' : 'blocked'))}
+              />
+              Run its components{vault.components === 'ask' ? ' (asks)' : ''}
             </label>
           )}
           <Button size="sm" onClick={onOpen}>

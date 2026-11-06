@@ -7,6 +7,7 @@ import { parseDeck } from '../../shared/deckParser.ts'
 import { getRegistryVersion } from '../../src/components/slides/defineComponent.ts'
 import { registryLanguageService } from '../../src/language-service/index.ts'
 import { validateMdx } from './mdxValidator.ts'
+import { ensureServerComponents } from './serverRegistry.ts'
 
 import type { DeckProblem } from '../../shared/agent.ts'
 
@@ -21,9 +22,11 @@ export interface DeckCheck {
 /** About how many characters of an 88 px display title fit on one line of a document slide. */
 export const DOCUMENT_TITLE_CHARS = 46
 
-let service: { version: number; ls: ReturnType<typeof registryLanguageService> } | null = null
+const services = new Map<string, { version: number; ls: ReturnType<typeof registryLanguageService> }>()
 
-export async function checkDeck(source: string): Promise<DeckCheck> {
+/** Checks a deck against the built-ins and, when given, that vault's own components. */
+export async function checkDeck(source: string, vault?: string): Promise<DeckCheck> {
+  await ensureServerComponents(vault)
   const problems: DeckProblem[] = []
   const compiled = await validateMdx(source)
   if (!compiled.valid) problems.push({ severity: 'error', line: compiled.line, message: `Does not compile: ${compiled.message ?? 'unknown error'}` })
@@ -38,11 +41,16 @@ export async function checkDeck(source: string): Promise<DeckCheck> {
 
   // Registry checks: raw HTML, unknown components and invalid values break the rules; an unknown
   // prop is ignored by the component, so it is a warning.
-  if (service?.version !== getRegistryVersion()) service = { version: getRegistryVersion(), ls: registryLanguageService() }
+  const key = vault ?? ''
+  let service = services.get(key)
+  if (service?.version !== getRegistryVersion()) {
+    service = { version: getRegistryVersion(), ls: registryLanguageService(undefined, vault ?? null) }
+    services.set(key, service)
+  }
   for (const d of service.ls.diagnostics(source)) {
     const line = d.range.start.line + 1
     const slide = slideAt(line)
-    problems.push({ severity: d.code === 'unknown-prop' ? 'warning' : 'error', line, slide: slide >= 0 ? slide : undefined, message: d.message })
+    problems.push({ severity: d.code === 'unknown-prop' || d.code === 'unavailable-component' ? 'warning' : 'error', line, slide: slide >= 0 ? slide : undefined, message: d.message })
   }
 
   for (const s of slides) {

@@ -69,8 +69,19 @@ interface SourceEntries {
   templates: RegistryConfig[]
 }
 
+/**
+ * A vault component that is not in use: it failed to compile or load, or the vault's components
+ * are blocked. Slides that use it show a placeholder; the gallery shows the message.
+ */
+export interface ComponentProblem {
+  name: string
+  message: string
+  blocked?: boolean
+}
+
 const builtins: SourceEntries = { components: [], templates: [] }
 const sources = new Map<string, SourceEntries>()
+const problems = new Map<string, readonly ComponentProblem[]>()
 /** While a source's modules load, definitions go here instead of to the built-ins. */
 let capture: SourceEntries | null = null
 let captureQueue: Promise<unknown> = Promise.resolve()
@@ -161,17 +172,25 @@ export function captureDefinitions(load: () => unknown): Promise<SourceEntries> 
  * Sets everything a source registered, replacing what it had: pass the whole vault, not only
  * the components that changed.
  */
-export function registerSource(source: string, entries: Partial<SourceEntries>): void {
+export function registerSource(source: string, entries: Partial<SourceEntries>, sourceProblems: readonly ComponentProblem[] = []): void {
   if (source === BUILTIN_SOURCE) throw new Error('The built-in components cannot be replaced')
   const next = { components: [...(entries.components ?? [])], templates: [...(entries.templates ?? [])] }
   for (const c of next.components) sourceOf.set(c.registry, source)
   for (const t of next.templates) sourceOf.set(t, source)
   sources.set(source, next)
+  problems.set(source, [...sourceProblems])
   changed()
 }
 
 export function clearSource(source: string): void {
-  if (sources.delete(source)) changed()
+  const had = sources.delete(source)
+  if (problems.delete(source) || had) changed()
+}
+
+/** The vault's components that are not in use, and why. */
+export const getSourceProblems = (vault?: string | null): readonly ComponentProblem[] => {
+  const resolved = vault === undefined ? activeVault : vault
+  return (resolved && problems.get(resolved)) || []
 }
 
 /** The vault whose components the getters return when none is passed. */

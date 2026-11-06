@@ -5,7 +5,7 @@
  */
 import { getSlideSummary, parseDeck } from '../../../shared/deckParser.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
-import { readContentInstructions } from '../agentContext.ts'
+import { buildVaultComponentSummary, readContentInstructions } from '../agentContext.ts'
 
 export interface DeckContext {
   ref: DeckRef
@@ -48,7 +48,7 @@ const folderInstructions = (dir: string, httpWording: boolean): string | null =>
  * slidecraft-presentations skill, synced into the vault, so this only points at it and adds the
  * vault's house style.
  */
-export async function buildAgentInstructions(contentDir: string): Promise<string> {
+export async function buildAgentInstructions(contentDir: string, vault?: string): Promise<string> {
   const parts = [
     [
       '# Slidecraft',
@@ -60,6 +60,8 @@ export async function buildAgentInstructions(contentDir: string): Promise<string
       '- Keep replies short: what changed, and anything the person should decide.',
     ].join('\n'),
   ]
+  const own = vault ? await buildVaultComponentSummary(vault) : null
+  if (own) parts.push(own)
   const folder = folderInstructions(contentDir, false)
   if (folder) parts.push(folder)
   return parts.join('\n\n')

@@ -229,7 +229,7 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
 
   const prompt = await promptFor(vault, thread, text, context)
   thread.notes = undefined
-  const instructions = await buildAgentInstructions(vault.path)
+  const instructions = await buildAgentInstructions(vault.path, vault.id)
   const scope = thread.info.deck?.path ?? ''
   try {
     beginCheckpoint(vault.path, id, turn, scope)
@@ -294,7 +294,7 @@ async function checkChangedDecks(vault: ContentSource, thread: StoredThread, tur
     const resolved = resolveDeckRefInSources({ source: vault.id, path: path.slice(0, -'/index.mdx'.length) })
     const source = resolved ? await readDeckSource(resolved) : null
     if (source === null) continue
-    const result = await checkDeck(source)
+    const result = await checkDeck(source, vault.id)
     if (result.problems.length === 0) continue
     append(vault, thread, turn, { type: 'deck-check', path, ok: result.ok, problems: result.problems.slice(0, 20) })
     if (!result.ok) {

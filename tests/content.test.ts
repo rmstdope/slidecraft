@@ -5,7 +5,8 @@ import { compile } from '@mdx-js/mdx'
 import { parseDeck } from '../shared/deckParser.ts'
 import { stripMdxFrontmatter } from '../shared/frontmatter.ts'
 import { resolveDeckRelative, rewriteDeckImports } from '../shared/mdxImports.ts'
-import { builtinMdxScope } from '../src/components/mdxScope'
+import { getMdxScope } from '../src/components/mdxScope'
+import { loadFolder, registerFolders } from '../src/vault-api/loadComponents'
 
 const contentDir = join(import.meta.dir, '..', 'content')
 const decks = readdirSync(contentDir, { withFileTypes: true })
@@ -14,6 +15,19 @@ const decks = readdirSync(contentDir, { withFileTypes: true })
 
 test('the repo ships at least one example deck', () => {
   expect(decks.length).toBeGreaterThan(0)
+})
+
+// The Examples vault's own components (content/components/), loaded as the app loads them.
+const EXAMPLES = 'examples-content-test'
+const componentsDir = join(contentDir, 'components')
+const folders = await Promise.all(
+  (existsSync(componentsDir) ? readdirSync(componentsDir) : []).map((name) => loadFolder(name, 'test', () => import(join(componentsDir, name, 'index.tsx')))),
+)
+registerFolders(EXAMPLES, folders)
+
+test("the Examples vault's components load", () => {
+  expect(folders.length).toBeGreaterThan(0)
+  expect(folders.filter((f) => f.error).map((f) => `${f.name}: ${f.error}`)).toEqual([])
 })
 
 describe('example decks', () => {
@@ -28,7 +42,7 @@ describe('example decks', () => {
             rewriteDeckImports,
             {
               deckName: deckDir.split('/').pop()!,
-              knownComponents: Object.keys(builtinMdxScope),
+              knownComponents: Object.keys(getMdxScope(EXAMPLES)),
               unsupported: 'keep',
               resolveAsset: (_deck: string, src: string) => {
                 if (!existsSync(join(deckDir, resolveDeckRelative(src)))) missingAssets.push(src)

@@ -1,6 +1,8 @@
 /** Presentations, vaults and themes (Part 4 §5; themes from plan Phase 4b). */
 import type { ContentSourceInfo } from '../../shared/decks.ts'
-import { addVault, configFilePath, getContentSources, getDefaultContentSource, removeVault, rememberVault, updateVault, VaultError } from '../lib/contentSources.ts'
+import { addVault, configFilePath, getComponentTrust, getContentSource, getContentSources, getDefaultContentSource, removeVault, rememberVault, setComponentTrust, updateVault, VaultError, type ContentSource } from '../lib/contentSources.ts'
+import { listVaultComponents } from '../lib/vaultComponents.ts'
+import { broadcast } from '../lib/events.ts'
 import { discoverPresentations } from '../lib/decks.ts'
 import { executeTool } from '../lib/tools.ts'
 import { restartFileWatcher } from '../lib/fileWatcher.ts'
@@ -20,7 +22,10 @@ export async function handlePresentations(url: URL): Promise<Response> {
   }
 }
 
-const info = ({ id, name, path, include, readOnly, builtIn, temporary }: ContentSourceInfo): ContentSourceInfo => ({ id, name, path, include, readOnly, builtIn, temporary })
+const info = (source: ContentSource): ContentSourceInfo => {
+  const { id, name, path, include, readOnly, builtIn, temporary } = source
+  return { id, name, path, include, readOnly, builtIn, temporary, components: getComponentTrust(source) }
+}
 
 function vaultsState() {
   return { vaults: getContentSources().map(info), defaultVault: getDefaultContentSource().id, configFile: configFilePath() }
@@ -36,7 +41,9 @@ async function afterVaultChange(): Promise<void> {
  * Vaults (UX overhaul U1):
  * GET /api/vaults · POST /api/vaults {name, path, readOnly?, create?} ·
  * PATCH /api/vaults/<id> {name?, readOnly?} · DELETE /api/vaults/<id> (files stay) ·
- * POST /api/vaults/<id>/open (remember it as the last vault).
+ * POST /api/vaults/<id>/open (remember it as the last vault) ·
+ * GET /api/vaults/<id>/components (its component folders) ·
+ * PUT /api/vaults/<id>/components {trust: "trusted" | "blocked"} (whether they may run).
  */
 export async function handleVaults(request: Request, url: URL): Promise<Response> {
   const rest = url.pathname.slice('/api/vaults'.length).replace(/^\/+/, '')
@@ -62,6 +69,19 @@ export async function handleVaults(request: Request, url: URL): Promise<Response
     if (action === 'open' && request.method === 'POST') {
       rememberVault(id)
       return json(vaultsState())
+    }
+    if (action === 'components') {
+      const source = getContentSource(id)
+      if (!source) return errorJson(404, `No vault "${id}"`)
+      if (request.method === 'GET') return json(await listVaultComponents(source))
+      if (request.method === 'PUT') {
+        const body = await readJson<{ trust?: unknown }>(request)
+        if (body?.trust !== 'trusted' && body?.trust !== 'blocked') return errorJson(400, 'Body must be JSON with "trust": "trusted" or "blocked"')
+        setComponentTrust(id, body.trust)
+        broadcast({ type: 'components-changed', source: id, timestamp: Date.now() })
+        return json(await listVaultComponents(getContentSource(id)!))
+      }
+      return errorJson(405, 'Method not allowed')
     }
     if (action) return errorJson(404, 'Not found')
     if (request.method === 'PATCH') {

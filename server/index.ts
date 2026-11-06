@@ -5,6 +5,8 @@
 import { syncAllFolderInstructions } from './lib/agentContext.ts'
 import { VAULT_RUNTIME_PREFIX } from '../shared/vaultRuntime.ts'
 import { handleVaultRuntime } from './routes/vaultRuntime.ts'
+import { bundleRequestName } from '../shared/vaultComponents.ts'
+import { serveComponentBundle } from './lib/vaultComponents.ts'
 import { syncSkillsToVaults } from './lib/skillSync.ts'
 import { getBuiltInSource, getContentDir, getContentSource, getContentSources, getDefaultContentSource, getLibraryDir, persistMigratedConfig } from './lib/contentSources.ts'
 import { eventsResponse } from './lib/events.ts'
@@ -56,6 +58,8 @@ export async function router(request: Request): Promise<Response> {
     }
     const source = getContentSource(sourceId)
     if (!source) return errorJson(404, 'Unknown content source')
+    const component = bundleRequestName(rest.join('/'))
+    if (component) return serveComponentBundle(source, component)
     return serveFileFrom(source.path, rest.join('/'))
   }
   // /content/ is the repository's examples in a checkout (as Vite bundles them), else the default vault.

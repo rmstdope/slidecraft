@@ -1,6 +1,7 @@
 import { BUILT_IN_SOURCE_ID, type DeckRef } from '@shared/decks.ts'
 import { presentationModules } from './bundledDecks'
 import type { DeckModuleLoader } from './deckTypes'
+import { ensureVaultComponents } from './vault-api/vaultComponents'
 
 export class DeckNotFoundError extends Error {
   constructor(deck: DeckRef) {
@@ -23,7 +24,11 @@ export function deckModuleLoader(deck: DeckRef, options: { builtInSourceId?: str
   const runtime = () => import('./deckLoader').then(({ loadDeck }) => loadDeck(deck, options.defaultSource))
   if (!options.runtime && isBundled(deck, options.builtInSourceId)) {
     const bundled = presentationModules[bundledKey(deck)]
-    return () => bundled().catch(runtime)
+    // A bundled deck takes its components from the MDX provider, so the vault's must be in first.
+    return () =>
+      ensureVaultComponents(deck.source)
+        .then(() => bundled())
+        .catch(runtime)
   }
   return runtime
 }

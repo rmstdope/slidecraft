@@ -24,8 +24,9 @@
       "@content/*": ["./content/*"],
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"],
+      "slidecraft": ["./src/vault-api/index.ts"],
       "monaco-editor-esm/*": ["./node_modules/monaco-editor/esm/vs/*"]
     }
   },
-  "include": ["src", "server", "shared", "scripts", "tests", "*.ts", "*.d.ts"]
+  "include": ["src", "server", "shared", "scripts", "tests", "content/components", "*.ts", "*.d.ts"]
 }
