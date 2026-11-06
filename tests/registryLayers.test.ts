@@ -163,6 +163,21 @@ describe('registry layers', () => {
     await expect(inner!).rejects.toThrow('inside another capture')
   })
 
+  test('captures started while another loads wait their turn instead of failing', async () => {
+    let release!: () => void
+    let started!: () => void
+    const loading = new Promise<void>((r) => (started = r))
+    const slow = captureDefinitions(() => {
+      started()
+      return new Promise<void>((r) => (release = r))
+    })
+    await loading // the first load is waiting on its import
+    const second = captureDefinitions(() => undefined)
+    release()
+    await expect(slow).resolves.toEqual({ components: [], templates: [] })
+    await expect(second).resolves.toEqual({ components: [], templates: [] })
+  })
+
   test('a built-in id also finds the vault component that replaces it', async () => {
     const defs = await vaultDefinitions()
     const builtinId = getBuiltinComponent('Stat')!.registry.id

@@ -267,7 +267,10 @@ const temporaryTrust = new Map<string, ComponentTrust>()
 export function getComponentTrust(source: ContentSource): ComponentTrust {
   if (source.builtIn) return 'trusted'
   if (source.temporary) return temporaryTrust.get(source.path) ?? 'ask'
-  return getContentSource(source.id)?.components ?? source.components
+  // From the file each time: another process (the MCP server an agent started) may hold an older
+  // copy of the config, and a vault blocked on the settings page must stop loading there too.
+  const entry = configured(migrateConfig(readConfig(configFile)).config).find((v) => vaultIdFromName(v.id ?? v.name) === source.id)
+  return entry ? trustOf(entry.components) : source.components
 }
 
 export function setComponentTrust(id: string, trust: 'trusted' | 'blocked'): ContentSource {

@@ -18,6 +18,11 @@ export interface ExportPayload {
   assets: Record<string, string>
   /** Content-folder themes the deck uses (built-in themes are part of the viewer). */
   themes: ExportedTheme[]
+  /**
+   * The deck's vault components (vault components plan): the export does not carry their code
+   * yet (V6), so the viewer shows a placeholder where one is used instead of failing the deck.
+   */
+  unavailable?: string[]
 }
 
 export const PAYLOAD_ELEMENT_ID = 'slidecraft-deck'

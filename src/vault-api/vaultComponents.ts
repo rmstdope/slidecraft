@@ -12,7 +12,7 @@ import { appPath, IS_STATIC } from '../basePath'
 import { bundledComponentModules } from '../bundledDecks'
 import { setActiveVault } from '../components/slides/defineComponent'
 import { subscribeServerEvents } from '../hooks/useSSE'
-import { BLOCKED_MESSAGE, loadFolder, registerFolders, UNDECIDED_MESSAGE, type LoadedFolder } from './loadComponents'
+import { BLOCKED_MESSAGE, loadFolder, registerFolders, reusable, UNDECIDED_MESSAGE, type LoadedFolder } from './loadComponents'
 
 export interface VaultComponentsState {
   trust: ComponentTrust
@@ -48,6 +48,8 @@ async function refresh(vault: string, entry: Entry): Promise<void> {
   const result = await fetchVaultComponents(vault)
   if (!result.data) {
     entry.state = { ...entry.state, error: result.error }
+    // Forget the vault, so the next deck or page that needs it asks the server again.
+    if (entries.get(vault) === entry && entry.folders.size === 0) entries.delete(vault)
     notify()
     return
   }
@@ -55,8 +57,8 @@ async function refresh(vault: string, entry: Entry): Promise<void> {
   const folders = new Map<string, LoadedFolder>()
   for (const info of components) {
     const previous = entry.folders.get(info.name)
-    const same = previous && previous.hash === info.hash && trust === entry.state.trust
-    folders.set(info.name, same ? previous : trust === 'trusted' ? await importFolder(info) : { name: info.name, hash: info.hash, components: [] })
+    const same = reusable(previous, info.hash) && trust === entry.state.trust
+    folders.set(info.name, same ? previous! : trust === 'trusted' ? await importFolder(info) : { name: info.name, hash: info.hash, components: [] })
   }
   entry.folders = folders
   entry.state = { trust, components }

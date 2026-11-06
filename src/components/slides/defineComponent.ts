@@ -85,6 +85,8 @@ const problems = new Map<string, readonly ComponentProblem[]>()
 /** While a source's modules load, definitions go here instead of to the built-ins. */
 let capture: SourceEntries | null = null
 let captureQueue: Promise<unknown> = Promise.resolve()
+/** True while a capture's `load` runs its synchronous part. */
+let loadingSync = false
 /** Set once the built-ins have all registered (the end of the slides barrel). */
 let sealed = false
 let activeVault: string | null = null
@@ -153,12 +155,21 @@ export function sealBuiltins(): void {
  * start another from inside its `load` (it would wait for itself).
  */
 export function captureDefinitions(load: () => unknown): Promise<SourceEntries> {
-  if (capture) return Promise.reject(new Error('captureDefinitions cannot run inside another capture'))
+  // A call from inside `load` would wait for itself. Calls from elsewhere while another source
+  // loads (two vaults at once) are fine: they wait their turn in the queue.
+  if (loadingSync) return Promise.reject(new Error('captureDefinitions cannot run inside another capture'))
   const run = captureQueue.then(async () => {
     const entries: SourceEntries = { components: [], templates: [] }
     capture = entries
     try {
-      await load()
+      let pending: unknown
+      loadingSync = true
+      try {
+        pending = load()
+      } finally {
+        loadingSync = false
+      }
+      await pending
     } finally {
       capture = null
     }

@@ -131,6 +131,7 @@ export function App() {
       }
       const vault = routeVault(route)
       if (vault !== undefined && !content.vaults.some((v) => v.id === vault)) {
+        void activateVault(content.defaultVault)
         window.history.replaceState(null, '', homeUrl(content.defaultVault))
         return setView({ type: 'home', vault: content.defaultVault })
       }

@@ -14,6 +14,15 @@ export interface LoadedFolder {
   error?: string
 }
 
+const LOAD_FAILED = 'Failed to load: '
+
+/**
+ * Whether a loaded folder can be kept while its hash is unchanged. A compile or folder-rule error
+ * is the same next time; a failure while running it may not be (it can depend on what else was
+ * loading), so that one is tried again.
+ */
+export const reusable = (folder: LoadedFolder | undefined, hash: string): folder is LoadedFolder => !!folder && folder.hash === hash && !folder.error?.startsWith(LOAD_FAILED)
+
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 /** Runs one folder's module (`load` imports it) and checks what it defined. */
@@ -25,7 +34,7 @@ export async function loadFolder(name: string, hash: string, load: () => Promise
     if (problems.length) return { name, hash, components: [], error: problems.join('\n') }
     return { name, hash, components: entries.components }
   } catch (error) {
-    return { name, hash, components: [], error: `Failed to load: ${messageOf(error)}` }
+    return { name, hash, components: [], error: `${LOAD_FAILED}${messageOf(error)}` }
   }
 }
 

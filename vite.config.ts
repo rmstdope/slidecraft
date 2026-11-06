@@ -51,9 +51,6 @@ export default defineConfig(({ command }) => {
         // Vault components import the app as 'slidecraft' (through the import map, outside Vite).
         // The static site bundles the Examples vault's components, so Vite resolves it to the source.
         { find: /^slidecraft$/, replacement: r('./src/vault-api/index.ts') },
-        // Vault components import the app as 'slidecraft' (the import map, outside Vite). For the
-        // Examples vault's components in the static site, Vite bundles them against the source.
-        { find: /^slidecraft$/, replacement: r('./src/vault-api/index.ts') },
         { find: /^@\//, replacement: r('./src') + '/' },
       ],
     },

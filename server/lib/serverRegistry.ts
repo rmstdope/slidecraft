@@ -14,7 +14,7 @@ import * as motion from 'motion/react'
 import type { VaultModuleName } from '../../shared/vaultRuntime.ts'
 import { clearSource } from '../../src/components/slides/defineComponent.ts'
 import * as slidecraft from '../../src/vault-api/index.ts'
-import { BLOCKED_MESSAGE, loadFolder, registerFolders, UNDECIDED_MESSAGE, type LoadedFolder } from '../../src/vault-api/loadComponents.ts'
+import { BLOCKED_MESSAGE, loadFolder, registerFolders, reusable, UNDECIDED_MESSAGE, type LoadedFolder } from '../../src/vault-api/loadComponents.ts'
 import { getComponentTrust, getContentSource, type ContentSource } from './contentSources.ts'
 import { bundleComponent, componentFolders, componentsDir, folderHash } from './vaultComponents.ts'
 
@@ -46,6 +46,8 @@ let loads = 0
 interface VaultState {
   trust: string
   folders: Map<string, LoadedFolder>
+  /** The folder names last registered as blocked. */
+  blocked?: string
 }
 
 const loaded = new Map<string, VaultState>()
@@ -67,7 +69,10 @@ async function refresh(source: ContentSource): Promise<void> {
   const trust = getComponentTrust(source)
   const names = componentFolders(source)
   if (trust !== 'trusted') {
-    loaded.set(source.id, { trust, folders: new Map() })
+    const before = loaded.get(source.id)
+    // Unchanged: registering again would bump the registry version and rebuild every check.
+    if (before?.trust === trust && before.blocked === names.join('/')) return
+    loaded.set(source.id, { trust, folders: new Map(), blocked: names.join('/') })
     if (names.length) registerFolders(source.id, [], names, trust === 'blocked' ? BLOCKED_MESSAGE : UNDECIDED_MESSAGE)
     else clearSource(source.id)
     return
@@ -78,7 +83,7 @@ async function refresh(source: ContentSource): Promise<void> {
   for (const name of names) {
     const hash = folderHash(join(componentsDir(source), name))
     const previous = before?.folders.get(name)
-    if (previous?.hash === hash) {
+    if (reusable(previous, hash)) {
       folders.set(name, previous)
       continue
     }

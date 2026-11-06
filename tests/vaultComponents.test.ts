@@ -16,6 +16,8 @@ import { checkDeck } from '../server/lib/deckChecks.ts'
 import { ensureServerComponents } from '../server/lib/serverRegistry.ts'
 import { executeTool } from '../server/lib/tools.ts'
 import { router } from '../server/index.ts'
+import { exportDeck } from '../server/lib/exportDeck.ts'
+import { PAYLOAD_ELEMENT_ID, type ExportPayload } from '../shared/exportPayload.ts'
 import { getAllComponents, getSourceProblems, registerSource, clearSource } from '../src/components/slides/defineComponent'
 import { getMdxScope } from '../src/components/mdxScope'
 import { registerFolders } from '../src/vault-api/loadComponents'
@@ -171,6 +173,31 @@ describe('the server registry', () => {
     setComponentTrust('stranger', 'trusted')
     await ensureServerComponents('stranger')
     expect(getAllComponents('stranger').some((c) => c.registry.name === 'Funnel')).toBe(true)
+  })
+})
+
+describe('review fixes', () => {
+  test('trust is read from the config file, so a change by another process counts', () => {
+    const file = join(root, 'config.json')
+    const config = JSON.parse(readFileSync(file, 'utf8'))
+    const before = getComponentTrust(getContentSource('acme')!)
+    config.vaults[0].components = 'blocked'
+    writeFileSync(file, JSON.stringify(config))
+    try {
+      expect(before).toBe('trusted')
+      expect(getComponentTrust(getContentSource('acme')!)).toBe('blocked')
+    } finally {
+      config.vaults[0].components = 'trusted'
+      writeFileSync(file, JSON.stringify(config))
+    }
+  })
+
+  test('an HTML export names the vault components it cannot carry yet', async () => {
+    const { html } = await exportDeck({ source: 'acme', path: 'pitch' }, { viewer: { js: '', css: '' } })
+    const json = new RegExp(`id="${PAYLOAD_ELEMENT_ID}">([^<]*)<`).exec(html)![1]
+    const payload = JSON.parse(json) as ExportPayload
+    expect(payload.unavailable).toContain('Funnel')
+    expect(payload.unavailable).toContain('Broken')
   })
 })
 

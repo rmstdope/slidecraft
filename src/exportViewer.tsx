@@ -10,6 +10,7 @@ import { MDXProvider } from '@mdx-js/react'
 import type { MDXComponents } from 'mdx/types'
 import { assetKey, PAYLOAD_ELEMENT_ID, type ExportPayload } from '@shared/exportPayload.ts'
 import { getMdxScope } from './components/mdxScope'
+import { unavailableComponent } from './components/UnavailableComponent'
 import { DeckContext } from './components/slides/deckContext'
 import { registerTheme } from './themes/registry'
 
@@ -28,7 +29,10 @@ function start() {
     const body = decodeBase64Utf8(payload.code)
     const { default: Content } = new Function(body)({ ...jsxRuntime, baseUrl: document.baseURI }) as { default: ComponentType<{ components?: MDXComponents }> }
     const resolveAsset = (src: string) => (!src || /^(data:|blob:|https?:)/i.test(src) ? src : (payload.assets[assetKey(src, payload.name)] ?? src))
-    const scope = getMdxScope() as MDXComponents
+    const scope = { ...getMdxScope() } as MDXComponents & Record<string, unknown>
+    // A vault component's code is not in the export yet: a placeholder on its slides, not a failed deck.
+    // An override of a built-in falls back to the built-in.
+    for (const name of payload.unavailable ?? []) if (!(name in scope)) scope[name] = unavailableComponent(name, 'vault components are not included in HTML exports yet')
     document.title = payload.name
 
     createRoot(root).render(
