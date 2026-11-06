@@ -63,7 +63,9 @@ server/   index.ts router · routes/ (mdx, content and vaults, images, export, a
           lib/ contentSources (vaults), decks, deckStore, fileWatcher, events (SSE), tools, mdxValidator,
                mdxRepair, agentContext (generated AGENTS.md), skillSync, deckChecks, themes, images,
                exports, chrome, agent/ (backend seam, Claude Code, Copilot, threads, checkpoints,
-               attachments, prompt)
+               attachments, prompt), vaultComponents (find and bundle components/<Name>/),
+               serverRegistry (import them on the server), vaultShims, componentChecks
+               (validate_component), builtinCopies (copy, compare, reset)
           mcp.ts (stdio MCP server over lib/tools; the binary runs it with --mcp)
 skills/   slidecraft-presentations (synced into vaults), slidecraft-components, slidecraft-dev
 ```
@@ -73,6 +75,17 @@ by Vite (`src/bundledDecks.ts`); every other deck is fetched as MDX text from th
 compiled in the browser by `src/deckLoader.tsx`, with imports rewritten by `shared/mdxImports.ts`
 so only `@components` and relative image files resolve. Live reload is a server-sent event
 (`presentation-updated`) that makes the app recompile and swap the module, keeping the position.
+
+How a vault's own components get there (`docs/plans/vault-components-plan.md`): the server bundles
+each `components/<Name>/` with `Bun.build`, keeping `slidecraft`, `react`, `react/jsx-runtime` and
+`motion/react` external, and serves it under `/content-source/<vault>/components/`. The import map
+in `index.html` sends those four names to `/vault-runtime/*.js` shims (`server/lib/vaultShims.ts`)
+that re-export the app's own modules from `globalThis.__slidecraftModules`.
+`src/vault-api/vaultComponents.ts` imports each bundle and registers the vault as a registry layer;
+`server/lib/serverRegistry.ts` does the same on the server for the tools and checks. The HTML
+export inlines the bundles and an import map of `data:` shims, and `src/exportViewer.tsx` registers
+them before it renders. Nothing of a vault runs, or is even bundled, until the vault is trusted
+(`getComponentTrust`).
 
 ## Data model
 

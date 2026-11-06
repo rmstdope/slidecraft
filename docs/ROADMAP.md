@@ -10,6 +10,7 @@ What Slidecraft does today, and what may come next. The detailed build history i
 - Themes with schemes and frames (slidecraft, paper, folio, ion), per-folder themes with `extends` and optional `effects`.
 - Browser editor with live preview, insert palette, contextual toolbar, language service, image picker.
 - Vaults: named content folders shown one at a time, with read-only vaults and live reload.
+- Vault components and templates: a vault's own, made with the agent from the gallery, replacing built-ins by name (a built-in is copied first), behind a trust prompt, in exports and the MCP tools.
 - Presenter view with notes, next slide and timer; drawing and annotations in both windows.
 - Single-file HTML export with reader mode; PDF export through headless Chrome.
 - The agent in the app: Claude Code or the Copilot CLI streaming into a deck workspace, with approvals, per-turn undo, attachments and three skills; an MCP server for any other agent.

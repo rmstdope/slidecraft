@@ -29,7 +29,9 @@ two (a deck that needs a new component) finishes one skill's part before startin
 Decks live in **vaults**: named folders of decks listed in `~/.config/slidecraft/config.json`
 and managed on `/settings`. `bun run content-dir` prints the default vault's folder. This
 repository's `content/` is the Examples vault and holds the example decks; a person's own decks
-go in their own vault. A vault's hand-written `AGENTS.md` carries its house style: on style it
+go in their own vault. Besides its deck folders, a vault may have `themes/<id>/`, its own
+components in `components/<Name>/` and its own slide templates in `templates/<id>/` (the
+`slidecraft-components` skill covers those two), and `exports/`. A vault's hand-written `AGENTS.md` carries its house style: on style it
 wins, on which components exist and how they work the skills win.
 
 ## Commands

@@ -18,11 +18,18 @@ export interface ExportPayload {
   assets: Record<string, string>
   /** Content-folder themes the deck uses (built-in themes are part of the viewer). */
   themes: ExportedTheme[]
-  /**
-   * The deck's vault components (vault components plan): the export does not carry their code
-   * yet (V6), so the viewer shows a placeholder where one is used instead of failing the deck.
-   */
-  unavailable?: string[]
+  /** The vault components the deck uses (vault components plan, V6); none when it uses none. */
+  components?: ExportedComponents
+}
+
+/** One vault component folder: its bundle, or why the export carries none. */
+export type ExportedFolder = { name: string; code: string; error?: undefined } | { name: string; code?: undefined; error: string }
+
+export interface ExportedComponents {
+  /** The vault they register under, so they override built-ins as they do in the app. */
+  vault: string
+  /** Bundles are base64 of the ES module, imported as `data:` URLs through the page's import map. */
+  folders: ExportedFolder[]
 }
 
 export const PAYLOAD_ELEMENT_ID = 'slidecraft-deck'

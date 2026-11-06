@@ -63,6 +63,8 @@ decks/
 │  ├─ index.mdx           the deck
 │  └─ images/             its images, imported by relative path
 ├─ themes/<id>/theme.json themes for this folder (optional)
+├─ components/<Name>/     this vault's own components (optional)
+├─ templates/<id>/        this vault's own slide templates (optional)
 └─ exports/               HTML and PDF exports
 ```
 
@@ -97,6 +99,17 @@ files. They are kept in `~/.config/slidecraft/config.json` (`SLIDECRAFT_CONFIG` 
 - In a checkout, this repository's example decks are the **Examples** vault.
 - An older config with `contents` and `default` is turned into vaults on start; the original is
   kept as `config.json.bak`.
+
+### A vault's own components
+
+A vault can add components (`components/<Name>/index.tsx`) and slide templates
+(`templates/<id>/index.mdx`) to the built-in ones; one with a built-in's name replaces it in that
+vault. Make and change them with the agent from the gallery (**New**, **Edit with agent**); editing
+a built-in copies it into the vault first, and **Reset to built-in** deletes the copy. Components
+are code, so a vault you add asks once before they run (`"components": "trusted"` or `"blocked"`
+on the vault in the config file, or **Settings › Vaults**). Until then its slides show
+placeholders where its components would be, in the app, in exports and in the MCP tools' checks.
+The [guide](docs/guide.md#a-vaults-own-components) has the details.
 
 On start the server writes an `AGENTS.md` into every writable vault with the component list and
 the authoring rules, and refreshes it when Slidecraft changes. A hand-written `AGENTS.md` is
@@ -155,7 +168,9 @@ claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --vault work
 | `screenshot_slide` | one slide as a 960 × 540 image, every step shown (needs the app running and Chrome) |
 | `export_html`, `export_pdf` | write an export into `<content>/exports/` |
 
-Every write is compile-checked; a failing write is refused with the line and the error.
+Every write is compile-checked; a failing write is refused with the line and the error. With
+`--vault`, the checks and exports know that vault's own components when it is allowed to run them;
+otherwise the checks say they were not run.
 
 
 Agents also get the **`slidecraft-presentations` and `slidecraft-components` skills**: Slidecraft
@@ -171,7 +186,8 @@ bun run export --name quarterly-review          # exports/quarterly-review.html
 bun run export --name quarterly-review --pdf    # needs the server running and Chrome
 ```
 
-The HTML file is self-contained (slides, images, fonts) and has a reader mode that shows every
+The HTML file is self-contained (slides, images, fonts, and the vault's own components the deck
+uses, when the vault may run them) and has a reader mode that shows every
 slide with its notes and prints as a handout. The PDF has one page per slide with every step shown.
 
 ## Documentation

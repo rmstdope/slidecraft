@@ -2,19 +2,22 @@
  * Single-file HTML export (Part 4 §8.2): the deck compiled on the server, every asset and
  * content-folder theme it uses as data URLs, and the prebuilt viewer, in one offline HTML file.
  */
-import { BUILTIN_SOURCE, getAllComponents, getSourceProblems, sourceOfEntry } from '../../src/components/slides/defineComponent.ts'
-import { ensureServerComponents } from './serverRegistry.ts'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { compile } from '@mdx-js/mdx'
 import { deckName, type DeckRef } from '../../shared/decks.ts'
-import { assetKey, mimeType, PAYLOAD_ELEMENT_ID, type ExportedTheme, type ExportPayload } from '../../shared/exportPayload.ts'
+import { assetKey, mimeType, PAYLOAD_ELEMENT_ID, type ExportedComponents, type ExportedFolder, type ExportedTheme, type ExportPayload } from '../../shared/exportPayload.ts'
 import { stripMdxFrontmatter } from '../../shared/frontmatter.ts'
 import { ASSET_IMPORT_RE, DeckImportError, resolveDeckRelative, rewriteDeckImports } from '../../shared/mdxImports.ts'
 import { readAppBytes, readAppText } from './appFiles.ts'
 import { resolveDeckFile, resolveDeckRefInSources, type ResolvedDeck } from './decks.ts'
 import { readDeckSource } from './deckStore.ts'
 import { discoverThemes, THEMES_DIR } from './themes.ts'
+import { getAllComponents, getSourceProblems, sourceOfEntry } from '../../src/components/slides/defineComponent.ts'
+import { getComponentTrust, getContentSource } from './contentSources.ts'
+import { ensureServerComponents } from './serverRegistry.ts'
+import { bundleComponent, componentFolders } from './vaultComponents.ts'
+import { inlineVaultImportMap } from './vaultShims.ts'
 
 export class ExportError extends Error {
   constructor(
@@ -96,11 +99,40 @@ export interface ExportOptions {
   viewer?: { js: string; css: string }
 }
 
-/** The vault's own component names, loaded or not; the viewer has only the built-ins. */
-async function vaultComponentNames(vault: string): Promise<string[]> {
+/** Why a component's code is not in an export of a vault whose components may not run. */
+export const NOT_TRUSTED_IN_EXPORT = "this vault's components were not allowed to run, so the export does not include them"
+
+/**
+ * The vault component folders the deck uses (by tag, a part counting for its folder), each with
+ * its bundle, or with why it has none: the vault's code may not run, or it did not load. The
+ * viewer registers them as the app does, so a vault component that is missing falls back to the
+ * built-in of its name, or shows a placeholder.
+ */
+async function exportedComponents(vault: string, mdx: string): Promise<ExportedComponents | undefined> {
+  const source = getContentSource(vault)
+  if (!source) return undefined
+  const folders = componentFolders(source)
+  if (!folders.length) return undefined
   await ensureServerComponents(vault)
-  const own = getAllComponents(vault).filter((c) => sourceOfEntry(c.registry) !== BUILTIN_SOURCE).map((c) => c.registry.name)
-  return [...new Set([...own, ...getSourceProblems(vault).filter((p) => !p.template).map((p) => p.name)])]
+  const tags = new Set([...mdx.matchAll(/<([A-Z][\w]*)/g)].map((m) => m[1]))
+  const folderOf = new Map<string, string>(folders.map((f) => [f, f]))
+  for (const c of getAllComponents(vault)) if (sourceOfEntry(c.registry) === vault) folderOf.set(c.registry.name, c.registry.parent ?? c.registry.name)
+  const used = [...new Set([...tags].flatMap((t) => (folderOf.has(t) ? [folderOf.get(t)!] : [])))].sort()
+  if (!used.length) return undefined
+  const trusted = getComponentTrust(source) === 'trusted'
+  const problems = new Map(getSourceProblems(vault).filter((p) => !p.template).map((p) => [p.name, p.message]))
+  const out: ExportedFolder[] = []
+  for (const name of used) {
+    if (!trusted) {
+      out.push({ name, error: NOT_TRUSTED_IN_EXPORT })
+      continue
+    }
+    const problem = problems.get(name)
+    const bundle = problem === undefined ? await bundleComponent(source, name) : undefined
+    if (problem !== undefined || bundle?.error !== undefined) out.push({ name, error: problem ?? bundle!.error! })
+    else out.push({ name, code: toBase64(bundle!.code!) })
+  }
+  return { vault, folders: out }
 }
 
 export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Promise<{ html: string; name: string }> {
@@ -155,9 +187,12 @@ export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Pro
 
   // 3. Payload and viewer in one HTML file. The payload is JSON with "<" escaped; the viewer is
   // base64, so no deck text or library code can end the script element early.
-  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx), unavailable: await vaultComponentNames(ref.source) }
+  const components = await exportedComponents(ref.source, mdx)
+  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx), ...(components ? { components } : {}) }
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   const viewer = options.viewer ?? loadViewer()
+  // Vault bundles import the shared packages by name: the map sends them to the viewer's own.
+  const importMap = components?.folders.some((f) => f.code !== undefined) ? `<script type="importmap">${JSON.stringify(await inlineVaultImportMap())}</script>\n` : ''
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,7 +200,7 @@ export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Pro
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(name)}</title>
 <style>${viewer.css.replace(/<\/style/gi, '<\\/style')}</style>
-</head>
+${importMap}</head>
 <body>
 <div id="root"></div>
 <script type="application/json" id="${PAYLOAD_ELEMENT_ID}">${json}</script>

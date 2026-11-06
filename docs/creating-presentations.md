@@ -93,7 +93,10 @@ not set its own; without them the theme's defaults apply.
 <Quote author="Pilot team lead">Merges just go through.</Quote>
 ```
 
-Every component, with its props and a live preview, is in the gallery at `/gallery`.
+Every component, with its props and a live preview, is in the gallery at `/gallery`. A vault
+can add components and slide templates of its own (`components/<Name>/`, `templates/<id>/`), or
+replace a built-in with its own copy; in a deck they are used like any other, and the gallery's
+**This vault** filter shows them. The [guide](guide.md#a-vaults-own-components) has the rest.
 
 ## Motion, short version
 

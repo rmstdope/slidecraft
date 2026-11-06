@@ -282,6 +282,15 @@ be copied.
 **Done when** an exported deck that uses a vault component and an overridden built-in plays
 offline as in the app, and the docs describe it.
 
+**Status:** done (2026-11-06). The export carries only the folders the deck uses (by tag, a part
+counting for its folder), and for a vault that may not run its code none of it: those slides
+get placeholders and copies give way to the built-ins, as in the app. The shims moved to
+`server/lib/vaultShims.ts` so the route and the export share them; the viewer grows by about 56 KB
+(the `slidecraft` module). `tests/vaultExport.test.ts` opens real exports from a file in headless
+Chrome (a vault component and an edited copy of Callout; then an untrusted vault) and prints a
+PDF through the app's print view; `tests/mcp.test.ts` runs `bun run mcp --vault` on a trusted and an
+untrusted vault. The welcome deck's vault slide, exported, plays FunnelBars from the file.
+
 ---
 
 ## 4. Risks
