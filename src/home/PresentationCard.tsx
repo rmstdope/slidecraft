@@ -57,7 +57,7 @@ function ExportButton({ kind, deck }: { kind: 'html' | 'pdf'; deck: Presentation
 
 /** One deck on the home grid: its first slide, launch buttons and actions (Part 3 §1.6). */
 export function PresentationCard({ deck, index, defaultSource, load, onPresent, onEdit, canExport = false }: PresentationCardProps) {
-  useRegistryVersion()
+  const registryVersion = useRegistryVersion()
   const [ref, inView] = useInView<HTMLDivElement>()
   const [thumb, setThumb] = useState<Thumb>({ state: 'loading' })
   const key = `${deck.source}:${deck.path}:${deck.updatedAt}`
@@ -78,7 +78,8 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
     return () => {
       live = false
     }
-  }, [inView, key, load])
+    // A deck that failed may have needed a vault component that registered since: try again then.
+  }, [inView, key, load, thumb.state === 'error' ? registryVersion : 0])
 
   const deckContext = useMemo(() => ({ deck, resolveAsset: assetResolverFor(deck, defaultSource) }), [deck, defaultSource])
 
@@ -105,7 +106,7 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
           )}
           {thumb.state === 'ready' && (
             <DeckContext.Provider value={deckContext}>
-              <MDXProvider components={getMdxScope() as MDXComponents}>
+              <MDXProvider components={getMdxScope(deck.source) as MDXComponents}>
                 <SlideThumbnail>
                   <thumb.Content />
                 </SlideThumbnail>

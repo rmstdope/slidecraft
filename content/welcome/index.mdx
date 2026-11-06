@@ -11,6 +11,7 @@ import {
   SignalFlow, SignalNode, SignalBypass,
   Punchline,
   ContentImage, Code, PersonRow, PersonCard,
+  FunnelBars,
 } from '@components'
 import stage from './images/stage.svg'
 import editorShot from './images/editor.png'
@@ -861,6 +862,20 @@ import docsShot from './images/docs.png'
   />
   <Callout label="Also:">validate_deck and screenshot_slide let the agent check and look at its own work.</Callout>
   <Notes>AGENTS.md at the root picks the skill: content goes to presentations, a new component to components, everything else to dev. The component list inside the presentations skill is generated from the registry, so it cannot drift. Every skill is on the docs site.</Notes>
+</Slide>
+
+<Slide scheme="dark" accent="teal" layout="document">
+  <Subtitle>Vault components</Subtitle>
+  <Title>A vault can bring its own components</Title>
+  <TwoColumn>
+    <FunnelBars unit="%" stages={[{ label: "Visited", value: 100 }, { label: "Signed up", value: 42 }, { label: "Paid", value: 9 }]} />
+    <List>
+      <ListItem>This chart is not built in: it is `components/FunnelBars/` in the Examples vault.</ListItem>
+      <ListItem>Saving the file updates every deck, the editor and the gallery.</ListItem>
+      <ListItem>Components are code, so a vault you add asks before they run.</ListItem>
+    </List>
+  </TwoColumn>
+  <Notes>A component folder holds an index.tsx that imports only slidecraft, react and motion. It adds to the built-ins in its own vault, and one with a built-in's name replaces it there. Broken ones show in the gallery with the error, and decks fall back to the built-in.</Notes>
 </Slide>
 
 <Slide hidden>

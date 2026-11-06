@@ -10,6 +10,7 @@ import { getContentSources, type ContentSource } from './contentSources.ts'
 import { discoverSource, matchesSourceInclude } from './decks.ts'
 import { broadcast, notifyPresentation } from './events.ts'
 import { discoverThemes } from './themes.ts'
+import { componentsSignature } from './vaultComponents.ts'
 
 const DEBOUNCE_MS = 150
 const POLL_MS = Number(process.env.SLIDECRAFT_WATCH_POLL_MS ?? 1000)
@@ -27,6 +28,16 @@ const tracked = new Map<string, Tracked>()
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 let poller: ReturnType<typeof setInterval> | undefined
 let polls = 0
+/** Per vault: the last seen signature of its components/ folder. */
+const componentSignatures = new Map<string, string>()
+
+/** Announce a vault's components when their code changed on disk. */
+function checkComponents(source: ContentSource): void {
+  const signature = componentsSignature(source)
+  const before = componentSignatures.get(source.id)
+  componentSignatures.set(source.id, signature)
+  if (before !== undefined && before !== signature) broadcast({ type: 'components-changed', source: source.id, timestamp: Date.now() })
+}
 
 const mtimeOf = (file: string): number | undefined => {
   try {
@@ -84,6 +95,7 @@ function onFsEvent(source: ContentSource, filename: string | null): void {
   if (!filename) return
   const rel = filename.split(sep).join('/')
   const file = join(source.path, rel)
+  if (rel.startsWith('components/')) return debounce(`components:${source.id}`, () => checkComponents(source))
   if (tracked.has(file)) return debounce(file, () => check(file))
   // Unknown path: a new deck or theme, or a change inside a theme folder (assets): rescan.
   if ((rel.endsWith('/index.mdx') && matchesSourceInclude(source, rel)) || rel.startsWith('themes/')) {
@@ -98,6 +110,7 @@ export async function startFileWatcher(): Promise<void> {
   for (const source of getContentSources()) {
     if (!existsSync(source.path)) continue
     await scan(source, false)
+    componentSignatures.set(source.id, componentsSignature(source))
     try {
       watchers.push(watch(source.path, { recursive: true }, (_event, filename) => onFsEvent(source, filename ? String(filename) : null)))
     } catch (error) {
@@ -106,6 +119,7 @@ export async function startFileWatcher(): Promise<void> {
   }
   poller = setInterval(() => {
     for (const file of [...tracked.keys()]) check(file)
+    for (const source of getContentSources()) if (existsSync(source.path)) checkComponents(source)
     if (++polls % RESCAN_EVERY === 0) for (const source of getContentSources()) if (existsSync(source.path)) void scan(source, true)
   }, POLL_MS)
 }
@@ -116,6 +130,7 @@ export function stopFileWatcher(): void {
   timers.forEach(clearTimeout)
   timers.clear()
   tracked.clear()
+  componentSignatures.clear()
 }
 
 export async function restartFileWatcher(): Promise<void> {

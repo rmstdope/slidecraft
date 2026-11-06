@@ -142,6 +142,31 @@ name.
 palette, help panel and gallery, updates on save, does not show in another vault, and an untrusted
 vault loads none.
 
+**Status:** done (2026-11-06).
+- `server/lib/vaultComponents.ts` finds, hashes and bundles folders. `server/lib/serverRegistry.ts`
+  imports trusted bundles into the server's registry. `src/vault-api/vaultComponents.ts` does the
+  same in the app.
+- `GET`/`PUT /api/vaults/<id>/components` lists the folders and sets trust. The watcher sends
+  `components-changed`, checking a signature of `components/` on every poll.
+- A component that is not loaded, because it is blocked, not yet allowed or broken, is recorded as
+  a problem in the registry. The MDX scope gives it a placeholder, and the language service reports
+  it as a warning (`unavailable-component`), not as an unknown component.
+- Every PR #9 follow-up above is handled:
+  - The gallery panel looks its entry up by name.
+  - Failed home thumbnails retry on a registry change.
+  - Decks wait for their vault's components (`ensureVaultComponents`).
+  - Vite-bundled decks drop their `@components` imports (`dropComponentImports`), so every
+    component comes from the provider.
+  - Editor markers refresh on a registry change.
+- The static site bundles the Examples vault's components with Vite.
+- Two deviations from the plan above:
+  - Bundles are cached in memory by hash, not in `.slidecraft/cache/`; `Bun.build` is quick enough.
+  - The agent hears about the vault's components in its standing instructions until the
+    generated catalogue arrives (V4).
+- Still open:
+  - A deck that imports a *part* of a blocked component fails its import check, because only folder
+    names get placeholders.
+
 ### Phase V3: Vault templates
 
 - Discover `templates/<id>/index.mdx`, parse the frontmatter, and register them in the vault's

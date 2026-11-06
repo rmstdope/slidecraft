@@ -18,6 +18,12 @@ This page is the reference for the fields.
 component's `displayName`. `getAllComponents()`, `getAllTemplates()`, `getComponentById()` and
 `getToolbarConfig()` read it. Templates are defined with `defineTemplate()` in `templates.ts`.
 
+The registry has layers: the built-ins, and each vault's own components (`components/<Name>/` in
+the vault, [vault components plan](plans/vault-components-plan.md)). The getters return the merged
+view for the active vault, or for the vault passed to them; a vault entry with a built-in's name
+hides the built-in there. Vault code registers only while the app loads it (`captureDefinitions`),
+and a folder may define only the component named like the folder and parts of it.
+
 ## Fields
 
 | Field | Rule |

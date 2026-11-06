@@ -3,6 +3,7 @@ import Editor, { type OnMount } from '@monaco-editor/react'
 import type * as Monaco from 'monaco-editor-esm/editor/editor.api.js'
 import type { LanguageService } from '../../language-service/service'
 import { LANGUAGE_ID, registerMdxLanguageFeatures, setupDiagnostics } from '../../language-service-monaco'
+import { useRegistryVersion } from '../../hooks/useRegistryVersion'
 import { useAppearance } from '../../appearance/useAppearance'
 import { MONACO_THEMES, monaco } from '../monacoSetup'
 
@@ -51,6 +52,10 @@ export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(funct
   const callbacks = useRef(props)
   callbacks.current = props
   const cleanup = useRef<(() => void) | null>(null)
+  const refreshDiagnostics = useRef<(() => void) | null>(null)
+  // A vault component registering changes what is valid: mark the slide again.
+  const registryVersion = useRegistryVersion()
+  useEffect(() => refreshDiagnostics.current?.(), [registryVersion])
 
   useImperativeHandle(ref, () => ({
     insertAtCursor(text) {
@@ -97,7 +102,8 @@ export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(funct
     editorRef.current = editor
     registerMdxLanguageFeatures(monaco, () => callbacks.current.service())
     cleanup.current?.()
-    const stopDiagnostics = setupDiagnostics(monaco, editor, () => callbacks.current.service())
+    const diagnostics = setupDiagnostics(monaco, editor, () => callbacks.current.service())
+    refreshDiagnostics.current = diagnostics.refresh
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => callbacks.current.onSave())
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => editor.trigger('keyboard', 'editor.action.triggerSuggest', {}))
     const cursor = editor.onDidChangeCursorPosition((e) => callbacks.current.onCursor(editor.getModel()?.getOffsetAt(e.position) ?? 0))
@@ -110,7 +116,8 @@ export const SlideEditor = forwardRef<SlideEditorHandle, SlideEditorProps>(funct
       callbacks.current.onSelection({ text: model.getValueInRange(e.selection), position: { top: box.top + visible.top, left: box.left + visible.left } })
     })
     cleanup.current = () => {
-      stopDiagnostics()
+      diagnostics.dispose()
+      refreshDiagnostics.current = null
       cursor.dispose()
       selection.dispose()
     }

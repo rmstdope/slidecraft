@@ -16,3 +16,9 @@ export const bundledThemeAssets: Record<string, string> = import.meta.glob('/con
   query: '?url',
   import: 'default',
 })
+
+/**
+ * The Examples vault's own components (vault components plan, V2), for the static site only:
+ * with a server they are bundled and served like any vault's.
+ */
+export const bundledComponentModules: Record<string, () => Promise<unknown>> = import.meta.glob('/content/components/*/index.tsx')

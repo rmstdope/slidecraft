@@ -1,4 +1,5 @@
 /** Small fetch helpers for the app shell. They never throw: failures become `{ error }`. */
+import type { VaultComponentsListing } from '@shared/vaultComponents.ts'
 import type { DeckRef, PresentationInfo, VaultInfo } from '@shared/decks.ts'
 import { deckName, deckQuery } from '@shared/decks.ts'
 import { appPath } from './basePath'
@@ -49,6 +50,9 @@ export const updateVault = (id: string, change: { name?: string; readOnly?: bool
 export const removeVault = (id: string) => request<VaultsState>(vaultPath(id), jsonInit('DELETE'))
 /** Remember the vault as the one `/` opens next time. */
 export const openVault = (id: string) => request<VaultsState>(`${vaultPath(id)}/open`, jsonInit('POST'))
+/** A vault's component folders and whether they may run (vault components plan, V2). */
+export const fetchVaultComponents = (id: string) => request<VaultComponentsListing>(`${vaultPath(id)}/components`)
+export const setVaultComponentTrust = (id: string, trust: 'trusted' | 'blocked') => request<VaultComponentsListing>(`${vaultPath(id)}/components`, jsonInit('PUT', { trust }))
 export const fetchPresentations = () => request<PresentationInfo[]>('/api/presentations')
 /** A new deck with one title slide, to write by hand. */
 export const createPresentation = (vault: string, name: string) => request<DeckRef>('/api/presentations', jsonInit('POST', { vault, name }))

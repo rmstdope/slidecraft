@@ -25,6 +25,8 @@ import {
   type ViewState,
 } from './router'
 import { startContentThemes } from './themes/contentThemes'
+import { activateVault } from './vault-api/vaultComponents'
+import { TrustPrompt } from './settings/TrustPrompt'
 import { LoadingScreen } from './ui'
 
 /** Monaco is large: the editor loads only when someone opens it. */
@@ -48,7 +50,7 @@ interface ContentContext {
   vaults: VaultInfo[]
 }
 
-const EXAMPLES_VAULT: VaultInfo = { id: BUILT_IN_SOURCE_ID, name: BUILT_IN_VAULT_NAME, path: '', include: [], readOnly: true, builtIn: true, temporary: false }
+const EXAMPLES_VAULT: VaultInfo = { id: BUILT_IN_SOURCE_ID, name: BUILT_IN_VAULT_NAME, path: '', include: [], readOnly: true, builtIn: true, temporary: false, components: 'trusted' }
 const OFFLINE_CONTENT: ContentContext = { defaultVault: BUILT_IN_SOURCE_ID, builtInSource: BUILT_IN_SOURCE_ID, vaults: [EXAMPLES_VAULT] }
 
 export function App() {
@@ -123,14 +125,18 @@ export function App() {
       if (!content) return
       // `/` opens the last vault; older URL shapes become their /v/<vault>/ form.
       if (route.type === 'root') {
+        void activateVault(content.defaultVault)
         window.history.replaceState(null, '', homeUrl(content.defaultVault))
         return setView({ type: 'home', vault: content.defaultVault })
       }
       const vault = routeVault(route)
       if (vault !== undefined && !content.vaults.some((v) => v.id === vault)) {
+        void activateVault(content.defaultVault)
         window.history.replaceState(null, '', homeUrl(content.defaultVault))
         return setView({ type: 'home', vault: content.defaultVault })
       }
+      // The vault on screen: its own components join the registry's default view.
+      if (vault) void activateVault(vault)
       const canonical = canonicalUrl(route, window.location.search, window.location.hash)
       if (canonical) window.history.replaceState(null, '', canonical)
       if (vault && !IS_STATIC && lastOpened.current !== vault) {
@@ -216,6 +222,8 @@ export function App() {
     case 'home': {
       const vault = content?.vaults.find((v) => v.id === view.vault) ?? EXAMPLES_VAULT
       return (
+        <>
+        <TrustPrompt vault={vault} />
         <HomePage
           key={vault.id}
           vault={vault}
@@ -232,17 +240,20 @@ export function App() {
           onSwitchVault={(id) => go(homeUrl(id))}
           onSettings={(section) => go(settingsUrl(section))}
         />
+        </>
       )
     }
     case 'gallery':
       return (
         <Suspense fallback={<LoadingScreen label="Loading gallery" />}>
-          <GalleryPage vault={view.vault} onExit={goHome} />
+          <TrustPrompt vault={content?.vaults.find((v) => v.id === view.vault)} />
+          <GalleryPage vault={view.vault} vaultName={content?.vaults.find((v) => v.id === view.vault)?.name} onExit={goHome} />
         </Suspense>
       )
     case 'editor':
       return (
         <Suspense fallback={<LoadingScreen label="Loading editor" />}>
+          <TrustPrompt vault={content?.vaults.find((v) => v.id === view.deck.source)} />
           <EditorPage key={`${view.deck.source}:${view.deck.path}`} deck={view.deck} defaultSource={assetSource} onExit={goHome} />
         </Suspense>
       )
@@ -278,7 +289,7 @@ function DeckView({ deck, content: Content, defaultSource }: { deck: DeckRef; co
   useRegistryVersion()
   return (
     <DeckContext.Provider value={deckContext}>
-      <MDXProvider components={getMdxScope() as MDXComponents}>
+      <MDXProvider components={getMdxScope(deck.source) as MDXComponents}>
         <Content />
       </MDXProvider>
     </DeckContext.Provider>

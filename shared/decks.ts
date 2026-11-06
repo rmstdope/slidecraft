@@ -27,6 +27,8 @@ export interface ContentSourceInfo {
   builtIn: boolean
   /** Opened with --content for this run only; not in the config file. */
   temporary: boolean
+  /** Whether the vault's own components may run (vault components plan, V2). */
+  components: 'trusted' | 'blocked' | 'ask'
 }
 
 export type VaultInfo = ContentSourceInfo
@@ -52,6 +54,7 @@ export const RESERVED_DECK_NAMES = new Set([
   'chat',
   'content',
   'content-source',
+  'components',
   'edit',
   'gallery',
   'images',

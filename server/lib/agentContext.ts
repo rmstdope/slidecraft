@@ -7,7 +7,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { getAllTemplates, getParts, getTopLevelComponents, type RegistryConfig } from '../../src/components/slides/defineComponent.ts'
+import { BUILTIN_SOURCE, getAllTemplates, getBuiltinComponent, getParts, getSourceProblems, getTopLevelComponents, sourceOfEntry, type RegistryConfig } from '../../src/components/slides/defineComponent.ts'
+import { ensureServerComponents } from './serverRegistry.ts'
 import '../../src/components/slides/index.ts'
 import { getContentSources, getDefaultContentSource, type ContentSource } from './contentSources.ts'
 import { VERSION } from './paths.ts'
@@ -47,6 +48,25 @@ export function buildComponentSummary(): string {
     lines.push(`- ${propLine(r)}`)
     for (const part of getParts(r.name)) lines.push(`  - ${propLine(part.registry)}`)
   }
+  return lines.join('\n')
+}
+
+/**
+ * The vault's own components (vault components plan, V2), for the agent's standing instructions:
+ * they are not in the skill's catalogue. Null when the vault has none.
+ */
+export async function buildVaultComponentSummary(vault: string): Promise<string | null> {
+  await ensureServerComponents(vault)
+  const own = getTopLevelComponents(vault).filter((c) => sourceOfEntry(c.registry) !== BUILTIN_SOURCE)
+  const problems = getSourceProblems(vault)
+  if (!own.length && !problems.length) return null
+  const lines = ['## This vault\'s own components', '', 'Besides the built-ins in the skill\'s reference, decks in this vault can use these (their code is in `components/<Name>/`). Import them from `@components` like the others.', '']
+  for (const { registry: r } of own) {
+    const props = r.props.map((p) => `\`${p.name}\`${p.default ? ` = ${p.default}` : ''}`).join(', ')
+    const parts = getParts(r.name, vault).map((p) => p.registry.name)
+    lines.push(`- **${r.name}**${getBuiltinComponent(r.name) ? ' (replaces the built-in of that name in this vault)' : ''}: ${r.description}${props ? ` Props: ${props}.` : ''}${parts.length ? ` Parts: ${parts.join(', ')}.` : ''}`, `  \`${r.snippet.split('\n')[0]}\``)
+  }
+  for (const p of problems) lines.push(`- **${p.name}** is not available: ${p.message.split('\n')[0]}`)
   return lines.join('\n')
 }
 

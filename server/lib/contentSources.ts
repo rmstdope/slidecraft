@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { BUILT_IN_SOURCE_ID, BUILT_IN_VAULT_NAME, vaultIdFromName, type ContentSourceInfo } from '../../shared/decks.ts'
+import type { ComponentTrust } from '../../shared/vaultComponents.ts'
 import {
   CONFIG_FILE,
   expandHome,
@@ -46,7 +47,9 @@ function normalizeIncludes(id: string, include: string | string[] | undefined, f
 
 const titleCase = (id: string) => id.replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
 
-export function normalizeContentSource(id: string, value: string | (SourceDescriptor & { name?: string }), builtIn = false): ContentSource {
+const trustOf = (value: unknown): ComponentTrust => (value === 'trusted' || value === 'blocked' ? value : 'ask')
+
+export function normalizeContentSource(id: string, value: string | (SourceDescriptor & { name?: string; components?: unknown }), builtIn = false): ContentSource {
   const legacy = typeof value === 'string'
   const rawPath = legacy ? value : value?.path
   if (typeof rawPath !== 'string' || rawPath.trim() === '') throw new Error(`Content source "${id}" must define a path`)
@@ -58,6 +61,8 @@ export function normalizeContentSource(id: string, value: string | (SourceDescri
     readOnly: legacy ? false : value.readOnly === true,
     builtIn,
     temporary: false,
+    // The repository's examples are the app's own, so their components always run.
+    components: builtIn ? 'trusted' : legacy ? 'ask' : trustOf(value.components),
   }
 }
 
@@ -128,10 +133,10 @@ export function normalizeContentSources(rawConfig: AppConfig, requested: string 
   const bundled = options.bundled ?? IS_BUNDLED
   if (!bundled) {
     const mounted = sources.find((s) => s.path === fallback)
-    if (mounted) mounted.builtIn = true
+    if (mounted) Object.assign(mounted, { builtIn: true, components: 'trusted' })
     else {
       const id = uniqueId(BUILT_IN_SOURCE_ID, ids)
-      sources.push({ ...normalizeContentSource(id, { path: fallback, include: DESCRIPTOR_INCLUDE, name: BUILT_IN_VAULT_NAME }), builtIn: true })
+      sources.push(normalizeContentSource(id, { path: fallback, include: DESCRIPTOR_INCLUDE, name: BUILT_IN_VAULT_NAME }, true))
     }
   } else if (sources.length === 0) {
     sources.push({ ...normalizeContentSource(vaultIdFromName(basename(fallback) || 'folder'), { path: fallback, name: basename(fallback) || 'Folder' }), temporary: true })
@@ -206,9 +211,12 @@ export function addVault(input: { name: string; path: string; readOnly?: boolean
   if (!name) throw new VaultError(400, 'A vault needs a name')
   if (!input.path.trim()) throw new VaultError(400, 'A vault needs a folder')
   const path = resolve(expandHome(input.path.trim()))
+  // A vault made here holds only what Slidecraft and its agent write, so its components may run.
+  let created = false
   if (!existsSync(path)) {
     if (!input.create) throw new VaultError(404, `The folder ${path} does not exist`)
     mkdirSync(path, { recursive: true })
+    created = true
   }
   const existing = state.sources.find((s) => s.path === path && !s.temporary && !s.builtIn)
   if (existing) throw new VaultError(409, `The folder is already the vault "${existing.name}"`)
@@ -216,7 +224,7 @@ export function addVault(input: { name: string; path: string; readOnly?: boolean
   const id = uniqueId(vaultIdFromName(name), new Set(state.sources.filter((s) => !s.temporary).map((s) => s.id)))
   // A temporary vault for this folder becomes the saved one.
   if (requested && resolve(expandHome(requested)) === path) requested = id
-  updateConfig((config) => ({ ...config, vaults: [...configured(config), { id, name, path: input.path.trim(), ...(input.readOnly ? { readOnly: true } : {}) }] }))
+  updateConfig((config) => ({ ...config, vaults: [...configured(config), { id, name, path: input.path.trim(), ...(input.readOnly ? { readOnly: true } : {}), ...(created ? { components: 'trusted' as const } : {}) }] }))
   return getContentSource(id)!
 }
 
@@ -248,6 +256,33 @@ export function removeVault(id: string): void {
     return { ...rest, vaults: configured(config).filter((v) => vaultIdFromName(v.id ?? v.name) !== id), ...(lastVault && lastVault !== id ? { lastVault } : {}) }
   })
   if (state.defaultSourceId === id) state = { ...state, defaultSourceId: state.sources.find((s) => !s.builtIn)?.id ?? state.sources[0].id }
+}
+
+// ---- Component trust (vault components plan, V2) -----------------------------------------
+
+/** A temporary vault's choice lasts for this run only. */
+const temporaryTrust = new Map<string, ComponentTrust>()
+
+/** Whether a vault's own components may run. */
+export function getComponentTrust(source: ContentSource): ComponentTrust {
+  if (source.builtIn) return 'trusted'
+  if (source.temporary) return temporaryTrust.get(source.path) ?? 'ask'
+  // From the file each time: another process (the MCP server an agent started) may hold an older
+  // copy of the config, and a vault blocked on the settings page must stop loading there too.
+  const entry = configured(migrateConfig(readConfig(configFile)).config).find((v) => vaultIdFromName(v.id ?? v.name) === source.id)
+  return entry ? trustOf(entry.components) : source.components
+}
+
+export function setComponentTrust(id: string, trust: 'trusted' | 'blocked'): ContentSource {
+  const source = getContentSource(id)
+  if (!source) throw new VaultError(404, `No vault "${id}"`)
+  if (source.builtIn) throw new VaultError(400, `The components of "${source.name}" always run`)
+  if (source.temporary) {
+    temporaryTrust.set(source.path, trust)
+    return source
+  }
+  updateConfig((config) => ({ ...config, vaults: configured(config).map((v) => (vaultIdFromName(v.id ?? v.name) !== id ? v : { ...v, id, components: trust })) }))
+  return getContentSource(id)!
 }
 
 /** Remember the vault the user opened, for `/` next time. */

@@ -52,6 +52,8 @@ export interface VaultConfig {
   path: string
   include?: string | string[]
   readOnly?: boolean
+  /** Whether the vault's own components may run (vault components plan); unset means ask. */
+  components?: 'trusted' | 'blocked'
 }
 
 export interface AppConfig {

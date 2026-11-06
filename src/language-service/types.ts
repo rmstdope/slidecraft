@@ -18,7 +18,7 @@ export interface Diagnostic {
   range: Range
   message: string
   severity: Severity
-  code: 'raw-html-element' | 'unknown-component' | 'invalid-prop-value' | 'unknown-prop'
+  code: 'raw-html-element' | 'unknown-component' | 'unavailable-component' | 'invalid-prop-value' | 'unknown-prop'
   source: 'slidecraft'
   data?: Record<string, unknown>
 }
@@ -98,4 +98,6 @@ export interface LanguageServiceData {
   components: ComponentInfo[]
   toolbar: (component: string) => ToolbarOption[] | undefined
   dynamicValues?: DynamicValues
+  /** Vault components that exist but are not loaded (blocked, or broken), and why. */
+  unavailable?: { name: string; message: string }[]
 }

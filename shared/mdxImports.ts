@@ -121,3 +121,19 @@ export function rewriteDeckImports(options: RewriteDeckImportsOptions) {
     tree.children = children
   }
 }
+
+/**
+ * For decks Vite bundles (the Examples vault in the dev server and the static site): drop the
+ * `@components` imports, so components come from the MDX provider as they do for the runtime
+ * loader, and a vault component (or a vault's override of a built-in) reaches them too.
+ */
+export function dropComponentImports() {
+  return (tree: Root): void => {
+    tree.children = tree.children.filter((node) => {
+      if (node.type !== 'mdxjsEsm' || !node.data?.estree) return true
+      const program: Program = node.data.estree
+      program.body = program.body.filter((s) => !(s.type === 'ImportDeclaration' && s.source.value === COMPONENTS_MODULE))
+      return program.body.length > 0
+    })
+  }
+}

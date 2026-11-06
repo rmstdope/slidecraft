@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { stripMdxFrontmatter } from './shared/frontmatter.ts'
+import { dropComponentImports } from './shared/mdxImports.ts'
 import { API_URL, CLIENT_PORT } from './shared/ports.ts'
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url))
@@ -32,7 +33,7 @@ export default defineConfig(({ command }) => {
     base: process.env.VITE_BASE ?? '/',
     plugins: [
       stripFrontmatterPlugin(),
-      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react' }) },
+      { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [dropComponentImports] }) },
       react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
       // Only src/styles/app.css uses Tailwind; the export viewer inherits the plugin but never imports it.
       tailwindcss(),
@@ -47,6 +48,9 @@ export default defineConfig(({ command }) => {
         { find: /^@components\//, replacement: r('./src/components') + '/' },
         { find: /^@content\//, replacement: r('./content') + '/' },
         { find: /^@shared\//, replacement: r('./shared') + '/' },
+        // Vault components import the app as 'slidecraft' (through the import map, outside Vite).
+        // The static site bundles the Examples vault's components, so Vite resolves it to the source.
+        { find: /^slidecraft$/, replacement: r('./src/vault-api/index.ts') },
         { find: /^@\//, replacement: r('./src') + '/' },
       ],
     },

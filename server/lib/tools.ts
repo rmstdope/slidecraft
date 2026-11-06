@@ -12,6 +12,7 @@ import '../../src/components/slides/index.ts'
 import { listThemes, registerTheme, unregisterSource } from '../../src/themes/registry.ts'
 import { getContentSource, getDefaultContentSource, getLibraryDir } from './contentSources.ts'
 import { checkDeck } from './deckChecks.ts'
+import { ensureServerComponents } from './serverRegistry.ts'
 import { discoverPresentations, resolveDeckRefInSources, resolveWritableDeckRefInSources, type ResolvedDeck } from './decks.ts'
 import { readDeckSource, saveValidatedDeck } from './deckStore.ts'
 import { listImages } from './images.ts'
@@ -150,7 +151,11 @@ function repaired(content: unknown): string | ToolResult {
   return repairSlideContent(content).content
 }
 
-const componentNames = () => getAllComponents().map((c) => c.registry.name)
+/** Every component a deck in the vault can use; the vault's own are loaded first. */
+async function componentNames(vault: string | undefined): Promise<string[]> {
+  await ensureServerComponents(vault)
+  return getAllComponents(vault ?? null).map((c) => c.registry.name)
+}
 
 function themesFor(sourceId: string) {
   const source = getContentSource(sourceId)
@@ -174,7 +179,7 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
       case 'validate_deck': {
         const loaded = await loadDeck(args, context, false)
         if ('success' in loaded) return loaded
-        return { success: true, data: await checkDeck(loaded.source) }
+        return { success: true, data: await checkDeck(loaded.source, loaded.ref.source) }
       }
       case 'read_presentation': {
         const loaded = await loadDeck(args, context, false)
@@ -212,7 +217,7 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
           slides.push(fixed)
         }
         const theme = typeof args.theme === 'string' && args.theme.trim() ? `theme="${args.theme.trim()}"` : ''
-        const source = newDeckSource(slides, componentNames(), theme)
+        const source = newDeckSource(slides, await componentNames(ref.source), theme)
         await mkdir(writable.resolved.deckDir, { recursive: true })
         const saved = await saveValidatedDeck(ref, writable.resolved, source, { created: true })
         if (!saved.ok) return fail(saved.error)

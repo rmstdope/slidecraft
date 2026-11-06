@@ -2,6 +2,8 @@
  * Single-file HTML export (Part 4 §8.2): the deck compiled on the server, every asset and
  * content-folder theme it uses as data URLs, and the prebuilt viewer, in one offline HTML file.
  */
+import { BUILTIN_SOURCE, getAllComponents, getSourceProblems, sourceOfEntry } from '../../src/components/slides/defineComponent.ts'
+import { ensureServerComponents } from './serverRegistry.ts'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { compile } from '@mdx-js/mdx'
@@ -94,6 +96,13 @@ export interface ExportOptions {
   viewer?: { js: string; css: string }
 }
 
+/** The vault's own component names, loaded or not; the viewer has only the built-ins. */
+async function vaultComponentNames(vault: string): Promise<string[]> {
+  await ensureServerComponents(vault)
+  const own = getAllComponents(vault).filter((c) => sourceOfEntry(c.registry) !== BUILTIN_SOURCE).map((c) => c.registry.name)
+  return [...new Set([...own, ...getSourceProblems(vault).map((p) => p.name)])]
+}
+
 export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Promise<{ html: string; name: string }> {
   const name = deckName(ref)
   const resolved = resolveDeckRefInSources(ref)
@@ -146,7 +155,7 @@ export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Pro
 
   // 3. Payload and viewer in one HTML file. The payload is JSON with "<" escaped; the viewer is
   // base64, so no deck text or library code can end the script element early.
-  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx) }
+  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx), unavailable: await vaultComponentNames(ref.source) }
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   const viewer = options.viewer ?? loadViewer()
   const html = `<!DOCTYPE html>

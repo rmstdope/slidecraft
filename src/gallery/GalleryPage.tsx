@@ -6,7 +6,21 @@ import { StepContext } from '../animations/stepContext'
 import { SlideThumbnail } from '../components/editor/SlideThumbnail'
 import { PreviewErrorBoundary } from '../components/ErrorBoundary'
 import { SLIDE_ACCENTS } from '../components/slides/accents'
-import { getAllComponents, getAllTemplates, getParts, getTopLevelComponents, ownerName, type RegistryConfig, type RegistryProp } from '../components/slides/defineComponent'
+import {
+  BUILTIN_SOURCE as BUILTIN_COMPONENTS,
+  getAllComponents,
+  getAllTemplates,
+  getBuiltinComponent,
+  getParts,
+  getSourceProblems,
+  getTopLevelComponents,
+  ownerName,
+  sourceOfEntry,
+  type ComponentProblem,
+  type RegistryConfig,
+  type RegistryProp,
+} from '../components/slides/defineComponent'
+import { setComponentTrust, useVaultComponents } from '../vault-api/vaultComponents'
 import { DESIGN_HEIGHT, DESIGN_WIDTH } from '../components/slides/Slide'
 import { StageScaleContext } from '../components/slides/thumbnailContext'
 import { useInView } from '../hooks/useInView'
@@ -47,9 +61,31 @@ const TABS: { value: Tab; label: string }[] = [
 const SETTINGS_KEY = 'slidecraft.gallery.preview.v2'
 
 /** One card per top-level component and template; parts (SignalNode…) live in their parent's card. */
-const allItems = (): RegistryConfig[] => [...getTopLevelComponents().map((c) => c.registry), ...getAllTemplates()]
-const allParts = (): RegistryConfig[] => getAllComponents().map((c) => c.registry).filter((r) => r.parent)
-const toolbarOf = (name: string) => getAllComponents().find((c) => c.registry.name === name)?.toolbar
+const allItems = (vault?: string): RegistryConfig[] => [...getTopLevelComponents(vault).map((c) => c.registry), ...getAllTemplates(vault)]
+const allParts = (vault?: string): RegistryConfig[] => getAllComponents(vault).map((c) => c.registry).filter((r) => r.parent)
+const toolbarOf = (name: string, vault?: string) => getAllComponents(vault).find((c) => c.registry.name === name)?.toolbar
+
+type SourceFilter = 'any' | 'vault'
+
+const SOURCE_FILTERS: { value: SourceFilter; label: string }[] = [
+  { value: 'any', label: 'Any source' },
+  { value: 'vault', label: 'This vault' },
+]
+
+const isVaultEntry = (item: RegistryConfig) => sourceOfEntry(item) !== BUILTIN_COMPONENTS
+/** A vault entry with a built-in's name replaces it in this vault. */
+const overridesBuiltin = (item: RegistryConfig) => isVaultEntry(item) && (item.category === 'component' ? !!getBuiltinComponent(item.name) : false)
+
+/** Where an entry comes from: Built-in, or the vault's name (and whether it replaces a built-in). */
+function SourceBadge({ item, vaultName }: { item: RegistryConfig; vaultName: string }) {
+  if (!isVaultEntry(item)) return <Badge className="tw:h-5 tw:bg-panel">Built-in</Badge>
+  return (
+    <Badge tone="accent" className="tw:h-5" title={overridesBuiltin(item) ? `Replaces the built-in ${item.name} in this vault` : 'This vault’s own'}>
+      {vaultName}
+      {overridesBuiltin(item) ? ' · overrides built-in' : ''}
+    </Badge>
+  )
+}
 const OWN = "Example's own"
 const OWN_TIP = 'Use what each example was written with'
 const title = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ')
@@ -135,7 +171,7 @@ function LiveStage({ Component, width, theme, step, total, replay }: { Component
   )
 }
 
-function GalleryCard({ item, settings, theme, onOpen }: { item: RegistryConfig; settings: GallerySettings; theme?: ResolvedTheme; onOpen(): void }) {
+function GalleryCard({ item, vaultName, settings, theme, onOpen }: { item: RegistryConfig; vaultName: string; settings: GallerySettings; theme?: ResolvedTheme; onOpen(): void }) {
   const source = useMemo(() => applySettings(item.previewCode, settings), [item.previewCode, settings])
   return (
     <button type="button" className="tw:group tw:flex tw:w-[380px] tw:max-w-full tw:flex-col tw:gap-2.5 tw:rounded-xl tw:bg-field tw:p-2.5 tw:text-left tw:transition-shadow tw:hover:shadow-[0_0_0_2px_var(--sc-focus)]" onClick={onOpen}>
@@ -143,11 +179,64 @@ function GalleryCard({ item, settings, theme, onOpen }: { item: RegistryConfig; 
       <span className="tw:flex tw:flex-col tw:gap-0.5 tw:px-1 tw:pb-1">
         <span className="tw:flex tw:items-center tw:gap-2">
           <span className="tw:font-semibold">{item.name}</span>
-          <Badge className="tw:h-5 tw:bg-panel">{item.category}</Badge>
+          <SourceBadge item={item} vaultName={vaultName} />
         </span>
         <span className="tw:line-clamp-2 tw:text-[13px] tw:text-muted">{item.description}</span>
       </span>
     </button>
+  )
+}
+
+/** A vault component that is not in use: it failed to compile or load (board 5). */
+function ProblemCard({ problem, vaultName }: { problem: ComponentProblem; vaultName: string }) {
+  const fallback = getBuiltinComponent(problem.name)
+  const [first, ...rest] = problem.message.split('\n')
+  return (
+    <div className="tw:flex tw:w-[380px] tw:max-w-full tw:flex-col tw:gap-2.5 tw:rounded-xl tw:bg-field tw:p-2.5 tw:shadow-[inset_0_0_0_1px_var(--sc-removed)]" role="group" aria-label={`${problem.name}: not loaded`}>
+      <div className={cn(frameClass, 'tw:flex tw:flex-col tw:justify-center tw:gap-1.5 tw:bg-panel-alt tw:p-4')} style={{ width: 360, height: Math.round((360 * DESIGN_HEIGHT) / DESIGN_WIDTH) }}>
+        <strong className="tw:text-removed">Doesn’t load</strong>
+        <code className="tw:line-clamp-4 tw:font-mono tw:text-[12px] tw:whitespace-pre-wrap tw:text-fg-2" title={problem.message}>
+          {[first, ...rest].join('\n')}
+        </code>
+      </div>
+      <span className="tw:flex tw:flex-col tw:gap-0.5 tw:px-1 tw:pb-1">
+        <span className="tw:flex tw:items-center tw:gap-2">
+          <span className="tw:font-semibold">{problem.name}</span>
+          <Badge tone="accent" className="tw:h-5">
+            {vaultName}
+            {fallback ? ' · overrides built-in' : ''}
+          </Badge>
+        </span>
+        <span className="tw:text-[13px] tw:text-muted">
+          {fallback ? `Decks use the built-in ${problem.name} until this is fixed.` : `Slides that use it show a placeholder until this is fixed.`} The code is in components/{problem.name}/.
+        </span>
+      </span>
+    </div>
+  )
+}
+
+/** The vault's components are blocked or not allowed yet: say so, and offer to allow them. */
+function BlockedBanner({ vault, problems }: { vault: string; problems: readonly ComponentProblem[] }) {
+  const [busy, setBusy] = useState(false)
+  const state = useVaultComponents(vault)
+  const count = problems.length === 1 ? 'one component' : `${problems.length} components`
+  return (
+    <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:rounded-xl tw:bg-field tw:px-4 tw:py-3" role="status">
+      <span className="tw:flex-1 tw:text-fg-2">
+        This vault has {count} of its own ({problems.map((p) => p.name).join(', ')}), {state?.trust === 'blocked' ? 'blocked on Settings › Vaults' : 'not allowed to run yet'}. Components are code that runs
+        with Slidecraft’s access; allow them only for a vault you trust.
+      </span>
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true)
+          void setComponentTrust(vault, 'trusted').finally(() => setBusy(false))
+        }}
+      >
+        Allow components
+      </Button>
+    </div>
   )
 }
 
@@ -255,7 +344,7 @@ function PropsTable({ props }: { props: RegistryProp[] }) {
   )
 }
 
-function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig; settings: GallerySettings; theme?: ResolvedTheme; onClose(): void }) {
+function DetailPanel({ item, vault, vaultName, settings, theme, onClose }: { item: RegistryConfig; vault?: string; vaultName: string; settings: GallerySettings; theme?: ResolvedTheme; onClose(): void }) {
   const [copied, setCopied] = useState(false)
   // Settings per component: the item itself and each of its parts.
   const [values, setValues] = useState<Record<string, PropValues>>({})
@@ -265,11 +354,11 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
   const groups = useMemo(
     () =>
       isComponent
-        ? [item, ...getParts(item.name).map((p) => p.registry)]
-            .map((r) => ({ registry: r, controls: propControls(r, toolbarOf(r.name)), written: readProps(item.previewCode, r.name) }))
+        ? [item, ...getParts(item.name, vault).map((p) => p.registry)]
+            .map((r) => ({ registry: r, controls: propControls(r, toolbarOf(r.name, vault)), written: readProps(item.previewCode, r.name) }))
             .filter((g) => g.controls.length > 0)
         : [],
-    [item, isComponent],
+    [item, isComponent, vault],
   )
   const withValues = (code: string) => Object.entries(values).reduce((text, [name, v]) => applyProps(text, name, v), code)
   const source = useMemo(() => applySettings(withValues(item.previewCode), settings), [item, values, settings])
@@ -311,7 +400,10 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
     <Sheet label={item.name} onClose={onClose} className="tw:max-w-[840px] tw:gap-5 tw:p-6">
       <header className="tw:flex tw:items-start tw:gap-4">
         <div className="tw:flex tw:flex-1 tw:flex-col tw:gap-1">
-          <h2 className="tw:font-display tw:text-[28px] tw:leading-tight tw:font-semibold">{item.name}</h2>
+          <h2 className="tw:flex tw:items-center tw:gap-3 tw:font-display tw:text-[28px] tw:leading-tight tw:font-semibold">
+            {item.name}
+            <SourceBadge item={item} vaultName={vaultName} />
+          </h2>
           <p className="tw:text-fg-2">{item.description}</p>
         </div>
         <Button size="sm" onClick={onClose}>
@@ -392,7 +484,7 @@ function DetailPanel({ item, settings, theme, onClose }: { item: RegistryConfig;
         <section className="tw:flex tw:flex-col tw:gap-2">
           <h3 className={h3Class}>Props</h3>
           <PropsTable props={item.props} />
-          {getParts(item.name).map(({ registry: part }) => (
+          {getParts(item.name, vault).map(({ registry: part }) => (
             <div key={part.id} className="tw:mt-3 tw:flex tw:flex-col tw:gap-2">
               <h3 className="tw:font-semibold">
                 Part: <code className="tw:font-mono">{part.name}</code>
@@ -525,10 +617,12 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
 
 /** Every component and template with a live preview (Part 3 §7). */
 /** The component gallery of one vault: built-in themes plus the vault's own. */
-export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(): void }) {
+export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', onExit }: { vault?: string; vaultName?: string; onExit(): void }) {
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('all')
-  const [open, setOpen] = useState<RegistryConfig | null>(null)
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('any')
+  // By name, so the panel shows the current entry after a vault component reloads.
+  const [openName, setOpenName] = useState<{ name: string; category: RegistryConfig['category'] } | null>(null)
   const [settings, setSettings] = useState<GallerySettings>(loadSettings)
   const version = useThemesVersion()
   // Content-folder themes register after load; the version re-lists them.
@@ -537,14 +631,22 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
   // A theme that has gone (a content folder changed) falls back to each example's own.
   const effective = useMemo(() => (settings.theme && !theme ? { ...settings, theme: '', frame: '' } : settings), [settings, theme])
   const registryVersion = useRegistryVersion()
-  const items = useMemo(allItems, [registryVersion])
-  const parts = useMemo(allParts, [registryVersion])
+  const items = useMemo(() => allItems(vault), [registryVersion, vault])
+  const parts = useMemo(() => allParts(vault), [registryVersion, vault])
+  const problems = useMemo(() => (vault ? getSourceProblems(vault) : []), [registryVersion, vault])
+  const broken = problems.filter((p) => !p.blocked && (tab !== 'template') && (!query || p.name.toLowerCase().includes(query.toLowerCase())))
+  const blocked = problems.filter((p) => p.blocked)
+  const hasOwn = items.some(isVaultEntry) || problems.length > 0
+  const open = openName ? items.find((i) => i.name === openName.name && i.category === openName.category) ?? null : null
   const visible = useMemo(() => {
     // A search that finds a part (SignalNode) shows its parent's card.
     const owners = new Set(searchItems(parts, query).map(ownerName))
     const found = new Set(searchItems(items, query).map((i) => i.name))
-    return items.filter((i) => (found.has(i.name) || owners.has(i.name)) && (tab === 'all' || i.category === tab)).sort((a, b) => a.name.localeCompare(b.name))
-  }, [items, parts, query, tab])
+    return items
+      .filter((i) => (found.has(i.name) || owners.has(i.name)) && (tab === 'all' || i.category === tab) && (sourceFilter === 'any' || isVaultEntry(i)))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [items, parts, query, tab, sourceFilter])
+  const ownCount = items.filter(isVaultEntry).length
   const groups = [
     { label: 'Components', items: visible.filter((i) => i.category === 'component') },
     { label: 'Templates', items: visible.filter((i) => i.category === 'template') },
@@ -558,7 +660,7 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (open) setOpen(null)
+      if (open) setOpenName(null)
       else if (!(e.target instanceof HTMLInputElement && e.target.value)) onExit()
     }
     window.addEventListener('keydown', onKey)
@@ -572,7 +674,14 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
           <Button size="icon" onClick={onExit} aria-label="Back to presentations" title="Back to presentations">
             <ArrowLeft aria-hidden />
           </Button>
-          <h1 className="tw:font-display tw:text-[28px] tw:leading-none tw:font-semibold">Component Gallery</h1>
+          <div className="tw:flex tw:flex-col tw:gap-1">
+            <h1 className="tw:font-display tw:text-[28px] tw:leading-none tw:font-semibold">Component Gallery</h1>
+            {hasOwn && (
+              <span className="tw:text-[13px] tw:text-muted">
+                {vaultName} vault · built-in components plus {ownCount} of the vault’s own
+              </span>
+            )}
+          </div>
           <span className="tw:flex-1" />
           <label className="tw:flex tw:h-9 tw:w-[300px] tw:max-w-full tw:items-center tw:gap-2 tw:rounded-[9px] tw:bg-field tw:px-2.5 tw:focus-within:shadow-[0_0_0_2px_var(--sc-focus)]">
             <Search className="tw:size-4 tw:shrink-0 tw:text-muted" aria-hidden />
@@ -587,6 +696,7 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
             />
           </label>
           <SegmentedControl aria-label="Show" value={tab} onValueChange={setTab} items={TABS} />
+          {hasOwn && <SegmentedControl aria-label="Source" value={sourceFilter} onValueChange={setSourceFilter} items={SOURCE_FILTERS} />}
           <span className="tw:text-[13px] tw:text-muted">
             {visible.length} of {items.length}
           </span>
@@ -594,7 +704,20 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
         <SettingsBar settings={effective} themes={themes} theme={theme} onChange={changeSettings} />
       </header>
       <main className="tw:flex tw:flex-col tw:gap-8 tw:px-6 tw:py-6">
-        {groups.length === 0 && <p className="tw:py-10 tw:text-center tw:text-muted">Nothing matches “{query}”.</p>}
+        {vault && blocked.length > 0 && <BlockedBanner vault={vault} problems={blocked} />}
+        {broken.length > 0 && (
+          <section className="tw:flex tw:flex-col tw:gap-4">
+            <h2 className="tw:font-display tw:text-[22px] tw:font-semibold">
+              Not loaded <span className="tw:font-sans tw:text-[15px] tw:font-normal tw:text-muted">{broken.length}</span>
+            </h2>
+            <div className="tw:flex tw:flex-wrap tw:gap-5">
+              {broken.map((p) => (
+                <ProblemCard key={p.name} problem={p} vaultName={vaultName} />
+              ))}
+            </div>
+          </section>
+        )}
+        {groups.length === 0 && <p className="tw:py-10 tw:text-center tw:text-muted">{query ? `Nothing matches “${query}”.` : 'Nothing to show.'}</p>}
         {groups.map((g) => (
           <section key={g.label} className="tw:flex tw:flex-col tw:gap-4">
             <h2 className="tw:font-display tw:text-[22px] tw:font-semibold">
@@ -602,13 +725,15 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
             </h2>
             <div className="tw:flex tw:flex-wrap tw:gap-5">
               {g.items.map((item) => (
-                <GalleryCard key={item.id} item={item} settings={effective} theme={theme} onOpen={() => setOpen(item)} />
+                <GalleryCard key={`${sourceOfEntry(item)}:${item.id}`} item={item} vaultName={vaultName} settings={effective} theme={theme} onOpen={() => setOpenName({ name: item.name, category: item.category })} />
               ))}
             </div>
           </section>
         ))}
       </main>
-      <AnimatePresence>{open && <DetailPanel key={open.id} item={open} settings={effective} theme={theme} onClose={() => setOpen(null)} />}</AnimatePresence>
+      <AnimatePresence>
+        {open && <DetailPanel key={`${open.category}:${open.name}`} item={open} vault={vault} vaultName={vaultName} settings={effective} theme={theme} onClose={() => setOpenName(null)} />}
+      </AnimatePresence>
     </div>
   )
 }
