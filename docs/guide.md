@@ -206,6 +206,25 @@ plays it live, with **Replay** and ← → for its build steps, and its **Settin
 the preview and the snippet follow, so **Copy** copies what you see.
 [Choosing components](../skills/slidecraft-presentations/references/choosing.md) has a table for choosing one.
 
+### A vault's own components
+
+A vault can carry components of its own in `components/<Name>/index.tsx`, one folder per
+component. They join the built-ins while that vault is open: its decks, the editor's completions,
+the palette, the help panel and the gallery all know them, and one with a built-in's name replaces
+that built-in in this vault only. Saving a file updates every open view. The Examples vault's
+`components/FunnelBars/` is a small example to copy.
+
+A component may import `slidecraft` (the app's helpers and every built-in component), `react`,
+`react/jsx-runtime`, `motion/react` and files in its own folder; anything else is an error. The
+gallery's **This vault** filter shows only the vault's own, and a component that does not compile
+gets a card with the error. Until it is fixed, decks use the built-in of that name, or show a
+placeholder on the slides that use it.
+
+Components are code that runs with Slidecraft's access, so a vault you add asks once before
+they run; **Settings › Vaults** changes the choice (**Run its components**). Vaults created in the
+app, and the Examples vault, are trusted from the start. Until a vault is allowed, its slides
+show placeholders where its components would be.
+
 ## Presenting
 
 Open a deck from the home page. Slides scale to fit the window; nothing reflows.
