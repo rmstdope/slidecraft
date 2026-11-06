@@ -102,11 +102,15 @@ export interface ExportOptions {
 /** Why a component's code is not in an export of a vault whose components may not run. */
 export const NOT_TRUSTED_IN_EXPORT = "this vault's components were not allowed to run, so the export does not include them"
 
+/** Capitalised tags in a deck: the components it names. */
+const deckTags = (mdx: string) => new Set([...mdx.matchAll(/<([A-Z][\w]*)/g)].map((m) => m[1]))
+
 /**
  * The vault component folders the deck uses (by tag, a part counting for its folder), each with
- * its bundle, or with why it has none: the vault's code may not run, or it did not load. The
- * viewer registers them as the app does, so a vault component that is missing falls back to the
- * built-in of its name, or shows a placeholder.
+ * its bundle, or with why it has none: the vault's code may not run, or it did not compile. The
+ * viewer loads and registers them as the app does, so one that fails there falls back to the
+ * built-in of its name, or shows a placeholder. The server's own load of a bundle does not
+ * decide: code that needs a browser (`window` at the top) fails in Bun and works in the viewer.
  */
 async function exportedComponents(vault: string, mdx: string): Promise<ExportedComponents | undefined> {
   const source = getContentSource(vault)
@@ -114,25 +118,32 @@ async function exportedComponents(vault: string, mdx: string): Promise<ExportedC
   const folders = componentFolders(source)
   if (!folders.length) return undefined
   await ensureServerComponents(vault)
-  const tags = new Set([...mdx.matchAll(/<([A-Z][\w]*)/g)].map((m) => m[1]))
+  const tags = deckTags(mdx)
   const folderOf = new Map<string, string>(folders.map((f) => [f, f]))
   for (const c of getAllComponents(vault)) if (sourceOfEntry(c.registry) === vault) folderOf.set(c.registry.name, c.registry.parent ?? c.registry.name)
   const used = [...new Set([...tags].flatMap((t) => (folderOf.has(t) ? [folderOf.get(t)!] : [])))].sort()
   if (!used.length) return undefined
   const trusted = getComponentTrust(source) === 'trusted'
-  const problems = new Map(getSourceProblems(vault).filter((p) => !p.template).map((p) => [p.name, p.message]))
   const out: ExportedFolder[] = []
   for (const name of used) {
     if (!trusted) {
       out.push({ name, error: NOT_TRUSTED_IN_EXPORT })
       continue
     }
-    const problem = problems.get(name)
-    const bundle = problem === undefined ? await bundleComponent(source, name) : undefined
-    if (problem !== undefined || bundle?.error !== undefined) out.push({ name, error: problem ?? bundle!.error! })
-    else out.push({ name, code: toBase64(bundle!.code!) })
+    const bundle = await bundleComponent(source, name)
+    out.push(bundle.error !== undefined ? { name, error: bundle.error } : { name, code: toBase64(bundle.code) })
   }
   return { vault, folders: out }
+}
+
+/**
+ * Tags the export has nothing for: not a built-in, and not a component of the vault that the
+ * server knows (a part of a folder that may not run, say). The viewer gives each a placeholder;
+ * a deck naming a component nobody defines would otherwise not render at all.
+ */
+function missingComponents(vault: string, mdx: string, components: ExportedComponents | undefined): string[] {
+  const known = new Set([...getAllComponents(vault).map((c) => c.registry.name), ...getSourceProblems(vault).map((p) => p.name), ...(components?.folders.map((f) => f.name) ?? [])])
+  return [...deckTags(mdx)].filter((t) => !known.has(t)).sort()
 }
 
 export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Promise<{ html: string; name: string }> {
@@ -188,7 +199,8 @@ export async function exportDeck(ref: DeckRef, options: ExportOptions = {}): Pro
   // 3. Payload and viewer in one HTML file. The payload is JSON with "<" escaped; the viewer is
   // base64, so no deck text or library code can end the script element early.
   const components = await exportedComponents(ref.source, mdx)
-  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx), ...(components ? { components } : {}) }
+  const missing = missingComponents(ref.source, mdx, components)
+  const payload: ExportPayload = { name, deck: ref, code: toBase64(code), assets, themes: exportedThemes(resolved, mdx), ...(components ? { components } : {}), ...(missing.length ? { missing } : {}) }
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   const viewer = options.viewer ?? loadViewer()
   // Vault bundles import the shared packages by name: the map sends them to the viewer's own.

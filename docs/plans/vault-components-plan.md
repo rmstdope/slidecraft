@@ -290,6 +290,10 @@ get placeholders and copies give way to the built-ins, as in the app. The shims 
 Chrome (a vault component and an edited copy of Callout; then an untrusted vault) and prints a
 PDF through the app's print view; `tests/mcp.test.ts` runs `bun run mcp --vault` on a trusted and an
 untrusted vault. The welcome deck's vault slide, exported, plays FunnelBars from the file.
+After review: whether a bundle is exported depends only on it compiling (code that needs a browser
+fails in the server's own import and works in the viewer); tags the export has no component for
+(a part of a folder that may not run) get placeholders; and the viewer has an error boundary, so
+a render error shows a message instead of a blank page.
 
 ---
 

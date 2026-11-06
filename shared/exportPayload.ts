@@ -20,6 +20,8 @@ export interface ExportPayload {
   themes: ExportedTheme[]
   /** The vault components the deck uses (vault components plan, V6); none when it uses none. */
   components?: ExportedComponents
+  /** Tags the deck uses that the export has no component for; the viewer shows placeholders. */
+  missing?: string[]
 }
 
 /** One vault component folder: its bundle, or why the export carries none. */

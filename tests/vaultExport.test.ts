@@ -27,6 +27,22 @@ export const Funnel = defineComponent<{ label?: string }>({
   Component: ({ label = 'hi' }) => <Text>{shout(label)}</Text>,
   registry: { id: 'funnel', name: 'Funnel', category: 'component', description: 'A test component.', props: [{ name: 'label', type: 'string' }], snippet: '<Funnel />', previewCode: '<Slide><Funnel /></Slide>' },
 })
+
+export const FunnelStage = defineComponent<{}>({
+  Component: () => <Text>funnel stage part</Text>,
+  registry: { id: 'funnel-stage', name: 'FunnelStage', parent: 'Funnel', category: 'component', description: 'A part.', props: [], snippet: '<FunnelStage />', previewCode: '<Slide><FunnelStage /></Slide>' },
+})
+`
+
+/** Fails when the server imports it (Bun has no window), works in a browser. */
+const wide = `import { defineComponent, Text } from 'slidecraft'
+
+const width = window.innerWidth
+
+export const Wide = defineComponent<{}>({
+  Component: () => <Text>{width > 0 ? 'browser only works' : 'no width'}</Text>,
+  registry: { id: 'wide', name: 'Wide', category: 'component', description: 'A test component.', props: [], snippet: '<Wide />', previewCode: '<Slide><Wide /></Slide>' },
+})
 `
 
 const deck = `<Presentation>
@@ -34,6 +50,8 @@ const deck = `<Presentation>
 <Slide>
   <Title>Exported</Title>
   <Funnel label="from the vault" />
+  <FunnelStage />
+  <Wide />
   <Callout label="Note">plain words</Callout>
 </Slide>
 
@@ -49,6 +67,7 @@ beforeAll(async () => {
   for (const vault of [acme, stranger]) {
     write(join(vault, 'components', 'Funnel', 'index.tsx'), funnel)
     write(join(vault, 'components', 'Funnel', 'shout.ts'), 'export const shout = (s: string) => s.toUpperCase()\n')
+    write(join(vault, 'components', 'Wide', 'index.tsx'), wide)
     write(join(vault, 'pitch', 'index.mdx'), deck)
   }
   initContentSources(
@@ -71,7 +90,9 @@ beforeAll(async () => {
 })
 
 const chrome = findChrome()
-const viewerBuilt = existsSync(join(import.meta.dir, '..', 'dist', 'viewer', 'viewer.js'))
+const viewerFile = join(import.meta.dir, '..', 'dist', 'viewer', 'viewer.js')
+// A viewer built before V6 ignores the components; it would fail here for no reason of this code's.
+const viewerBuilt = existsSync(viewerFile) && readFileSync(viewerFile, 'utf8').includes('data:text/javascript;base64,')
 
 const appBuilt = existsSync(join(import.meta.dir, '..', 'dist', 'index.html'))
 
@@ -109,7 +130,10 @@ describe.skipIf(!chrome || !viewerBuilt)('an exported deck with vault components
     const { text, errors } = await shown('acme')
     expect(errors).toEqual([])
     expect(text).toContain('FROM THE VAULT')
+    expect(text).toContain('funnel stage part')
     expect(text).toContain('vault copy: plain words')
+    // The server could not load Wide; the export carries it anyway, and the browser runs it.
+    expect(text).toContain('browser only works')
   }, 30000)
 
   test('an untrusted vault: a placeholder for its own component, the built-in for the override', async () => {
@@ -118,6 +142,10 @@ describe.skipIf(!chrome || !viewerBuilt)('an exported deck with vault components
     expect(errors).toEqual([])
     expect(text).not.toContain('FROM THE VAULT')
     expect(text).toContain('Funnel')
+    // A part of a folder that may not run is unknown to the server: a placeholder, not a blank page.
+    expect(text).toContain('FunnelStage')
+    expect(text).not.toContain('funnel stage part')
+    expect(text).not.toContain('browser only works')
     expect(text).toContain('plain words')
     expect(text).not.toContain('vault copy')
   }, 30000)

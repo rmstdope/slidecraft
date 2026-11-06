@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -80,8 +80,11 @@ describe('MCP server on a vault with its own components', () => {
     try {
       expect(JSON.parse((await call('validate_deck', { name: 'pitch' })).text)).toMatchObject({ ok: true, problems: [] })
       expect(JSON.parse((await call('validate_component', { name: 'Funnel' })).text)).toMatchObject({ ok: true })
-      const exported = JSON.parse((await call('export_html', { name: 'pitch' })).text) as { filePath: string }
-      expect(readFileSync(exported.filePath, 'utf8')).toContain('<script type="importmap">')
+      // The export needs the built viewer (`bun run build`).
+      if (existsSync(join(import.meta.dir, '..', 'dist', 'viewer', 'viewer.js'))) {
+        const exported = JSON.parse((await call('export_html', { name: 'pitch' })).text) as { filePath: string }
+        expect(readFileSync(exported.filePath, 'utf8')).toContain('<script type="importmap">')
+      }
     } finally {
       await client.close()
     }

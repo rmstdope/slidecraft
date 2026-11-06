@@ -4,13 +4,14 @@
  * with no server and no network.
  */
 import './styles/global.css'
-import { StrictMode, type ComponentType } from 'react'
+import { Component, StrictMode, type ComponentType, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as jsxRuntime from 'react/jsx-runtime'
 import { MDXProvider } from '@mdx-js/react'
 import type { MDXComponents } from 'mdx/types'
 import { assetKey, PAYLOAD_ELEMENT_ID, type ExportedComponents, type ExportPayload } from '@shared/exportPayload.ts'
 import { getMdxScope } from './components/mdxScope'
+import { unavailableComponent } from './components/UnavailableComponent'
 import { DeckContext } from './components/slides/deckContext'
 import { setActiveVault } from './components/slides/defineComponent'
 import { registerTheme } from './themes/registry'
@@ -36,6 +37,28 @@ async function registerComponents(exported: ExportedComponents): Promise<void> {
   setActiveVault(exported.vault)
 }
 
+function showError(root: HTMLElement, error: unknown): void {
+  const pre = document.createElement('pre')
+  pre.style.cssText = 'padding:2rem;color:#e0452b;white-space:pre-wrap;font:14px ui-monospace,monospace'
+  pre.textContent = `Could not open this presentation:\n${error instanceof Error ? error.stack || error.message : String(error)}`
+  root.replaceChildren(pre)
+}
+
+/** A render error says so, as an error before rendering does, instead of leaving a blank page. */
+class ViewerErrorBoundary extends Component<{ root: HTMLElement; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch(error: Error) {
+    // After React has let go of the tree, so the message is not rendered over.
+    setTimeout(() => showError(this.props.root, error))
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
+
 async function start() {
   const root = document.getElementById('root')
   if (!root) return
@@ -50,23 +73,23 @@ async function start() {
     const { default: Content } = new Function(body)({ ...jsxRuntime, baseUrl: document.baseURI }) as { default: ComponentType<{ components?: MDXComponents }> }
     const resolveAsset = (src: string) => (!src || /^(data:|blob:|https?:)/i.test(src) ? src : (payload.assets[assetKey(src, payload.name)] ?? src))
     if (payload.components) await registerComponents(payload.components)
-    const scope = getMdxScope(payload.components?.vault ?? null) as MDXComponents
+    const scope = { ...getMdxScope(payload.components?.vault ?? null) } as MDXComponents & Record<string, unknown>
+    for (const name of payload.missing ?? []) if (!(name in scope)) scope[name] = unavailableComponent(name, 'this export does not include it')
     document.title = payload.name
 
     createRoot(root).render(
       <StrictMode>
-        <DeckContext.Provider value={{ deck: payload.deck, resolveAsset }}>
-          <MDXProvider components={scope}>
-            <Content components={scope} />
-          </MDXProvider>
-        </DeckContext.Provider>
+        <ViewerErrorBoundary root={root}>
+          <DeckContext.Provider value={{ deck: payload.deck, resolveAsset }}>
+            <MDXProvider components={scope}>
+              <Content components={scope} />
+            </MDXProvider>
+          </DeckContext.Provider>
+        </ViewerErrorBoundary>
       </StrictMode>,
     )
   } catch (error) {
-    const pre = document.createElement('pre')
-    pre.style.cssText = 'padding:2rem;color:#e0452b;white-space:pre-wrap;font:14px ui-monospace,monospace'
-    pre.textContent = `Could not open this presentation:\n${error instanceof Error ? error.stack || error.message : String(error)}`
-    root.replaceChildren(pre)
+    showError(root, error)
   }
 }
 
