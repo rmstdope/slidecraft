@@ -95,13 +95,30 @@ export function syncSkill(vault: ContentSource, files = skillFiles(), skill: Vau
 }
 
 /** One vault's skills: the shipped files, plus the presentations skill's catalogue of the vault's own. */
-export async function syncVaultSkills(vault: ContentSource, shipped?: Map<VaultSkill, Map<string, Buffer>>): Promise<Record<VaultSkill, SkillSyncResult>> {
+/** Per vault: the sync running now, so two never interleave (the later one runs after it). */
+const running = new Map<string, Promise<unknown>>()
+
+/**
+ * One vault's skills. Syncs of a vault run one at a time, so the catalogue written last is the
+ * one built last. Never rejects: a problem is logged and the shipped skill still lands.
+ */
+export function syncVaultSkills(vault: ContentSource, shipped?: Map<VaultSkill, Map<string, Buffer>>): Promise<Record<VaultSkill, SkillSyncResult>> {
+  const run = (running.get(vault.id) ?? Promise.resolve()).then(() => syncVaultSkillsNow(vault, shipped))
+  running.set(vault.id, run.catch(() => undefined))
+  return run
+}
+
+async function syncVaultSkillsNow(vault: ContentSource, shipped?: Map<VaultSkill, Map<string, Buffer>>): Promise<Record<VaultSkill, SkillSyncResult>> {
   const out = {} as Record<VaultSkill, SkillSyncResult>
   for (const skill of VAULT_SKILLS) {
     const files = new Map(shipped?.get(skill) ?? skillFiles(skill))
     if (skill === SKILL_NAME && files.size && !vault.readOnly && !vault.builtIn && existsSync(vault.path)) {
-      const catalogue = await buildVaultCatalogue(vault.id)
-      if (catalogue) files.set(VAULT_CATALOGUE, Buffer.from(catalogue))
+      try {
+        const catalogue = await buildVaultCatalogue(vault.id)
+        if (catalogue) files.set(VAULT_CATALOGUE, Buffer.from(catalogue))
+      } catch (error) {
+        console.warn(`Could not list the components of ${vault.path} for its skill: ${(error as Error).message}`)
+      }
     }
     try {
       out[skill] = syncSkill(vault, files, skill)

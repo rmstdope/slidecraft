@@ -147,6 +147,24 @@ function importGuard(folder: string): BunPlugin {
   }
 }
 
+/**
+ * An import with attributes (`with { … }` or `assert { … }`, comments allowed in between). Bun
+ * runs `type: 'macro'` imports while it bundles, which would run vault code on the server whatever
+ * the trust, and macro imports skip the import rule. Vault code has no use for attributes at all.
+ */
+const IMPORT_ATTRIBUTES = /['"`]\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)*(?:with|assert)\s*\{/
+
+/** Files in a component folder that use import attributes, relative to the folder. */
+function filesWithImportAttributes(folder: string): string[] {
+  return codeFiles(folder).filter((file) => {
+    try {
+      return IMPORT_ATTRIBUTES.test(readFileSync(file, 'utf8'))
+    } catch {
+      return false
+    }
+  })
+}
+
 export type BundleResult = { hash: string; code: string; error?: undefined } | { hash: string; code?: undefined; error: string }
 
 const bundles = new Map<string, BundleResult>()
@@ -161,6 +179,13 @@ export async function bundleComponent(source: ContentSource, name: string): Prom
   const cached = bundles.get(key)
   if (cached?.hash === hash) return cached
   let result: BundleResult
+  // Checked before Bun.build sees the code: bundling would run a macro.
+  const attributed = filesWithImportAttributes(folder)
+  if (attributed.length) {
+    result = { hash, error: attributed.map((f) => `${relativeTo(folder, f)}: import attributes (with { … }, such as macros) are not allowed in a vault component`).join('\n') }
+    bundles.set(key, result)
+    return result
+  }
   try {
     const out = await Bun.build({
       entrypoints: [join(folder, COMPONENT_ENTRY)],

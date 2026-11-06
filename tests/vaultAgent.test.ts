@@ -164,3 +164,58 @@ describe('skills in a vault', () => {
     expect(readFileSync(API_FILE, 'utf8')).toBe(await buildApiReference())
   })
 })
+
+describe('review fixes (PR #12)', () => {
+  test('a macro import is refused before bundling, so it never runs', async () => {
+    const marker = join(root, 'macro-ran')
+    write(join(acme, 'components', 'Evil', 'm.ts'), `import { writeFileSync } from 'node:fs'\nexport function boom() { writeFileSync(${JSON.stringify(marker)}, 'x'); return 1 }\n`)
+    write(join(acme, 'components', 'Evil', 'index.tsx'), "import { boom } from './m.ts' /* hidden */ with { type: 'macro' }\nexport const n = boom()\n")
+    const result = await checkVaultEntry('acme', 'Evil')
+    expect(result.ok).toBe(false)
+    expect(result.problems[0].message).toContain('import attributes')
+    expect(existsSync(marker)).toBe(false)
+    rmSync(join(acme, 'components', 'Evil'), { recursive: true })
+  })
+
+  test("an untrusted vault's component is not even bundled by the check", async () => {
+    const other = join(root, 'other')
+    const marker = join(root, 'untrusted-ran')
+    write(join(other, 'components', 'Quiet', 'index.tsx'), "export const x = 1\n")
+    initContentSources(
+      { vaults: [{ id: 'acme', name: 'Acme', path: acme, components: 'trusted' }, { id: 'other', name: 'Other', path: other, components: 'blocked' }] },
+      undefined,
+      join(root, 'fallback'),
+      join(root, 'config.json'),
+    )
+    const result = await checkVaultEntry('other', 'Quiet')
+    expect(result.ok).toBe(true)
+    expect(result.problems[0].message).toContain('not compiled')
+    expect(existsSync(marker)).toBe(false)
+  })
+
+  test('a component without props does not register, and the catalogue still builds', async () => {
+    write(
+      join(acme, 'components', 'Bare', 'index.tsx'),
+      "import { defineComponent } from 'slidecraft'\nexport const Bare = defineComponent({ Component: () => null, registry: { id: 'bare', name: 'Bare', category: 'component', description: 'x.', snippet: '<Bare />', previewCode: '<Slide><Bare /></Slide>' } } as never)\n",
+    )
+    const result = await checkVaultEntry('acme', 'Bare')
+    expect(result.problems.map((p) => p.message).join('\n')).toContain('registry needs props')
+    const synced = await syncVaultSkills(getContentSource('acme')!)
+    expect(synced[SKILL_NAME]).toBeDefined()
+    rmSync(join(acme, 'components', 'Bare'), { recursive: true })
+  })
+
+  test('undo keeps a target folder that existed before the turn, even empty', async () => {
+    mkdirSync(join(acme, 'components', 'Kept'), { recursive: true })
+    const thread = createThread('acme', { target: { kind: 'component', name: 'Kept' } })
+    script = async () => {
+      writeFileSync(join(acme, 'components', 'Kept', 'index.tsx'), 'export const x = 1\n')
+      return { ok: true }
+    }
+    await sendMessage('acme', thread.id, 'Write it')
+    await settled('acme', thread.id)
+    undoAgentTurn('acme', thread.id, 1)
+    expect(existsSync(join(acme, 'components', 'Kept'))).toBe(true)
+    expect(existsSync(join(acme, 'components', 'Kept', 'index.tsx'))).toBe(false)
+  })
+})

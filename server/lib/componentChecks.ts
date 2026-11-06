@@ -61,6 +61,10 @@ export async function checkVaultComponent(vaultId: string, name: string): Promis
   if (!COMPONENT_NAME_RE.test(name)) return done(path, [error(`"${name}" is not a component name: use PascalCase, such as FunnelBars`)])
   if (!existsSync(join(source.path, COMPONENTS_DIR, name, COMPONENT_ENTRY))) return done(path, [error(`${path}/${COMPONENT_ENTRY} does not exist`)])
 
+  // Not even bundled for an untrusted vault: bundling reads code with a tool that could run it.
+  if (getComponentTrust(source) !== 'trusted') {
+    return done(path, [warning("The vault's components are not allowed to run, so it was not compiled, loaded or checked (Settings › Vaults)")])
+  }
   const bundle = await bundleComponent(source, name)
   if (bundle.error !== undefined) {
     return done(
@@ -70,9 +74,6 @@ export async function checkVaultComponent(vaultId: string, name: string): Promis
         return error(`Does not compile: ${line}`, at ? Number(at[1]) : undefined)
       }),
     )
-  }
-  if (getComponentTrust(source) !== 'trusted') {
-    return done(path, [warning("It compiles, but the vault's components are not allowed to run, so it was not loaded or checked further (Settings › Vaults)")])
   }
 
   await ensureServerComponents(vaultId)

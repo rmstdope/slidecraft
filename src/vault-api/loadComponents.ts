@@ -31,6 +31,14 @@ export async function loadFolder(name: string, hash: string, load: () => Promise
   try {
     const entries = await captureDefinitions(load)
     const problems = checkFolderDefinitions(name, entries.components.map((c) => c.registry))
+    // Every listing, the language service and the catalogues read these fields: a component
+    // without them would break them all, so it does not register.
+    for (const { registry: r } of entries.components) {
+      const missing = (['id', 'description', 'snippet', 'previewCode'] as const).filter((f) => typeof r[f] !== 'string')
+      if (missing.length || !Array.isArray(r.props) || r.props.some((p) => typeof p?.name !== 'string' || typeof p?.type !== 'string')) {
+        problems.push(`${r.name}: its registry needs ${[...missing, ...(Array.isArray(r.props) ? [] : ['props'])].join(', ') || 'a name and a type on every prop'}`)
+      }
+    }
     if (entries.templates.length) problems.push('defineTemplate cannot be used in a component; templates are MDX files in templates/<id>/')
     if (problems.length) return { name, hash, components: [], error: problems.join('\n') }
     return { name, hash, components: entries.components }

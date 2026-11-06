@@ -79,7 +79,7 @@ export async function handleVaults(request: Request, url: URL): Promise<Response
         if (body?.trust !== 'trusted' && body?.trust !== 'blocked') return errorJson(400, 'Body must be JSON with "trust": "trusted" or "blocked"')
         setComponentTrust(id, body.trust)
         broadcast({ type: 'components-changed', source: id, timestamp: Date.now() })
-        void syncVaultSkills(getContentSource(id)!)
+        void syncVaultSkills(getContentSource(id)!).catch((error) => console.warn(`Could not update the skills of ${id}: ${(error as Error).message}`))
         return json(await listVaultComponents(getContentSource(id)!))
       }
       return errorJson(405, 'Method not allowed')

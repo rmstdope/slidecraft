@@ -225,6 +225,12 @@ appeared, and undo removed the folder.
     the marker.
 - **Deviation:** board 4's agent docked in the detail sheet became **Edit with agent**, which opens
   the same workspace as a new component (board 2).
+- **Found in review:** `Bun.build` runs macros (`import … with { type: 'macro' }`) while it bundles,
+  so bundling alone could run vault code. Folders with import attributes are refused before
+  bundling, and the check bundles nothing for an untrusted vault. A component whose registry lacks
+  `props` or the text fields does not register, since every listing reads them.
+- **Open:** a conversation about a component checkpoints only that folder. Anything the agent writes
+  elsewhere, such as a deck, is not listed, checked or undoable from that conversation.
 - **Found:** Bun 1.4 fails to import a second file from a folder reached through a symlink. The
   server's bundle folder is now its real path; macOS's temp folder is behind `/var` → `/private/var`.
 

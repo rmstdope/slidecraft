@@ -116,9 +116,11 @@ async function refresh(source: ContentSource): Promise<void> {
 export function ensureServerComponents(vault: string | undefined): Promise<void> {
   const source = vault ? getContentSource(vault) : undefined
   if (!source) return Promise.resolve()
-  const running = pending.get(source.id)
-  if (running) return running
-  const run = refresh(source).finally(() => pending.delete(source.id))
-  pending.set(source.id, run)
+  // One refresh at a time per vault. A call during one runs another after it (cheap when nothing
+  // changed), so a file changed meanwhile is never missed.
+  const run = (pending.get(source.id) ?? Promise.resolve()).then(() => refresh(source))
+  const settled = run.catch(() => undefined)
+  pending.set(source.id, settled)
+  void settled.then(() => pending.get(source.id) === settled && pending.delete(source.id))
   return run
 }
