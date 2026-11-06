@@ -105,7 +105,10 @@ No vault loading yet; the built-ins move onto the new structure, and nothing vis
 `Stat`.
 
 **Status:** done (2026-11-06). Exports of the `slidecraft` module are recorded in
-`tests/fixtures/vault-api-exports.json`; the shims are served at `/vault-runtime/<file>.js`.
+`tests/fixtures/vault-api-exports.json`; the shims are served at `/vault-runtime/<file>.js`. After
+the built-ins register, `defineComponent` works only while a vault component loads (or for a
+built-in reloading in the dev server), and it refuses to rename a component that already has a
+name.
 
 ### Phase V2: Loading vault components
 
@@ -122,6 +125,19 @@ No vault loading yet; the built-ins move onto the new structure, and nothing vis
   cards (board 1, board 5).
 - An example component in `content/components/` used by a `welcome` slide.
 
+- From the PR #9 review, places that go stale when a vault registers after they rendered:
+  - The gallery's open detail panel holds the old `RegistryConfig`; it must look its entry up
+    again by name on each registry version.
+  - Home thumbnails that failed before the vault's bundles loaded stay failed; retry on a
+    registry version change.
+  - A deck compiled before its vault's components registered fails its `@components` import
+    check. Wait for the vault's components before compiling its decks, and give a component
+    that is still missing a placeholder for that slide only.
+  - Bundled Examples decks (Vite) bind component imports directly, so overrides do not reach
+    them. The Examples vault is read-only, so this only matters for its example component:
+    load its decks through the runtime compiler when the vault has components.
+  - Editor diagnostics refresh on the next edit only; refresh them on a registry change.
+
 **Done when** a hand-written component in a vault works in that vault's decks, editor completions,
 palette, help panel and gallery, updates on save, does not show in another vault, and an untrusted
 vault loads none.
@@ -132,6 +148,9 @@ vault loads none.
   source. Templates are text, so they are not trust-gated.
 - Gallery, palette and **Add slide** list them with their source; the same override rule applies.
 - An example template in `content/templates/`.
+
+- Template ids must be unique in the merged view (the gallery and palette key by id): an id
+  that clashes with an entry of another name is an error in that template's check.
 
 **Done when** a vault template appears in Add slide and in the gallery, and one with a built-in's
 name replaces it.

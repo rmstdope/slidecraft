@@ -12,6 +12,7 @@ import {
   getAllComponents,
   getAllTemplates,
   getBuiltinComponent,
+  getComponentById,
   getParts,
   getRegistryVersion,
   getTopLevelComponents,
@@ -41,7 +42,7 @@ const component = (_name: string): FC => {
 /** Defines components the way a vault module does: inside a capture, so the built-ins stay as they are. */
 async function vaultDefinitions() {
   return captureDefinitions(() => {
-    defineComponent({ Component: component('Stat'), registry: entry('Stat') })
+    defineComponent({ Component: component('Stat'), registry: entry('Stat', { id: 'acme-stat' }) })
     defineComponent({ Component: component('FunnelBars'), registry: entry('FunnelBars') })
     defineComponent({ Component: component('FunnelStage'), registry: entry('FunnelStage', { parent: 'FunnelBars' }) })
     defineTemplate({ id: 'template-acme-title', name: 'Acme Title Slide', description: 'Title.', snippet: '<Slide />', previewCode: '<Slide />' })
@@ -142,6 +143,35 @@ describe('registry layers', () => {
     expect((await captureDefinitions(() => defineComponent({ Component: component('C'), registry: entry('C') }))).components).toHaveLength(1)
   })
 
+  test('a definition outside a capture is refused once the built-ins have registered', () => {
+    expect(() => defineComponent({ Component: component('Late'), registry: entry('Late') })).toThrow('outside a vault component')
+    expect(() => defineTemplate({ id: 'late', name: 'Late', description: 'Late.', snippet: '', previewCode: '' })).toThrow('outside a vault component')
+    expect(getAllComponents(null).some((c) => c.registry.name === 'Late')).toBe(false)
+  })
+
+  test('a built-in is never renamed by a vault definition', async () => {
+    const Text = getBuiltinComponent('Text')!.Component
+    await expect(captureDefinitions(() => defineComponent({ Component: Text, registry: entry('Lead') }))).rejects.toThrow('was given the component Text')
+    expect(Text.displayName).toBe('Text')
+  })
+
+  test('a capture cannot start inside another', async () => {
+    let inner: Promise<unknown> | undefined
+    await captureDefinitions(() => {
+      inner = captureDefinitions(() => undefined)
+    })
+    await expect(inner!).rejects.toThrow('inside another capture')
+  })
+
+  test('a built-in id also finds the vault component that replaces it', async () => {
+    const defs = await vaultDefinitions()
+    const builtinId = getBuiltinComponent('Stat')!.registry.id
+    registerSource('acme', defs)
+    setActiveVault('acme')
+    expect(getComponentById(builtinId)).toBe(defs.components[0])
+    expect(getComponentById(builtinId, null)).toBe(getBuiltinComponent('Stat'))
+  })
+
   test('the built-ins cannot be replaced', () => {
     expect(() => registerSource(BUILTIN_SOURCE, {})).toThrow()
   })
@@ -162,5 +192,13 @@ describe('MDX scope', () => {
     expect(scope.Text).toBe(builtinMdxScope.Text)
     expect(getMdxScope() as unknown).toBe(scope) // cached while nothing changes
     expect((getMdxScope('other') as Record<string, unknown>).FunnelBars).toBeUndefined()
+  })
+
+  test('no vault (null) and the active vault (undefined) are different scopes', async () => {
+    const defs = await vaultDefinitions()
+    registerSource('acme', defs)
+    setActiveVault('acme')
+    expect((getMdxScope() as Record<string, unknown>).Stat).toBe(defs.components[0].Component)
+    expect(getMdxScope(null)).toBe(builtinMdxScope)
   })
 })

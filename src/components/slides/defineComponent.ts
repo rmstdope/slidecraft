@@ -74,6 +74,8 @@ const sources = new Map<string, SourceEntries>()
 /** While a source's modules load, definitions go here instead of to the built-ins. */
 let capture: SourceEntries | null = null
 let captureQueue: Promise<unknown> = Promise.resolve()
+/** Set once the built-ins have all registered (the end of the slides barrel). */
+let sealed = false
 let activeVault: string | null = null
 let version = 0
 const listeners = new Set<() => void>()
@@ -85,12 +87,37 @@ function changed() {
   for (const listener of listeners) listener()
 }
 
-export function defineComponent<P>(config: ComponentDefinition<P>): FC<P> {
-  if (config.registry.category !== 'component') {
-    throw new Error(`defineComponent("${config.registry.name}") must use category 'component'`)
+const isDev = (): boolean => (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV === true
+
+/**
+ * Where a definition outside a capture goes. Before the seal it is a built-in. After it, only a
+ * built-in module re-running in the dev server (hot reload) may replace its own entry; anything
+ * else, such as vault code calling defineComponent after its module has loaded, is refused.
+ */
+function builtinSlot<T>(list: T[], name: string, nameOf: (t: T) => string, what: string): (entry: T) => void {
+  if (!sealed) return (entry) => list.push(entry)
+  const at = list.findIndex((e) => nameOf(e) === name)
+  if (isDev() && at >= 0) {
+    return (entry) => {
+      list[at] = entry
+      changed()
+    }
   }
-  ;(capture ?? builtins).components.push(config as AnyDefinition)
-  config.Component.displayName = config.registry.name // load-bearing: step counting, notes, header split
+  throw new Error(`${what}("${name}") ran outside a vault component's loading; define components only at the top level of the module`)
+}
+
+export function defineComponent<P>(config: ComponentDefinition<P>): FC<P> {
+  const { name } = config.registry
+  if (config.registry.category !== 'component') {
+    throw new Error(`defineComponent("${name}") must use category 'component'`)
+  }
+  // displayName is load-bearing (step counting, notes, header split): never rename a component
+  // that already has another name, such as a built-in a vault component passes on.
+  const current = config.Component.displayName
+  if (current && current !== name) throw new Error(`defineComponent("${name}") was given the component ${current}; wrap it in a new component instead`)
+  const add = capture ? (entry: AnyDefinition) => capture!.components.push(entry) : builtinSlot(builtins.components, name, (c) => c.registry.name, 'defineComponent')
+  add(config as AnyDefinition)
+  config.Component.displayName = name
   if (!capture) sourceOf.set(config.registry, BUILTIN_SOURCE)
   return config.Component
 }
@@ -98,16 +125,24 @@ export function defineComponent<P>(config: ComponentDefinition<P>): FC<P> {
 /** Whole-slide snippets for the palette and "Add slide"; registered like components. */
 export function defineTemplate(config: Omit<RegistryConfig, 'category' | 'props'>): RegistryConfig {
   const registry: RegistryConfig = { ...config, category: 'template', props: [] }
-  ;(capture ?? builtins).templates.push(registry)
+  const add = capture ? (entry: RegistryConfig) => capture!.templates.push(entry) : builtinSlot(builtins.templates, registry.name, (t) => t.name, 'defineTemplate')
+  add(registry)
   if (!capture) sourceOf.set(registry, BUILTIN_SOURCE)
   return registry
 }
 
+/** Called once every built-in has registered; from then on definitions need a capture. */
+export function sealBuiltins(): void {
+  sealed = true
+}
+
 /**
  * Runs `load` (importing a source's modules) and returns what it defined, without registering
- * it. Loads run one at a time, so two sources never mix their definitions.
+ * it. Loads run one at a time, so two sources never mix their definitions. A capture cannot
+ * start another from inside its `load` (it would wait for itself).
  */
 export function captureDefinitions(load: () => unknown): Promise<SourceEntries> {
+  if (capture) return Promise.reject(new Error('captureDefinitions cannot run inside another capture'))
   const run = captureQueue.then(async () => {
     const entries: SourceEntries = { components: [], templates: [] }
     capture = entries
@@ -122,7 +157,10 @@ export function captureDefinitions(load: () => unknown): Promise<SourceEntries> 
   return run
 }
 
-/** Sets (replacing) everything a source registered. */
+/**
+ * Sets everything a source registered, replacing what it had: pass the whole vault, not only
+ * the components that changed.
+ */
 export function registerSource(source: string, entries: Partial<SourceEntries>): void {
   if (source === BUILTIN_SOURCE) throw new Error('The built-in components cannot be replaced')
   const next = { components: [...(entries.components ?? [])], templates: [...(entries.templates ?? [])] }
@@ -200,8 +238,13 @@ export const getParts = (name: string, vault?: string | null): readonly AnyDefin
 /** The top-level entry a component belongs to: its parent, or itself. */
 export const ownerName = (registry: RegistryConfig): string => registry.parent ?? registry.name
 
+/** By id; a built-in's id also finds a vault component that replaces it under another id. */
 export function getComponentById(id: string, vault?: string | null): AnyDefinition | undefined {
-  return getAllComponents(vault).find((c) => c.registry.id === id)
+  const all = getAllComponents(vault)
+  const found = all.find((c) => c.registry.id === id)
+  if (found) return found
+  const builtin = builtins.components.find((c) => c.registry.id === id)
+  return builtin && all.find((c) => c.registry.name === builtin.registry.name)
 }
 
 export function getToolbarConfig(componentName: string, vault?: string | null): ToolbarPropEditor[] | undefined {
