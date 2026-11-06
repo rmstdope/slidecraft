@@ -93,6 +93,20 @@ useCases:
 Each value is on one line; quote a value with ` #` in it. `theme: <id>` makes the gallery preview
 it in that theme (for a theme's frames). A template named like a built-in template replaces it.
 
+## A copy of a built-in
+
+Editing a built-in in the gallery first copies it into the vault: its file, with every app import
+pointed at `slidecraft`, in `components/<Name>/index.tsx` (or the template in
+`templates/<id>/index.mdx`), beside a `.slidecraft-origin.json` that records which built-in and
+which app version it came from. The copy replaces the built-in in this vault.
+
+- Keep the name, the parts' names and every prop the built-in has: decks in the vault already use
+  them. Add props rather than renaming them.
+- Leave `.slidecraft-origin.json` alone. The gallery uses it to compare the copy with the built-in
+  and to say when the app's built-in has changed.
+- Resetting to the built-in deletes the folder. It is the person's button in the gallery, not
+  something to do yourself.
+
 ## Workflow
 
 1. **Read** [`slidecraft-api.md`](slidecraft-api.md), and the `slidecraft-presentations` skill's

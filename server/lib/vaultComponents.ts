@@ -13,6 +13,7 @@ import type { BunPlugin } from 'bun'
 import { VAULT_MODULE_NAMES } from '../../shared/vaultRuntime.ts'
 import { COMPONENT_ENTRY, COMPONENT_NAME_RE, COMPONENTS_DIR, componentBundleUrl, type ComponentTrust, type VaultComponentInfo, type VaultComponentsListing } from '../../shared/vaultComponents.ts'
 import { TEMPLATE_ENTRY, TEMPLATE_ID_RE, TEMPLATES_DIR, type VaultTemplateFile } from '../../shared/vaultTemplates.ts'
+import { originInfo } from './builtinCopies.ts'
 import { getComponentTrust, type ContentSource } from './contentSources.ts'
 
 const CODE_FILE = /\.(tsx?|jsx?|mjs)$/
@@ -223,14 +224,20 @@ export async function listVaultComponents(source: ContentSource): Promise<VaultC
   const trust: ComponentTrust = getComponentTrust(source)
   const components: VaultComponentInfo[] = []
   for (const name of componentFolders(source)) {
+    const origin = originInfo(source, 'component', name)
+    const extra = origin ? { origin } : {}
     if (trust !== 'trusted') {
-      components.push({ name, hash: folderHash(join(componentsDir(source), name)) })
+      components.push({ name, hash: folderHash(join(componentsDir(source), name)), ...extra })
       continue
     }
     const bundle = await bundleComponent(source, name)
-    components.push(bundle.error !== undefined ? { name, hash: bundle.hash, error: bundle.error } : { name, hash: bundle.hash, url: componentBundleUrl(source.id, name, bundle.hash) })
+    components.push(bundle.error !== undefined ? { name, hash: bundle.hash, error: bundle.error, ...extra } : { name, hash: bundle.hash, url: componentBundleUrl(source.id, name, bundle.hash), ...extra })
   }
-  return { vault: source.id, trust, components, templates: templateFiles(source) }
+  const templates = templateFiles(source).map((t) => {
+    const origin = originInfo(source, 'template', t.id)
+    return origin ? { ...t, origin } : t
+  })
+  return { vault: source.id, trust, components, templates }
 }
 
 /** `GET /content-source/<vault>/components/<Name>/index.js`: the bundle, for a trusted vault only. */

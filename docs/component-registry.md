@@ -24,6 +24,12 @@ view for the active vault, or for the vault passed to them; a vault entry with a
 hides the built-in there. Vault code registers only while the app loads it (`captureDefinitions`),
 and a folder may define only the component named like the folder and parts of it.
 
+A built-in can be copied into a vault (V5) when its file holds only it and its parts and every
+import is `react`, `motion/react` or something the `slidecraft` module exports. `bun run skills`
+works that out into `shared/builtinCopies.json` (with the reason for each that cannot), and a test
+copies every copyable built-in and checks it renders as the built-in. To make one copyable, export
+what it needs from `src/vault-api/index.ts`.
+
 ## Fields
 
 | Field | Rule |

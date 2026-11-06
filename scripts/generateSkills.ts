@@ -1,7 +1,8 @@
 /**
  * Generates the skills' component catalogue (UX overhaul U4) from the component registry, so the
  * skills can never drift from the components. `bun run skills` writes it; `bun run build` runs it;
- * tests/skills.test.ts fails when the committed file is out of date.
+ * tests/skills.test.ts fails when the committed file is out of date. It also writes which built-ins a
+ * vault can copy (shared/builtinCopies.json, vault components V5).
  */
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -15,6 +16,7 @@ export const API_FILE = join(ROOT, 'skills', 'slidecraft-components', 'reference
 const API_INDEX = join(ROOT, 'src', 'vault-api', 'index.ts')
 
 import { catalogueEntry as entry } from '../server/lib/catalogue.ts'
+import { BUILTIN_COPIES_FILE, builtinCopiesText } from './builtinCopies.ts'
 import { readFileSync } from 'node:fs'
 
 export function buildCatalogue(): string {
@@ -116,4 +118,6 @@ if (import.meta.main) {
   console.log(`Wrote ${CATALOGUE_FILE}`)
   writeFileSync(API_FILE, await buildApiReference())
   console.log(`Wrote ${API_FILE}`)
+  writeFileSync(BUILTIN_COPIES_FILE, await builtinCopiesText())
+  console.log(`Wrote ${BUILTIN_COPIES_FILE}`)
 }

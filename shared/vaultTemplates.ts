@@ -5,6 +5,7 @@
  * whether or not the vault's components may run. The same parser runs in the app, on the server
  * and in the static site.
  */
+import type { OriginInfo } from './builtinCopies.ts'
 import { splitMdxFrontmatter } from './frontmatter.ts'
 
 export const TEMPLATES_DIR = 'templates'
@@ -17,6 +18,8 @@ export const TEMPLATE_ID_RE = /^[a-z0-9][a-z0-9-]*$/
 export interface VaultTemplateFile {
   id: string
   text: string
+  /** It was copied from a built-in (V5). */
+  origin?: OriginInfo
 }
 
 export interface ParsedTemplate {

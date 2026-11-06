@@ -1,4 +1,5 @@
 /** Small fetch helpers for the app shell. They never throw: failures become `{ error }`. */
+import type { CopyPlan } from '@shared/builtinCopies.ts'
 import type { VaultComponentsListing } from '@shared/vaultComponents.ts'
 import type { DeckRef, PresentationInfo, VaultInfo } from '@shared/decks.ts'
 import { deckName, deckQuery } from '@shared/decks.ts'
@@ -53,6 +54,11 @@ export const openVault = (id: string) => request<VaultsState>(`${vaultPath(id)}/
 /** A vault's component folders and whether they may run (vault components plan, V2). */
 export const fetchVaultComponents = (id: string) => request<VaultComponentsListing>(`${vaultPath(id)}/components`)
 export const setVaultComponentTrust = (id: string, trust: 'trusted' | 'blocked') => request<VaultComponentsListing>(`${vaultPath(id)}/components`, jsonInit('PUT', { trust }))
+/** Copying a built-in into a vault and resetting a copy (vault components V5). */
+export const fetchCopyPlan = (id: string, kind: 'component' | 'template', name: string) =>
+  request<CopyPlan>(`${vaultPath(id)}/components/copy?${new URLSearchParams({ kind, name })}`)
+export const copyBuiltinToVault = (id: string, kind: 'component' | 'template', name: string) => request<CopyPlan>(`${vaultPath(id)}/components/copy`, jsonInit('POST', { kind, name }))
+export const resetVaultEntry = (id: string, kind: 'component' | 'template', folder: string) => request<{ builtin: string }>(`${vaultPath(id)}/components/reset`, jsonInit('POST', { kind, folder }))
 export const fetchPresentations = () => request<PresentationInfo[]>('/api/presentations')
 /** A new deck with one title slide, to write by hand. */
 export const createPresentation = (vault: string, name: string) => request<DeckRef>('/api/presentations', jsonInit('POST', { vault, name }))

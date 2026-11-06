@@ -234,7 +234,17 @@ you want; the agent writes `components/<Name>/` using the `slidecraft-components
 with `validate_component`, and the preview follows each save. Slidecraft checks the folder again
 after every turn and tells the agent about errors, and **Undo this turn** takes a turn back (a new
 component's folder goes with it). Open one of the vault's own entries and choose **Edit with agent**
-to change it the same way. Built-ins cannot be edited here yet.
+to change it the same way.
+
+**Changing a built-in:** a built-in itself cannot change, so **Edit with agent** on a built-in
+offers to copy it into the vault first. The copy (`components/<Name>/`, or `templates/<id>/` for a
+template) replaces the built-in in this vault only, and the agent works on it. A built-in that
+cannot be copied yet, because it uses app code the `slidecraft` module does not offer, says why.
+A copy no longer gets Slidecraft's fixes to the built-in, so its panel in the gallery has a
+**Vault copy / Built-in** switch to compare the two, says when the app's built-in has changed since
+the copy was made, and offers **Reset to built-in**, which deletes the copy. A vault component that
+does not load has **Fix with agent** and, when it replaces a built-in, **Reset to built-in** on its
+card.
 
 Components are code that runs with Slidecraft's access, so a vault you add asks once before
 they run; **Settings › Vaults** changes the choice (**Run its components**). Vaults created in the

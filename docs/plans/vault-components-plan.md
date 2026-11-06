@@ -247,6 +247,28 @@ appeared, and undo removed the folder.
 edited, every built-in marked copyable copies and compiles (a test runs them all), and reset
 restores the built-in.
 
+**Status:** done (2026-11-06). Checked in the browser on a scratch vault: Timeline copied through
+the dialog, the workspace showed the copy, an edit showed under **Vault copy** against the built-in,
+the changed note appeared, and reset brought the built-in back. Gauge's dialog said why it cannot
+be copied.
+- **Copyable:** `scripts/builtinCopies.ts` (run by `bun run skills`) writes
+  `shared/builtinCopies.json`. 48 of 63 top-level built-ins are copyable. The rest: the four a deck
+  is made of (`Presentation`, `Slide`, `Notes`, `Step`), `Gauge` and `GaugeRow` (one file, two
+  top-level components), and those using helpers the `slidecraft` module does not export
+  (`drawProps`, `accentZone`, `useCountUp`, `textSignature`, the chart maths, `@shared/themes.ts`).
+  Exporting those would make more copyable; left for a request, as the risks section says.
+- **The copy:** the built-in's file with relative imports pointed at `slidecraft`, made by the server
+  from the source on disk, or from the release binary's embedded copy. Templates are written as a
+  vault template file. `.slidecraft-origin.json` holds the built-in, app version and a hash of the
+  source; the listing reports `changed` when the app's source hash differs.
+- **Routes:** `GET`/`POST /api/vaults/<id>/components/copy` and `POST …/components/reset`. Reset
+  deletes only a folder that replaces a built-in.
+- **Tests** (`tests/builtinCopies.test.ts`): every copyable built-in copies, registers, passes
+  `validate_component`, and renders the same markup as the built-in; every built-in template
+  round-trips through the template parser.
+- **Deviation:** the "decks that use it" count in the copy dialog is for components only, since
+  a template is pasted into a slide rather than used by name.
+
 ### Phase V6: Export, MCP, docs
 
 - HTML export: inline the used bundles and the import map; the viewer registers them first. PDF
