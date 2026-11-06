@@ -10,7 +10,7 @@ import { errorJson, json, readJson } from '../lib/http.ts'
 import { PORT } from '../lib/paths.ts'
 import { discoverThemes } from '../lib/themes.ts'
 import { syncAllFolderInstructions } from '../lib/agentContext.ts'
-import { syncSkillsToVaults } from '../lib/skillSync.ts'
+import { syncSkillsToVaults, syncVaultSkills } from '../lib/skillSync.ts'
 
 export async function handlePresentations(url: URL): Promise<Response> {
   try {
@@ -34,7 +34,7 @@ function vaultsState() {
 async function afterVaultChange(): Promise<void> {
   await restartFileWatcher()
   await syncAllFolderInstructions(PORT)
-  syncSkillsToVaults()
+  await syncSkillsToVaults()
 }
 
 /**
@@ -79,6 +79,7 @@ export async function handleVaults(request: Request, url: URL): Promise<Response
         if (body?.trust !== 'trusted' && body?.trust !== 'blocked') return errorJson(400, 'Body must be JSON with "trust": "trusted" or "blocked"')
         setComponentTrust(id, body.trust)
         broadcast({ type: 'components-changed', source: id, timestamp: Date.now() })
+        void syncVaultSkills(getContentSource(id)!).catch((error) => console.warn(`Could not update the skills of ${id}: ${(error as Error).message}`))
         return json(await listVaultComponents(getContentSource(id)!))
       }
       return errorJson(405, 'Method not allowed')

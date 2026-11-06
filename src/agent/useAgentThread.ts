@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AgentBackendId, AgentBackendInfo, AgentEvent, MessageContext, ThreadInfo } from '@shared/agent.ts'
+import type { AgentBackendId, AgentBackendInfo, AgentEvent, MessageContext, ThreadInfo, ThreadTarget } from '@shared/agent.ts'
 import type { DeckRef } from '@shared/decks.ts'
 import { subscribeServerEvents } from '../hooks/useSSE'
 import * as api from './api'
@@ -27,7 +27,7 @@ export interface AgentThreadState {
  * thread's events kept live from the shared SSE stream, and the actions. The most recent thread
  * opens by itself; a new one is created with the first message.
  */
-export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent?: (event: AgentEvent) => void): AgentThreadState {
+export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent?: (event: AgentEvent) => void, target?: ThreadTarget): AgentThreadState {
   const [backends, setBackends] = useState<AgentBackendInfo[] | null>(null)
   const [threads, setThreads] = useState<ThreadInfo[]>([])
   const [threadId, setThreadId] = useState<string | null>(null)
@@ -39,21 +39,33 @@ export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent
   const onEventRef = useRef(onEvent)
   onEventRef.current = onEvent
   const deckPath = deck?.path
+  const targetKey = target ? `${target.kind}:${target.name}` : ''
+  const targetRef = useRef(target)
+  targetRef.current = target
+  /** Whether a thread belongs in this list: the deck's, the target's, or the vault's own. */
+  const belongs = useCallback(
+    (t: ThreadInfo) => {
+      const want = targetRef.current
+      if (want) return t.target?.kind === want.kind && t.target.name === want.name
+      return deckPath ? t.deck?.path === deckPath : !t.deck && !t.target
+    },
+    [deckPath, targetKey],
+  )
 
   // The thread list, opening the most recent thread.
   useEffect(() => {
     let live = true
     void api.fetchBackends().then((r) => live && setBackends(r.data ?? []))
-    void api.fetchThreads(vault, deckPath ? { source: vault, path: deckPath } : undefined).then((r) => {
+    void api.fetchThreads(vault, deckPath ? { source: vault, path: deckPath } : undefined, targetRef.current).then((r) => {
       if (!live) return
-      const list = (r.data ?? []).filter((t) => (deckPath ? true : !t.deck))
+      const list = (r.data ?? []).filter(belongs)
       setThreads(list)
       setThreadId((current) => current ?? list[0]?.id ?? null)
     })
     return () => {
       live = false
     }
-  }, [vault, deckPath])
+  }, [vault, deckPath, belongs])
 
   const load = useCallback(
     (id: string) =>
@@ -86,11 +98,11 @@ export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent
         }
         if (message.type === 'agent-thread') {
           const info = message.thread as ThreadInfo
-          if (info.vault !== vault || (deckPath ? info.deck?.path !== deckPath : !!info.deck)) return
+          if (info.vault !== vault || !belongs(info)) return
           setThreads((list) => upsert(list, info))
         }
       }),
-    [vault, deckPath, load],
+    [vault, belongs, load],
   )
 
   const send = useCallback(
@@ -99,7 +111,7 @@ export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent
       setError(undefined)
       let id = idRef.current
       if (!id) {
-        const created = await api.createThread(vault, deckPath ? { source: vault, path: deckPath } : undefined, backend)
+        const created = await api.createThread(vault, deckPath ? { source: vault, path: deckPath } : undefined, backend, targetRef.current)
         if (!created.data) {
           setSending(false)
           setError(created.error)
@@ -116,7 +128,7 @@ export function useAgentThread(vault: string, deck: DeckRef | undefined, onEvent
       else setThreads((list) => upsert(list, sent.data!))
       return !!sent.data
     },
-    [vault, deckPath],
+    [vault, deckPath, targetKey],
   )
 
   const thread = threads.find((t) => t.id === threadId) ?? null

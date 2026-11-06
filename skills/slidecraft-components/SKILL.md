@@ -1,6 +1,6 @@
 ---
 name: slidecraft-components
-description: Create or extend Slidecraft slide components (`defineComponent` in `src/components/slides/`). Use for a new component, a new prop or variant on one, or a change to how a component renders or animates.
+description: Create or extend Slidecraft slide components and slide templates, either a vault's own (`components/<Name>/`, `templates/<id>/` in a vault) or the built-ins (`defineComponent` in `src/components/slides/`). Use for a new component or template, a new prop or variant on one, or a change to how a component renders or animates.
 ---
 
 # Slidecraft slide components
@@ -10,7 +10,16 @@ A slide component is a React component a deck uses inside `<Slide>`. Each is cre
 of truth: the gallery, the editor's palette, toolbar, help panel and completions, the docs-site
 catalogue and the skills' component catalogue all read it. Register once; everything follows.
 
-## Workflow
+## In a vault, or in the repository?
+
+- **In a vault** (the working directory holds decks, maybe `components/` and `templates/`, and no
+  `src/`): the component or template belongs to this vault. Follow
+  [`references/vault.md`](references/vault.md); the requirements below still apply, the workflow
+  there replaces the one here.
+- **In the Slidecraft repository** (`src/components/slides/` exists): a built-in for every vault.
+  Follow the workflow below.
+
+## Workflow (built-in components)
 
 1. **Study a neighbour.** Find the closest existing component (the table in
    [`references/building.md`](references/building.md) says which one teaches what) and read it.

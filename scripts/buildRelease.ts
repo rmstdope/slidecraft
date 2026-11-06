@@ -37,7 +37,8 @@ export function embeddedFiles(): string[] {
   const publicFiles = walk(join(ROOT, 'public'))
   const publicNames = new Set(publicFiles.map((f) => relative(join(ROOT, 'public'), f)))
   const distFiles = walk(join(ROOT, 'dist')).filter((f) => !publicNames.has(relative(join(ROOT, 'dist'), f)))
-  const skillFiles = walk(join(ROOT, 'skills', 'slidecraft-presentations'))
+  // The skills Slidecraft copies into vaults (server/lib/skillSync.ts).
+  const skillFiles = [...walk(join(ROOT, 'skills', 'slidecraft-presentations')), ...walk(join(ROOT, 'skills', 'slidecraft-components'))]
   return [...publicFiles, ...distFiles, ...skillFiles].map(rel).sort()
 }
 

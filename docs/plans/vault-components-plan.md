@@ -209,6 +209,31 @@ name replaces it.
 **Done when** asking the agent in the gallery for a new component produces a working one in
 `components/<Name>/` with a live preview, validation passes, and Undo this turn removes it.
 
+**Status:** done (2026-11-06). Checked with a real Claude Code turn on a scratch vault: the agent
+read the skill's vault part, wrote `components/BadgeRow/`, `validate_component` passed, the preview
+appeared, and undo removed the folder.
+- **The check:** `server/lib/componentChecks.ts` is behind both `validate_component` (MCP) and the
+  check after each turn, which reports as a `deck-check` event with the folder as the path.
+- **Conversations:** a thread's `info.target` names the folder. The turn's checkpoint scope is that
+  folder, and undo also removes a folder the turn created. The prompt names the skill, the folder and
+  `validate_component`.
+- **Skills:**
+  - `slidecraft-components` has `references/vault.md`, and `references/slidecraft-api.md`, which
+    `bun run skills` generates from `src/vault-api/index.ts`.
+  - Both skills are copied into each writable vault. The presentations copy also gets a generated
+    `references/vault-components.md`, rewritten when the vault's components change and recorded in
+    the marker.
+- **Deviation:** board 4's agent docked in the detail sheet became **Edit with agent**, which opens
+  the same workspace as a new component (board 2).
+- **Found in review:** `Bun.build` runs macros (`import … with { type: 'macro' }`) while it bundles,
+  so bundling alone could run vault code. Folders with import attributes are refused before
+  bundling, and the check bundles nothing for an untrusted vault. A component whose registry lacks
+  `props` or the text fields does not register, since every listing reads them.
+- **Open:** a conversation about a component checkpoints only that folder. Anything the agent writes
+  elsewhere, such as a deck, is not listed, checked or undoable from that conversation.
+- **Found:** Bun 1.4 fails to import a second file from a folder reached through a symlink. The
+  server's bundle folder is now its real path; macOS's temp folder is behind `/var` → `/private/var`.
+
 ### Phase V5: Copying, comparing and resetting built-ins
 
 - Build step: the copyable built-ins and their sources, embedded in the binary.

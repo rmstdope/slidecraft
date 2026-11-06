@@ -5,6 +5,7 @@
  */
 import { getSlideSummary, parseDeck } from '../../../shared/deckParser.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
+import { targetFolder, type ThreadTarget } from '../../../shared/agent.ts'
 import { buildVaultComponentSummary, readContentInstructions } from '../agentContext.ts'
 
 export interface DeckContext {
@@ -57,6 +58,7 @@ export async function buildAgentInstructions(contentDir: string, vault?: string)
       '',
       '- For any work on a presentation, use the `slidecraft-presentations` skill (`.claude/skills/slidecraft-presentations/SKILL.md`) and follow its workflow, including `validate_deck` and `screenshot_slide` from the `slidecraft` tools.',
       '- Each message starts with a <slidecraft-context> block: the deck, its slides and the one on screen. It describes the screen; the request follows it.',
+      "- For a component or template of this vault (`components/<Name>/`, `templates/<id>/`), use the `slidecraft-components` skill (`.claude/skills/slidecraft-components/SKILL.md`), its vault part, and check your work with `validate_component`.",
       '- Keep replies short: what changed, and anything the person should decide.',
     ].join('\n'),
   ]
@@ -65,6 +67,22 @@ export async function buildAgentInstructions(contentDir: string, vault?: string)
   const folder = folderInstructions(contentDir, false)
   if (folder) parts.push(folder)
   return parts.join('\n\n')
+}
+
+/** A conversation about one vault component or template (V4): where to work and how to check it. */
+export function buildTargetContext(target: ThreadTarget): string {
+  const folder = targetFolder(target)
+  const what = target.kind === 'component' ? `the vault component ${target.name}` : `the vault template ${target.name}`
+  const entry = target.kind === 'component' ? `${folder}/index.tsx` : `${folder}/index.mdx`
+  return [
+    `## Working on ${what}`,
+    '',
+    `Folder: ${folder}/ (relative to the working directory); its entry is ${entry}. It may not exist yet: create it.`,
+    '',
+    `Follow the vault part of the \`slidecraft-components\` skill (\`.claude/skills/slidecraft-components/SKILL.md\`). Write only inside ${folder}/; the person sees it in the Component Gallery as you save, and "Undo this turn" covers only that folder.`,
+    '',
+    `When you are done, run \`validate_component\` with name "${target.name}" and fix every error. Slidecraft also checks the folder after your turn.`,
+  ].join('\n')
 }
 
 /** What the person is looking at: the deck, its structure and the slide on screen. */

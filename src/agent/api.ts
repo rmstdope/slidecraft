@@ -1,5 +1,5 @@
 /** The agent API (UX overhaul U2). Helpers never throw: failures become `{ error }`. */
-import type { AgentBackendId, AgentBackendInfo, MessageContext, ThreadDetail, ThreadInfo, TurnDiff } from '@shared/agent.ts'
+import type { AgentBackendId, AgentBackendInfo, MessageContext, ThreadDetail, ThreadInfo, ThreadTarget, TurnDiff } from '@shared/agent.ts'
 import type { DeckRef } from '@shared/decks.ts'
 import { appPath } from '../basePath'
 import type { ApiResult } from '../api'
@@ -20,11 +20,11 @@ const threadPath = (vault: string, id: string) => `/api/agent/threads/${encodeUR
 
 export const fetchBackends = () => request<AgentBackendInfo[]>('/api/agent/backends')
 
-export const fetchThreads = (vault: string, deck?: DeckRef) =>
-  request<ThreadInfo[]>(`/api/agent/threads?${new URLSearchParams({ vault, ...(deck ? { path: deck.path } : {}) })}`)
+export const fetchThreads = (vault: string, deck?: DeckRef, target?: ThreadTarget) =>
+  request<ThreadInfo[]>(`/api/agent/threads?${new URLSearchParams({ vault, ...(deck ? { path: deck.path } : {}), ...(target ? { [target.kind]: target.name } : {}) })}`)
 
-export const createThread = (vault: string, deck?: DeckRef, backend?: AgentBackendId) =>
-  request<ThreadInfo>('/api/agent/threads', post({ vault, path: deck?.path, backend }))
+export const createThread = (vault: string, deck?: DeckRef, backend?: AgentBackendId, target?: ThreadTarget) =>
+  request<ThreadInfo>('/api/agent/threads', post({ vault, path: deck?.path, backend, target }))
 
 export const fetchThread = (vault: string, id: string) => request<ThreadDetail>(threadPath(vault, id))
 

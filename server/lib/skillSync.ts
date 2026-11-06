@@ -11,12 +11,18 @@ import { dirname, join, relative, sep } from 'node:path'
 import { listAppFiles, readAppBytes } from './appFiles.ts'
 import { getContentSources, type ContentSource } from './contentSources.ts'
 import { VERSION } from './paths.ts'
+import { buildVaultCatalogue } from './agentContext.ts'
 
 export const SKILL_NAME = 'slidecraft-presentations'
-export const SKILL_SOURCE = `skills/${SKILL_NAME}/`
+/** The components skill, for a vault's own components and templates (vault components plan, V4). */
+export const COMPONENTS_SKILL = 'slidecraft-components'
+export const VAULT_SKILLS = [SKILL_NAME, COMPONENTS_SKILL] as const
+export type VaultSkill = (typeof VAULT_SKILLS)[number]
 export const MARKER_FILE = '.slidecraft-generated.json'
+/** Generated per vault into its copy of the presentations skill: the vault's own components. */
+export const VAULT_CATALOGUE = 'references/vault-components.md'
 
-export const vaultSkillDir = (vaultPath: string): string => join(vaultPath, '.claude', 'skills', SKILL_NAME)
+export const vaultSkillDir = (vaultPath: string, skill: VaultSkill = SKILL_NAME): string => join(vaultPath, '.claude', 'skills', skill)
 
 interface Marker {
   generator: 'slidecraft'
@@ -27,11 +33,12 @@ interface Marker {
 const hash = (bytes: Buffer | string): string => createHash('sha256').update(bytes).digest('hex')
 
 /** The skill as Slidecraft ships it: path inside the skill folder → bytes. */
-export function skillFiles(): Map<string, Buffer> {
+export function skillFiles(skill: VaultSkill = SKILL_NAME): Map<string, Buffer> {
+  const prefix = `skills/${skill}/`
   const files = new Map<string, Buffer>()
-  for (const appPath of listAppFiles(SKILL_SOURCE)) {
+  for (const appPath of listAppFiles(prefix)) {
     const bytes = readAppBytes(appPath)
-    if (bytes) files.set(appPath.slice(SKILL_SOURCE.length), bytes)
+    if (bytes) files.set(appPath.slice(prefix.length), bytes)
   }
   return files
 }
@@ -61,12 +68,12 @@ function readMarker(dir: string): Marker | null {
 export type SkillSyncResult = 'written' | 'unchanged' | 'hand-edited' | 'read-only' | 'missing-dir' | 'no-skill'
 
 /** Bring one vault's copy of the skill up to date, unless a person has edited it. */
-export function syncSkill(vault: ContentSource, files = skillFiles()): SkillSyncResult {
+export function syncSkill(vault: ContentSource, files = skillFiles(), skill: VaultSkill = SKILL_NAME): SkillSyncResult {
   // The repository's own examples already see the skill through the repository's .claude/skills.
   if (vault.readOnly || vault.builtIn) return 'read-only'
   if (!existsSync(vault.path)) return 'missing-dir'
   if (files.size === 0) return 'no-skill'
-  const dir = vaultSkillDir(vault.path)
+  const dir = vaultSkillDir(vault.path, skill)
   const present = filesIn(dir).filter((f) => f !== MARKER_FILE)
   const marker = readMarker(dir)
   if (present.length > 0 && !marker) return 'hand-edited'
@@ -87,16 +94,45 @@ export function syncSkill(vault: ContentSource, files = skillFiles()): SkillSync
   return 'written'
 }
 
-/** Every writable vault (server start, and after the vaults change). */
-export function syncSkillsToVaults(): Map<ContentSource, SkillSyncResult> {
-  const files = skillFiles()
-  const results = new Map<ContentSource, SkillSyncResult>()
-  for (const vault of getContentSources()) {
+/** One vault's skills: the shipped files, plus the presentations skill's catalogue of the vault's own. */
+/** Per vault: the sync running now, so two never interleave (the later one runs after it). */
+const running = new Map<string, Promise<unknown>>()
+
+/**
+ * One vault's skills. Syncs of a vault run one at a time, so the catalogue written last is the
+ * one built last. Never rejects: a problem is logged and the shipped skill still lands.
+ */
+export function syncVaultSkills(vault: ContentSource, shipped?: Map<VaultSkill, Map<string, Buffer>>): Promise<Record<VaultSkill, SkillSyncResult>> {
+  const run = (running.get(vault.id) ?? Promise.resolve()).then(() => syncVaultSkillsNow(vault, shipped))
+  running.set(vault.id, run.catch(() => undefined))
+  return run
+}
+
+async function syncVaultSkillsNow(vault: ContentSource, shipped?: Map<VaultSkill, Map<string, Buffer>>): Promise<Record<VaultSkill, SkillSyncResult>> {
+  const out = {} as Record<VaultSkill, SkillSyncResult>
+  for (const skill of VAULT_SKILLS) {
+    const files = new Map(shipped?.get(skill) ?? skillFiles(skill))
+    if (skill === SKILL_NAME && files.size && !vault.readOnly && !vault.builtIn && existsSync(vault.path)) {
+      try {
+        const catalogue = await buildVaultCatalogue(vault.id)
+        if (catalogue) files.set(VAULT_CATALOGUE, Buffer.from(catalogue))
+      } catch (error) {
+        console.warn(`Could not list the components of ${vault.path} for its skill: ${(error as Error).message}`)
+      }
+    }
     try {
-      results.set(vault, syncSkill(vault, files))
+      out[skill] = syncSkill(vault, files, skill)
     } catch (error) {
-      console.warn(`Could not sync the ${SKILL_NAME} skill into ${vault.path}: ${(error as Error).message}`)
+      console.warn(`Could not sync the ${skill} skill into ${vault.path}: ${(error as Error).message}`)
     }
   }
+  return out
+}
+
+/** Every writable vault (server start, and after the vaults change). */
+export async function syncSkillsToVaults(): Promise<Map<ContentSource, Record<VaultSkill, SkillSyncResult>>> {
+  const shipped = new Map(VAULT_SKILLS.map((skill) => [skill, skillFiles(skill)] as const))
+  const results = new Map<ContentSource, Record<VaultSkill, SkillSyncResult>>()
+  for (const vault of getContentSources()) results.set(vault, await syncVaultSkills(vault, shipped))
   return results
 }

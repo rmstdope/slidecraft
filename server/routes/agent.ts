@@ -4,8 +4,8 @@
  *
  * GET  /api/agent/backends
  * GET  /api/agent/settings · PUT /api/agent/settings {backend?, model?}
- * GET  /api/agent/threads?vault=<id>[&path=<deck>]
- * POST /api/agent/threads {vault, path?, backend?}
+ * GET  /api/agent/threads?vault=<id>[&path=<deck>][&component=<Name>|&template=<id>]
+ * POST /api/agent/threads {vault, path?, target?: {kind, name}, backend?}
  * GET  /api/agent/threads/<vault>/<id>
  * POST /api/agent/threads/<vault>/<id>/messages {text, context?}
  * POST /api/agent/threads/<vault>/<id>/stop
@@ -18,7 +18,7 @@ import { AttachmentError, MAX_ATTACHMENT_BYTES, storeAttachment } from '../lib/a
 import { localOrigin } from '../lib/agent/claudeCode.ts'
 import { boundaryOf, parseMultipart } from '../lib/multipart.ts'
 import { getAgentSettings, getContentSource, setAgentSettings } from '../lib/contentSources.ts'
-import { createThread, defaultBackend, getBackends, getThread, getTurnDiff, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError, undoAgentTurn } from '../lib/agent/threads.ts'
+import { createThread, parseTarget, defaultBackend, getBackends, getThread, getTurnDiff, listThreads, resolveApproval, sendMessage, stopTurn, ThreadError, undoAgentTurn } from '../lib/agent/threads.ts'
 import { errorJson, json, readJson } from '../lib/http.ts'
 
 const decode = (segment: string | undefined): string | null => {
@@ -65,13 +65,16 @@ export async function handleAgent(request: Request, url: URL): Promise<Response>
         const vault = url.searchParams.get('vault')
         if (!vault) return errorJson(400, 'vault is required')
         const path = url.searchParams.get('path')
-        return json(listThreads(vault, path ? { source: vault, path } : undefined))
+        const component = url.searchParams.get('component')
+        const template = url.searchParams.get('template')
+        const target = component ? parseTarget({ kind: 'component', name: component }) : template ? parseTarget({ kind: 'template', name: template }) : undefined
+        return json(listThreads(vault, path ? { source: vault, path } : undefined, target))
       }
       if (method === 'POST') {
-        const body = await readJson<{ vault?: unknown; path?: unknown; backend?: unknown }>(request)
+        const body = await readJson<{ vault?: unknown; path?: unknown; target?: unknown; backend?: unknown }>(request)
         if (!body || typeof body.vault !== 'string') return errorJson(400, 'Body must be JSON with a "vault" string')
         const path = typeof body.path === 'string' && body.path ? body.path : undefined
-        const thread = createThread(body.vault, { deck: path ? { source: body.vault, path } : undefined, backend: typeof body.backend === 'string' ? (body.backend as AgentBackendId) : undefined })
+        const thread = createThread(body.vault, { deck: path ? { source: body.vault, path } : undefined, target: parseTarget(body.target), backend: typeof body.backend === 'string' ? (body.backend as AgentBackendId) : undefined })
         return json(thread, 201)
       }
       return errorJson(405, 'Method not allowed')

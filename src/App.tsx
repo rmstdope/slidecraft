@@ -247,7 +247,12 @@ export function App() {
       return (
         <Suspense fallback={<LoadingScreen label="Loading gallery" />}>
           <TrustPrompt vault={content?.vaults.find((v) => v.id === view.vault)} />
-          <GalleryPage vault={view.vault} vaultName={content?.vaults.find((v) => v.id === view.vault)?.name} onExit={goHome} />
+          <GalleryPage
+            vault={view.vault}
+            vaultName={content?.vaults.find((v) => v.id === view.vault)?.name}
+            vaultReadOnly={content?.vaults.find((v) => v.id === view.vault)?.readOnly ?? true}
+            onExit={goHome}
+          />
         </Suspense>
       )
     case 'editor':

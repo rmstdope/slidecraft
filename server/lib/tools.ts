@@ -12,6 +12,7 @@ import '../../src/components/slides/index.ts'
 import { listThemes, registerTheme, unregisterSource } from '../../src/themes/registry.ts'
 import { getContentSource, getDefaultContentSource, getLibraryDir } from './contentSources.ts'
 import { checkDeck } from './deckChecks.ts'
+import { checkVaultEntry } from './componentChecks.ts'
 import { ensureServerComponents } from './serverRegistry.ts'
 import { discoverPresentations, resolveDeckRefInSources, resolveWritableDeckRefInSources, type ResolvedDeck } from './decks.ts'
 import { readDeckSource, saveValidatedDeck } from './deckStore.ts'
@@ -98,6 +99,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     mutates: false,
     parameters: { type: 'object', properties: { name: str('Presentation folder name') }, required: ['name'] },
   },
+  {
+    name: 'validate_component',
+    description:
+      "Check one of this vault's own components (components/<Name>/) or templates (templates/<id>/) the way the app will load it: it compiles, imports only 'slidecraft', 'react', 'react/jsx-runtime', 'motion/react' and its own files, defines the component named like the folder (and parts with parent set), the registry fields are complete, and snippet and previewCode check like a deck. Run it after every edit; errors must be fixed.",
+    mutates: false,
+    parameters: { type: 'object', properties: { name: str('Component name (FunnelBars), template folder (funnel-slide), or a path such as components/FunnelBars') }, required: ['name'] },
+  },
   { name: 'list_themes', description: 'List the themes available to presentations in this content folder, with their frames (slide masters).', mutates: false, parameters: { type: 'object', properties: {} } },
   {
     name: 'list_images',
@@ -180,6 +188,11 @@ export async function executeTool(name: string, args: Record<string, unknown>, c
         const loaded = await loadDeck(args, context, false)
         if ('success' in loaded) return loaded
         return { success: true, data: await checkDeck(loaded.source, loaded.ref.source) }
+      }
+      case 'validate_component': {
+        if (typeof args.name !== 'string' || !args.name.trim()) return fail('name is required: a component name such as FunnelBars, or a template folder')
+        const vault = context.deck?.source ?? context.vault ?? getDefaultContentSource().id
+        return { success: true, data: await checkVaultEntry(vault, args.name.trim()) }
       }
       case 'read_presentation': {
         const loaded = await loadDeck(args, context, false)

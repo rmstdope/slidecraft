@@ -25,6 +25,8 @@ interface TurnRecord {
   turn: number
   /** Vault-relative folder the checkpoint covers; '' is the whole vault. */
   scope: string
+  /** The scope folder did not exist before the turn (a new vault component). */
+  created?: boolean
   before: Manifest
   after?: Manifest
   undone?: boolean
@@ -121,7 +123,7 @@ function collectGarbage(vaultPath: string): void {
 export function beginCheckpoint(vaultPath: string, thread: string, turn: number, scope: string): void {
   const data = load(vaultPath, thread)
   data.turns = data.turns.filter((t) => t.turn !== turn)
-  data.turns.push({ turn, scope, before: snapshot(vaultPath, scope), at: Date.now() })
+  data.turns.push({ turn, scope, before: snapshot(vaultPath, scope), at: Date.now(), ...(scope && !existsSync(resolve(vaultPath, scope)) ? { created: true } : {}) })
   save(vaultPath, thread, data)
 }
 
@@ -188,6 +190,10 @@ export function undoTurn(vaultPath: string, thread: string, turn: number): FileC
       removeEmptyParents(dirname(full), resolve(vaultPath, record.scope))
     }
   }
+  // A folder the turn created (a new vault component) goes too once it is empty again; one that
+  // was there before, even empty, stays.
+  const scopeDir = resolve(vaultPath, record.scope)
+  if (record.created && existsSync(scopeDir) && readdirSync(scopeDir).length === 0) rmSync(scopeDir, { recursive: true })
   record.undone = true
   save(vaultPath, thread, data)
   return changes

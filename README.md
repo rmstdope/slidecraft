@@ -151,15 +151,17 @@ claude mcp add slidecraft -- bun /path/to/slidecraft/server/mcp.ts --vault work
 | `list_themes`, `set_presentation_theme` | themes and frames |
 | `list_images` | images beside a deck and in the shared library |
 | `validate_deck` | compile errors, raw HTML, unknown components or props, titles that probably wrap |
+| `validate_component` | a vault's own component or template: compiles with the import rule, loads, complete registry entry, snippet and preview check like a deck |
 | `screenshot_slide` | one slide as a 960 × 540 image, every step shown (needs the app running and Chrome) |
 | `export_html`, `export_pdf` | write an export into `<content>/exports/` |
 
 Every write is compile-checked; a failing write is refused with the line and the error.
 
 
-Agents also get the **`slidecraft-presentations` skill**: Slidecraft keeps a copy in every writable
-vault at `.claude/skills/slidecraft-presentations/`, so `claude` started in a vault folder finds it
-on its own. A copy you edit is never overwritten. The repository's own skills are in `skills/`.
+Agents also get the **`slidecraft-presentations` and `slidecraft-components` skills**: Slidecraft
+keeps a copy of each in every writable vault at `.claude/skills/`, so `claude` started in a vault
+folder finds them on its own. The presentations copy also lists the vault's own components and
+templates. A copy you edit is never overwritten. The repository's own skills are in `skills/`.
 ## Export
 
 From a deck's card on the home page, or:
