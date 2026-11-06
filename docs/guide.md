@@ -34,6 +34,10 @@ decks/                    the content folder
 │  └─ images/             its images
 ├─ themes/                optional themes
 │  └─ our-brand/theme.json
+├─ components/            optional components of this vault's own
+│  └─ FunnelBars/index.tsx
+├─ templates/             optional slide templates of this vault's own
+│  └─ funnel-slide/index.mdx
 └─ exports/               HTML and PDF exports
 ```
 
@@ -249,7 +253,9 @@ card.
 Components are code that runs with Slidecraft's access, so a vault you add asks once before
 they run; **Settings › Vaults** changes the choice (**Run its components**). Vaults created in the
 app, and the Examples vault, are trusted from the start. Until a vault is allowed, its slides
-show placeholders where its components would be.
+show placeholders where its components would be, and a copy of a built-in gives way to the
+built-in. Exports follow the same rule: an HTML export carries the vault components the deck uses
+when the vault may run them, and placeholders (or the built-ins) when it may not.
 
 ## Presenting
 
@@ -286,8 +292,9 @@ per slide in this browser and show in both windows; the laser never persists.
 
 ## Export
 
-- **HTML:** one self-contained file with every slide, image and font; it opens offline in any
-  browser and has a **Read** mode that shows each slide with its notes and prints as a handout.
+- **HTML:** one self-contained file with every slide, image and font, and the vault's own
+  components the deck uses (see [A vault's own components](#a-vaults-own-components)); it opens
+  offline in any browser and has a **Read** mode that shows each slide with its notes and prints as a handout.
 - **PDF:** one landscape page per slide, every step shown. It needs Chrome or Chromium installed
   (`CHROME_PATH` to point at one).
 

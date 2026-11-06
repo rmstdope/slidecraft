@@ -16,7 +16,7 @@ import { checkDeck } from '../server/lib/deckChecks.ts'
 import { ensureServerComponents } from '../server/lib/serverRegistry.ts'
 import { executeTool } from '../server/lib/tools.ts'
 import { router } from '../server/index.ts'
-import { exportDeck } from '../server/lib/exportDeck.ts'
+import { exportDeck, NOT_TRUSTED_IN_EXPORT } from '../server/lib/exportDeck.ts'
 import { PAYLOAD_ELEMENT_ID, type ExportPayload } from '../shared/exportPayload.ts'
 import { getAllComponents, getSourceProblems, registerSource, clearSource } from '../src/components/slides/defineComponent'
 import { getMdxScope } from '../src/components/mdxScope'
@@ -197,12 +197,22 @@ describe('review fixes', () => {
     }
   })
 
-  test('an HTML export names the vault components it cannot carry yet', async () => {
-    const { html } = await exportDeck({ source: 'acme', path: 'pitch' }, { viewer: { js: '', css: '' } })
-    const json = new RegExp(`id="${PAYLOAD_ELEMENT_ID}">([^<]*)<`).exec(html)![1]
-    const payload = JSON.parse(json) as ExportPayload
-    expect(payload.unavailable).toContain('Funnel')
-    expect(payload.unavailable).toContain('Broken')
+  test('an HTML export carries the bundles of the vault components the deck uses, and only when trusted', async () => {
+    const payloadOf = (html: string) => JSON.parse(new RegExp(`id="${PAYLOAD_ELEMENT_ID}">([^<]*)<`).exec(html)![1]) as ExportPayload
+    const trusted = await exportDeck({ source: 'acme', path: 'pitch' }, { viewer: { js: '', css: '' } })
+    const folders = payloadOf(trusted.html).components!.folders
+    // Broken is in the vault but not in the deck.
+    expect(folders.map((f) => f.name)).toEqual(['Funnel'])
+    expect(Buffer.from(folders[0].code!, 'base64').toString('utf8')).toContain('toUpperCase')
+    expect(trusted.html).toContain('<script type="importmap">')
+    setComponentTrust('stranger', 'blocked')
+    try {
+      const untrusted = await exportDeck({ source: 'stranger', path: 'talk' }, { viewer: { js: '', css: '' } })
+      expect(payloadOf(untrusted.html).components).toEqual({ vault: 'stranger', folders: [{ name: 'Funnel', error: NOT_TRUSTED_IN_EXPORT }] })
+      expect(untrusted.html).not.toContain('importmap')
+    } finally {
+      setComponentTrust('stranger', 'trusted')
+    }
   })
 })
 

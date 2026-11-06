@@ -21,6 +21,8 @@ A deck is one MDX file, `<vault>/<name>/index.mdx`: a `<Presentation>` root whos
    the references when a branch needs them:
    - which component fits, its props, code and images → [`references/components.md`](references/components.md)
      (every component, generated from the registry) and [`references/choosing.md`](references/choosing.md);
+   - the vault's own components and templates, which add to or replace the built-ins there →
+     `references/vault-components.md` (generated in each vault that has any; absent otherwise);
    - themes, frames, "official" or branded decks, colour beyond the accent → [`references/themes-and-colour.md`](references/themes-and-colour.md);
    - steps, morphs, canvases, count-ups → [`references/motion.md`](references/motion.md);
    - a whole new deck or a framed deck → [`references/examples.md`](references/examples.md).

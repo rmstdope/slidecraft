@@ -122,5 +122,8 @@ which app version it came from. The copy replaces the built-in in this vault.
    person can undo your turn in the conversation.
 
 There is no `bun test` and no `src/` in a vault: `validate_component` is the test. If the vault's
-components are not allowed to run (Settings › Vaults in Slidecraft), it can only check that the
-folder compiles; say so.
+components are not allowed to run (Settings › Vaults in Slidecraft), it does not compile, load or
+check the folder at all; say so, and leave the choice to the person.
+
+Nothing else is needed for decks that use the component: the editor, the presenter, HTML and PDF
+exports and the MCP tools all load it from the folder.

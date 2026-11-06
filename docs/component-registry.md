@@ -30,6 +30,14 @@ works that out into `shared/builtinCopies.json` (with the reason for each that c
 copies every copyable built-in and checks it renders as the built-in. To make one copyable, export
 what it needs from `src/vault-api/index.ts`.
 
+Everything that reads the registry sees the same layers: the app and the gallery, the server's
+own registry for `validate_deck`, `validate_component`, the agent context and `bun run mcp --vault`
+(`server/lib/serverRegistry.ts`), and the HTML export (V6). The export carries the bundle of each
+vault component folder the deck uses, base64 in its payload, plus an import map whose `slidecraft`,
+`react`, `react/jsx-runtime` and `motion/react` are `data:` shims onto the viewer's own modules;
+the viewer registers them under the deck's vault before it renders. A vault whose components may
+not run exports none of its code, so its slides show placeholders and built-ins stay.
+
 ## Fields
 
 | Field | Rule |
