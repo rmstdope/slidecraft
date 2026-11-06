@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ArrowUp, Check, PanelLeftClose, Paperclip, Plus, Square, X } from 'lucide-react'
-import type { AgentBackendId, AgentEvent, MessageContext, TurnDiff } from '@shared/agent.ts'
+import type { AgentBackendId, AgentEvent, MessageContext, ThreadTarget, TurnDiff } from '@shared/agent.ts'
 import { fetchAgentSettings, fetchTurnDiff, undoTurn, uploadAttachment } from './api'
 import { deckName, type DeckRef } from '@shared/decks.ts'
 import type { DiffLine } from '@shared/lineDiff.ts'
@@ -13,6 +13,12 @@ interface Props {
   vault: string
   /** The deck the conversation is about; absent for a vault-level conversation. */
   deck?: DeckRef
+  /** A vault component or template the conversation is about (V4), instead of a deck. */
+  target?: ThreadTarget
+  /** Shown in the empty conversation, in place of the default hint. */
+  emptyHint?: string
+  /** Text to start the input with (a new component's description). */
+  initialInput?: string
   /** What is on screen (slide, selection): shown as chips and sent with the message. */
   context?: MessageContext
   /** Runs before a message goes out, e.g. saving the editor; false cancels the send. */
@@ -37,18 +43,18 @@ const proseClass =
   'tw:leading-relaxed tw:[&_p]:my-1.5 tw:[&_p:first-child]:mt-0 tw:[&_p:last-child]:mb-0 tw:[&_ul]:my-1.5 tw:[&_ul]:list-disc tw:[&_ul]:pl-5 tw:[&_ol]:my-1.5 tw:[&_ol]:list-decimal tw:[&_ol]:pl-5 tw:[&_li]:my-0.5 tw:[&_strong]:font-semibold tw:[&_code]:rounded tw:[&_code]:bg-field tw:[&_code]:px-1 tw:[&_code]:font-mono tw:[&_code]:text-[12.5px] tw:[&_pre]:my-2 tw:[&_pre]:overflow-x-auto tw:[&_pre]:rounded-lg tw:[&_pre]:bg-field tw:[&_pre]:p-3 tw:[&_pre]:font-mono tw:[&_pre]:text-[12.5px]'
 
 /** The agent conversation panel (UX overhaul U2): streamed text, tool calls, approvals, stop. */
-export function AgentChat({ vault, deck, context, beforeSend, compact, onCollapse, onDeckWritten, onRunningChange }: Props) {
+export function AgentChat({ vault, deck, target, emptyHint, initialInput, context, beforeSend, compact, onCollapse, onDeckWritten, onRunningChange }: Props) {
   const onEvent = (event: AgentEvent) => {
     if (event.type !== 'file-changed' || !onDeckWritten) return
     const match = /^(.+)\/index\.mdx$/.exec(event.path)
     if (match) onDeckWritten({ source: vault, path: match[1] })
   }
-  const state = useAgentThread(vault, deck, onEvent)
+  const state = useAgentThread(vault, deck, onEvent, target)
   const { backends, threads, thread, events, error, sending } = state
   const turns = useMemo(() => toTurns(events), [events])
   const running = !!thread?.running || sending
   const waiting = pendingApproval(turns)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialInput ?? '')
   // Chips the person removed; a chip comes back when what it shows changes.
   const [dismissed, setDismissed] = useState<{ slide?: number; selection?: string }>({})
   const chips = {
@@ -171,9 +177,9 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
         )}
         {!unavailable && turns.length === 0 && !compact && (
           <div className="tw:m-auto tw:flex tw:max-w-[300px] tw:flex-col tw:gap-2 tw:py-8 tw:text-center">
-            <h2 className="tw:font-display tw:text-[22px] tw:leading-tight tw:font-semibold">{deck ? `Working on ${deckName(deck)}` : 'What do you want to present?'}</h2>
+            <h2 className="tw:font-display tw:text-[22px] tw:leading-tight tw:font-semibold">{target ? (target.kind === 'component' ? `Component ${target.name}` : `Template ${target.name}`) : deck ? `Working on ${deckName(deck)}` : 'What do you want to present?'}</h2>
             <p className="tw:text-muted">
-              {deck ? 'Ask for a change: a new slide, a shorter title, another theme. The agent edits the file and the preview follows.' : 'Describe the talk, paste your notes, or ask for a change across decks.'}
+              {emptyHint ?? (deck ? 'Ask for a change: a new slide, a shorter title, another theme. The agent edits the file and the preview follows.' : 'Describe the talk, paste your notes, or ask for a change across decks.')}
             </p>
           </div>
         )}
@@ -240,7 +246,7 @@ export function AgentChat({ vault, deck, context, beforeSend, compact, onCollaps
             value={input}
             disabled={unavailable}
             aria-label="Message the agent"
-            placeholder={deck ? 'Ask for a change…' : 'What do you want to present? Describe the talk or paste your notes…'}
+            placeholder={target ? 'Describe it, or ask for a change…' : deck ? 'Ask for a change…' : 'What do you want to present? Describe the talk or paste your notes…'}
             className="tw:max-h-[200px] tw:min-h-[44px] tw:w-full tw:resize-none tw:border-0 tw:bg-transparent tw:text-[14px] tw:text-fg tw:outline-none tw:placeholder:text-muted tw:disabled:opacity-60"
             onChange={(e) => setInput(e.target.value)}
             onPaste={(e) => {

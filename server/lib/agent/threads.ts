@@ -5,9 +5,12 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AgentBackendId, AgentEvent, AgentEventBody, MessageContext, ThreadDetail, ThreadInfo, TurnDiff } from '../../../shared/agent.ts'
+import { targetFolder, type AgentBackendId, type AgentEvent, type AgentEventBody, type MessageContext, type ThreadDetail, type ThreadInfo, type ThreadTarget, type TurnDiff } from '../../../shared/agent.ts'
+import { COMPONENT_NAME_RE } from '../../../shared/vaultComponents.ts'
+import { TEMPLATE_ID_RE } from '../../../shared/vaultTemplates.ts'
+import { checkVaultEntry, vaultEntryOf } from '../componentChecks.ts'
 import { deckName, type DeckRef } from '../../../shared/decks.ts'
-import { buildAgentInstructions, buildDeckContext } from './prompt.ts'
+import { buildAgentInstructions, buildDeckContext, buildTargetContext } from './prompt.ts'
 import { getAgentSettings, getContentSource, type ContentSource } from '../contentSources.ts'
 import { readDeckSource } from '../deckStore.ts'
 import { resolveDeckRefInSources } from '../decks.ts'
@@ -123,7 +126,7 @@ function append(vault: ContentSource, thread: StoredThread, turn: number, body: 
   } else thread.events.push(event)
   thread.info.updatedAt = event.at
   // A vault conversation that writes a new deck becomes that deck's conversation.
-  if (event.type === 'file-changed' && !thread.info.deck) {
+  if (event.type === 'file-changed' && !thread.info.deck && !thread.info.target) {
     const match = /^([^/].*)\/index\.mdx$/.exec(event.path)
     const deck = match ? { source: vault.id, path: match[1] } : undefined
     if (deck && resolveDeckRefInSources(deck)) {
@@ -137,7 +140,7 @@ function append(vault: ContentSource, thread: StoredThread, turn: number, body: 
 
 // ---- Public API ----------------------------------------------------------------------------
 
-export function listThreads(vaultId: string, deck?: DeckRef): ThreadInfo[] {
+export function listThreads(vaultId: string, deck?: DeckRef, target?: ThreadTarget): ThreadInfo[] {
   const vault = vaultOf(vaultId)
   if (!existsSync(dirOf(vault))) return []
   const threads: ThreadInfo[] = []
@@ -146,6 +149,7 @@ export function listThreads(vaultId: string, deck?: DeckRef): ThreadInfo[] {
     const thread = load(vault, file.slice(0, -'.json'.length))
     if (!thread) continue
     if (deck && thread.info.deck?.path !== deck.path) continue
+    if (target && (thread.info.target?.kind !== target.kind || thread.info.target.name !== target.name)) continue
     threads.push(infoOf(thread))
   }
   return threads.sort((a, b) => b.updatedAt - a.updatedAt)
@@ -157,12 +161,22 @@ export function getThread(vaultId: string, id: string): ThreadDetail {
   return { ...infoOf(thread), events: thread.events }
 }
 
-export function createThread(vaultId: string, options: { deck?: DeckRef; backend?: AgentBackendId } = {}): ThreadInfo {
+/** A target from a request, checked: a component's PascalCase name or a template's folder name. */
+export function parseTarget(value: unknown): ThreadTarget | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const { kind, name } = value as { kind?: unknown; name?: unknown }
+  if (kind === 'component' && typeof name === 'string' && COMPONENT_NAME_RE.test(name)) return { kind, name }
+  if (kind === 'template' && typeof name === 'string' && TEMPLATE_ID_RE.test(name)) return { kind, name }
+  throw new ThreadError(400, 'A target is a component (PascalCase name) or a template (lower-case folder name)')
+}
+
+export function createThread(vaultId: string, options: { deck?: DeckRef; target?: ThreadTarget; backend?: AgentBackendId } = {}): ThreadInfo {
   const vault = vaultOf(vaultId)
   if (vault.readOnly) throw new ThreadError(403, `The vault "${vault.name}" is read-only`)
   const backend = options.backend ?? defaultBackend()
   if (!backends.has(backend)) throw new ThreadError(400, `Unknown agent "${backend}"`)
   if (options.deck && !resolveDeckRefInSources({ source: vault.id, path: options.deck.path })) throw new ThreadError(400, 'Invalid presentation reference')
+  if (options.deck && options.target) throw new ThreadError(400, 'A conversation is about a deck or a component, not both')
   const now = Date.now()
   const thread: StoredThread = {
     version: 1,
@@ -170,7 +184,8 @@ export function createThread(vaultId: string, options: { deck?: DeckRef; backend
       id: crypto.randomUUID(),
       vault: vault.id,
       deck: options.deck ? { source: vault.id, path: options.deck.path } : undefined,
-      title: options.deck ? deckName(options.deck) : 'New conversation',
+      target: options.target,
+      title: options.deck ? deckName(options.deck) : options.target ? options.target.name : 'New conversation',
       backend,
       createdAt: now,
       updatedAt: now,
@@ -185,7 +200,7 @@ export function createThread(vaultId: string, options: { deck?: DeckRef; backend
 
 /** The prompt for one message: what is on screen, then the person's words. */
 async function promptFor(vault: ContentSource, thread: StoredThread, text: string, context?: MessageContext): Promise<string> {
-  let deckContext = buildDeckContext(null)
+  let deckContext = thread.info.target ? buildTargetContext(thread.info.target) : buildDeckContext(null)
   if (thread.info.deck) {
     const resolved = resolveDeckRefInSources(thread.info.deck)
     if (resolved) {
@@ -220,7 +235,8 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
   const turn = (thread.events[thread.events.length - 1]?.turn ?? 0) + 1
   const run: ActiveTurn = { abort: new AbortController(), approvals: new Map() }
   active.set(key, run)
-  if (thread.info.title === 'New conversation' || (thread.info.deck && thread.info.title === deckName(thread.info.deck) && turn === 1)) {
+  const defaultTitle = thread.info.deck ? deckName(thread.info.deck) : thread.info.target?.name
+  if (thread.info.title === 'New conversation' || (defaultTitle && thread.info.title === defaultTitle && turn === 1)) {
     thread.info.title = text.trim().replace(/\s+/g, ' ').slice(0, 80)
   }
   append(vault, thread, turn, { type: 'user-message', text, context })
@@ -230,7 +246,8 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
   const prompt = await promptFor(vault, thread, text, context)
   thread.notes = undefined
   const instructions = await buildAgentInstructions(vault.path, vault.id)
-  const scope = thread.info.deck?.path ?? ''
+  // A turn about a component or template can only be undone inside its folder.
+  const scope = thread.info.target ? targetFolder(thread.info.target) : (thread.info.deck?.path ?? '')
   try {
     beginCheckpoint(vault.path, id, turn, scope)
   } catch (error) {
@@ -271,7 +288,9 @@ export async function sendMessage(vaultId: string, id: string, text: string, con
     try {
       const files = finishCheckpoint(vault.path, id, turn)
       if (files.length) append(vault, thread, turn, { type: 'changes', files })
-      await checkChangedDecks(vault, thread, turn, files.filter((f) => f.status !== 'deleted' && f.path.endsWith('/index.mdx')).map((f) => f.path))
+      const changed = files.filter((f) => f.status !== 'deleted')
+      await checkChangedDecks(vault, thread, turn, changed.filter((f) => f.path.endsWith('/index.mdx') && !vaultEntryOf(f.path)).map((f) => f.path))
+      await checkChangedEntries(vault, thread, turn, changed.map((f) => f.path))
     } catch (error) {
       console.warn(`Could not finish the checkpoint: ${(error as Error).message}`)
     }
@@ -300,6 +319,27 @@ async function checkChangedDecks(vault: ContentSource, thread: StoredThread, tur
     if (!result.ok) {
       const errors = result.problems.filter((p) => p.severity === 'error').map((p) => `${p.line ? `line ${p.line}: ` : ''}${p.message}`)
       thread.notes = [...(thread.notes ?? []), `After your last turn, ${path} has problems to fix: ${errors.join('; ')}`]
+    }
+  }
+}
+
+/**
+ * Check every vault component and template a turn changed (V4), as validate_component does, so
+ * an agent without the Slidecraft tools hears about problems too.
+ */
+async function checkChangedEntries(vault: ContentSource, thread: StoredThread, turn: number, paths: string[]): Promise<void> {
+  const entries = new Map<string, string>()
+  for (const path of paths) {
+    const entry = vaultEntryOf(path)
+    if (entry) entries.set(`${entry.kind}:${entry.name}`, `${entry.kind === 'component' ? 'components' : 'templates'}/${entry.name}`)
+  }
+  for (const folder of entries.values()) {
+    const result = await checkVaultEntry(vault.id, folder)
+    if (result.problems.length === 0) continue
+    append(vault, thread, turn, { type: 'deck-check', path: `${folder}/`, ok: result.ok, problems: result.problems.slice(0, 20) })
+    if (!result.ok) {
+      const errors = result.problems.filter((p) => p.severity === 'error').map((p) => `${p.line ? `line ${p.line}: ` : ''}${p.message}`)
+      thread.notes = [...(thread.notes ?? []), `After your last turn, ${folder}/ has problems to fix: ${errors.join('; ')}`]
     }
   }
 }

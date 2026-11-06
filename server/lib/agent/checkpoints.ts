@@ -188,6 +188,9 @@ export function undoTurn(vaultPath: string, thread: string, turn: number): FileC
       removeEmptyParents(dirname(full), resolve(vaultPath, record.scope))
     }
   }
+  // A folder the turn created (a new vault component) goes too once it is empty again.
+  const scopeDir = resolve(vaultPath, record.scope)
+  if (record.scope && Object.keys(record.before).length === 0 && existsSync(scopeDir) && readdirSync(scopeDir).length === 0) rmSync(scopeDir, { recursive: true })
   record.undone = true
   save(vaultPath, thread, data)
   return changes

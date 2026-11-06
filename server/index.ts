@@ -86,9 +86,11 @@ async function main() {
   for (const [s, sync] of await syncAllFolderInstructions(PORT)) {
     if (sync === 'written') console.log(`Wrote AGENTS.md in ${s.path}`)
   }
-  for (const [s, sync] of syncSkillsToVaults()) {
-    if (sync === 'written') console.log(`Wrote the slidecraft-presentations skill in ${s.path}`)
-    if (sync === 'hand-edited') console.log(`Keeping the edited slidecraft-presentations skill in ${s.path}`)
+  for (const [s, skills] of await syncSkillsToVaults()) {
+    for (const [skill, sync] of Object.entries(skills)) {
+      if (sync === 'written') console.log(`Wrote the ${skill} skill in ${s.path}`)
+      if (sync === 'hand-edited') console.log(`Keeping the edited ${skill} skill in ${s.path}`)
+    }
   }
   console.log(IS_BUNDLED ? 'Serving the embedded app' : existsSync(DIST_DIR) ? 'Serving the built app from dist/' : 'No dist/: use `bun run dev` for the app, or `bun run build` first')
   Bun.serve({ port: PORT, fetch: router, idleTimeout: 255 })

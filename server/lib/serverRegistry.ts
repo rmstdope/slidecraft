@@ -4,7 +4,7 @@
  * bundles are imported with a Bun plugin that supplies `slidecraft` and the shared packages as
  * the server's own modules. Only a trusted vault's code is ever imported.
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -40,7 +40,15 @@ function installPlugin(): void {
   })
 }
 
-const CACHE_DIR = join(tmpdir(), `slidecraft-components-${process.pid}`)
+/**
+ * Where bundles are written to be imported. Its real path: on macOS the temp folder sits behind a
+ * symlink (/var → /private/var), and Bun fails to import a second file through one (Bun 1.4).
+ */
+const CACHE_DIR = (() => {
+  const dir = join(tmpdir(), `slidecraft-components-${process.pid}`)
+  mkdirSync(dir, { recursive: true })
+  return realpathSync(dir)
+})()
 let loads = 0
 
 interface VaultState {

@@ -20,11 +20,21 @@ export interface AgentBackendInfo {
   approvals: boolean
 }
 
-/** A conversation about one deck, or about the vault as a whole (`deck` absent). */
+/** A vault component or template a conversation works on (vault components plan, V4). */
+export interface ThreadTarget {
+  kind: 'component' | 'template'
+  /** The folder name: `components/<name>/` or `templates/<name>/`. */
+  name: string
+}
+
+export const targetFolder = (target: ThreadTarget): string => `${target.kind === 'component' ? 'components' : 'templates'}/${target.name}`
+
+/** A conversation about one deck, one vault component or template, or the vault as a whole. */
 export interface ThreadInfo {
   id: string
   vault: string
   deck?: DeckRef
+  target?: ThreadTarget
   title: string
   backend: AgentBackendId
   createdAt: number

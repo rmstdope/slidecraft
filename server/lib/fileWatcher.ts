@@ -11,6 +11,7 @@ import { discoverSource, matchesSourceInclude } from './decks.ts'
 import { broadcast, notifyPresentation } from './events.ts'
 import { discoverThemes } from './themes.ts'
 import { componentsSignature } from './vaultComponents.ts'
+import { syncVaultSkills } from './skillSync.ts'
 
 const DEBOUNCE_MS = 150
 const POLL_MS = Number(process.env.SLIDECRAFT_WATCH_POLL_MS ?? 1000)
@@ -36,7 +37,10 @@ function checkComponents(source: ContentSource): void {
   const signature = componentsSignature(source)
   const before = componentSignatures.get(source.id)
   componentSignatures.set(source.id, signature)
-  if (before !== undefined && before !== signature) broadcast({ type: 'components-changed', source: source.id, timestamp: Date.now() })
+  if (before === undefined || before === signature) return
+  broadcast({ type: 'components-changed', source: source.id, timestamp: Date.now() })
+  // The vault's catalogue in its copy of the presentations skill follows (V4).
+  void syncVaultSkills(source).catch((error) => console.warn(`Could not update the skills in ${source.path}: ${(error as Error).message}`))
 }
 
 const mtimeOf = (file: string): number | undefined => {

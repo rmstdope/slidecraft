@@ -228,6 +228,14 @@ gallery while the vault is open, and one with a built-in template's name replace
 Examples vault's `templates/funnel-slide/` is one to copy. Templates are only text, so they load
 whether or not the vault's components may run.
 
+**With the agent:** in the gallery, **New › New component** (or **New template**) asks for a name
+and opens a workspace: the conversation on the left, the live preview on the right. Describe what
+you want; the agent writes `components/<Name>/` using the `slidecraft-components` skill, checks it
+with `validate_component`, and the preview follows each save. Slidecraft checks the folder again
+after every turn and tells the agent about errors, and **Undo this turn** takes a turn back (a new
+component's folder goes with it). Open one of the vault's own entries and choose **Edit with agent**
+to change it the same way. Built-ins cannot be edited here yet.
+
 Components are code that runs with Slidecraft's access, so a vault you add asks once before
 they run; **Settings › Vaults** changes the choice (**Run its components**). Vaults created in the
 app, and the Examples vault, are trusted from the start. Until a vault is allowed, its slides

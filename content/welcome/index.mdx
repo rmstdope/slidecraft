@@ -871,12 +871,12 @@ import docsShot from './images/docs.png'
     <FunnelBars unit="%" stages={[{ label: "Visited", value: 100 }, { label: "Signed up", value: 42 }, { label: "Paid", value: 9 }]} />
     <List>
       <ListItem>This chart is not built in: it is `components/FunnelBars/` in the Examples vault.</ListItem>
-      <ListItem>Saving the file updates every deck, the editor and the gallery.</ListItem>
+      <ListItem>In the gallery, New asks the agent for one, and the preview follows each save.</ListItem>
       <ListItem>Components are code, so a vault you add asks before they run.</ListItem>
       <ListItem>Slide templates in `templates/` join Add slide the same way.</ListItem>
     </List>
   </TwoColumn>
-  <Notes>A component folder holds an index.tsx that imports only slidecraft, react and motion. It adds to the built-ins in its own vault, and one with a built-in's name replaces it there. Broken ones show in the gallery with the error, and decks fall back to the built-in. Templates are one MDX file each, frontmatter and a single Slide; they are text, so they load without asking.</Notes>
+  <Notes>A component folder holds an index.tsx that imports only slidecraft, react and motion. It adds to the built-ins in its own vault, and one with a built-in's name replaces it there. Broken ones show in the gallery with the error, and decks fall back to the built-in. Templates are one MDX file each, frontmatter and a single Slide; they are text, so they load without asking. Saving a file updates every deck, the editor and the gallery; the agent works through the slidecraft-components skill and checks its work with validate_component.</Notes>
 </Slide>
 
 <Slide hidden>

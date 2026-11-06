@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { AnimatePresence, MotionConfig } from 'motion/react'
-import { ArrowLeft, Copy, RotateCcw, Search } from 'lucide-react'
+import { ArrowLeft, Copy, PencilLine, Plus, RotateCcw, Search } from 'lucide-react'
+import type { ThreadTarget } from '@shared/agent.ts'
+import { COMPONENT_NAME_RE } from '@shared/vaultComponents.ts'
+import { TEMPLATE_ID_RE } from '@shared/vaultTemplates.ts'
+import { IS_STATIC } from '../basePath'
+import { EntryWorkspace } from './EntryWorkspace'
 import { BUILT_IN_SOURCE_ID } from '@shared/decks.ts'
 import { StepContext } from '../animations/stepContext'
 import { SlideThumbnail } from '../components/editor/SlideThumbnail'
@@ -43,7 +48,7 @@ import {
 import { countPreviewSteps } from './previewSteps'
 import { searchItems } from './search'
 import { useLazyPreview } from './useLazyPreview'
-import { Badge, Button, cn, NativeSelect, SegmentedControl, Sheet } from '../ui'
+import { Badge, Button, cn, Dialog, Field, Input, Menu, NativeSelect, SegmentedControl, Sheet } from '../ui'
 
 /** A preview's frame: black behind the slide, rounded, a hairline in either theme. */
 const frameClass = 'tw:relative tw:shrink-0 tw:overflow-hidden tw:rounded-md tw:bg-black tw:shadow-hairline'
@@ -76,6 +81,55 @@ const isVaultEntry = (item: RegistryConfig) => sourceOfEntry(item) !== BUILTIN_C
 /** A vault entry with a built-in's name replaces it in this vault. */
 const overridesBuiltin = (item: RegistryConfig) =>
   isVaultEntry(item) && (item.category === 'component' ? !!getBuiltinComponent(item.name) : getAllTemplates(null).some((t) => t.name === item.name))
+
+/** The folder a vault entry lives in, as a conversation target. */
+const targetOf = (item: RegistryConfig): ThreadTarget =>
+  item.category === 'component' ? { kind: 'component', name: item.name } : { kind: 'template', name: item.id.replace(/^template-/, '') }
+
+/** Asks for the new component's or template's folder name, then opens its workspace. */
+function NewEntryDialog({ kind, taken, onCancel, onStart }: { kind: ThreadTarget['kind']; taken: (name: string) => boolean; onCancel(): void; onStart(target: ThreadTarget): void }) {
+  const [name, setName] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const component = kind === 'component'
+  const valid = component ? COMPONENT_NAME_RE.test(name) : TEMPLATE_ID_RE.test(name)
+  const clash = valid && taken(name)
+  const start = () => valid && !clash && onStart({ kind, name })
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onCancel()}
+      // The name field, not the close button, gets the focus.
+      onOpenAutoFocus={(e) => {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }}
+      title={component ? 'New component' : 'New template'}
+      description={component ? 'The agent writes it in components/<Name>/ in this vault, and you describe it in the conversation.' : 'The agent writes it in templates/<name>/ in this vault, and you describe it in the conversation.'}
+    >
+      <form
+        className="tw:flex tw:flex-col tw:gap-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          start()
+        }}
+      >
+        <Field label={component ? 'Name (PascalCase, the tag decks use)' : 'Folder name (lower-case words joined by dashes)'}>
+          <Input ref={inputRef} value={name} placeholder={component ? 'FunnelBars' : 'pricing-slide'} onChange={(e) => setName(component ? e.target.value.replace(/\s+/g, '') : e.target.value.toLowerCase().replace(/\s+/g, '-'))} />
+        </Field>
+        {name && !valid && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{component ? 'Start with a capital letter; letters and digits only.' : 'Lower-case letters, digits and dashes only.'}</p>}
+        {clash && <p className="tw:m-0 tw:text-[13px] tw:text-removed">This vault already has one with that name; open it from the gallery to change it.</p>}
+        <div className="tw:flex tw:justify-end tw:gap-2">
+          <Button type="button" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={!valid || clash}>
+            Start with the agent
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  )
+}
 
 /** Where an entry comes from: Built-in, or the vault's name (and whether it replaces a built-in). */
 function SourceBadge({ item, vaultName }: { item: RegistryConfig; vaultName: string }) {
@@ -347,7 +401,7 @@ function PropsTable({ props }: { props: RegistryProp[] }) {
   )
 }
 
-function DetailPanel({ item, vault, vaultName, settings, theme, onClose }: { item: RegistryConfig; vault?: string; vaultName: string; settings: GallerySettings; theme?: ResolvedTheme; onClose(): void }) {
+function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit }: { item: RegistryConfig; vault?: string; vaultName: string; settings: GallerySettings; theme?: ResolvedTheme; onClose(): void; onEdit?: () => void }) {
   const [copied, setCopied] = useState(false)
   // Settings per component: the item itself and each of its parts.
   const [values, setValues] = useState<Record<string, PropValues>>({})
@@ -409,6 +463,12 @@ function DetailPanel({ item, vault, vaultName, settings, theme, onClose }: { ite
           </h2>
           <p className="tw:text-fg-2">{item.description}</p>
         </div>
+        {onEdit && isVaultEntry(item) && (
+          <Button size="sm" variant="primary" onClick={onEdit}>
+            <PencilLine aria-hidden />
+            Edit with agent
+          </Button>
+        )}
         <Button size="sm" onClick={onClose}>
           Close (Esc)
         </Button>
@@ -620,10 +680,14 @@ function SettingsBar({ settings, themes, theme, onChange }: { settings: GalleryS
 
 /** Every component and template with a live preview (Part 3 §7). */
 /** The component gallery of one vault: built-in themes plus the vault's own. */
-export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', onExit }: { vault?: string; vaultName?: string; onExit(): void }) {
+export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', vaultReadOnly = false, onExit }: { vault?: string; vaultName?: string; vaultReadOnly?: boolean; onExit(): void }) {
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('all')
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('any')
+  // The agent works on vault entries only, in a writable vault with a server.
+  const canEdit = !!vault && !vaultReadOnly && !IS_STATIC
+  const [creating, setCreating] = useState<ThreadTarget['kind'] | null>(null)
+  const [workspace, setWorkspace] = useState<{ target: ThreadTarget; isNew: boolean } | null>(null)
   // By name, so the panel shows the current entry after a vault component reloads.
   const [openName, setOpenName] = useState<{ name: string; category: RegistryConfig['category'] } | null>(null)
   const [settings, setSettings] = useState<GallerySettings>(loadSettings)
@@ -664,13 +728,13 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
+      if (e.key !== 'Escape' || workspace || creating) return
       if (open) setOpenName(null)
       else if (!(e.target instanceof HTMLInputElement && e.target.value)) onExit()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onExit])
+  }, [open, onExit, workspace, creating])
 
   return (
     <div className="sc-app tw:h-full tw:overflow-y-auto tw:bg-ground">
@@ -702,6 +766,20 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
           </label>
           <SegmentedControl aria-label="Show" value={tab} onValueChange={setTab} items={TABS} />
           {hasOwn && <SegmentedControl aria-label="Source" value={sourceFilter} onValueChange={setSourceFilter} items={SOURCE_FILTERS} />}
+          {canEdit && (
+            <Menu
+              trigger={
+                <Button variant="primary">
+                  <Plus aria-hidden />
+                  New
+                </Button>
+              }
+              items={[
+                { label: 'New component', onSelect: () => setCreating('component') },
+                { label: 'New template', onSelect: () => setCreating('template') },
+              ]}
+            />
+          )}
           <span className="tw:text-[13px] tw:text-muted">
             {visible.length} of {items.length}
           </span>
@@ -737,8 +815,31 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
         ))}
       </main>
       <AnimatePresence>
-        {open && <DetailPanel key={`${open.category}:${open.name}`} item={open} vault={vault} vaultName={vaultName} settings={effective} theme={theme} onClose={() => setOpenName(null)} />}
+        {open && !workspace && (
+          <DetailPanel
+            key={`${open.category}:${open.name}`}
+            item={open}
+            vault={vault}
+            vaultName={vaultName}
+            settings={effective}
+            theme={theme}
+            onClose={() => setOpenName(null)}
+            onEdit={canEdit ? () => setWorkspace({ target: targetOf(open), isNew: false }) : undefined}
+          />
+        )}
       </AnimatePresence>
+      {creating && vault && (
+        <NewEntryDialog
+          kind={creating}
+          taken={(name) => (creating === 'component' ? items.some((i) => i.category === 'component' && isVaultEntry(i) && i.name === name) : items.some((i) => i.category === 'template' && isVaultEntry(i) && i.id === `template-${name}`))}
+          onCancel={() => setCreating(null)}
+          onStart={(target) => {
+            setCreating(null)
+            setWorkspace({ target, isNew: true })
+          }}
+        />
+      )}
+      {workspace && vault && <EntryWorkspace vault={vault} vaultName={vaultName} target={workspace.target} isNew={workspace.isNew} onClose={() => setWorkspace(null)} />}
     </div>
   )
 }
