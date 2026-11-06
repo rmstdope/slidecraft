@@ -6,6 +6,10 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { BUILTIN_SOURCE_DIR, type BuiltinCopiesManifest } from '../shared/builtinCopies.ts'
+import manifest from '../shared/builtinCopies.json'
+
+const builtinCopies = manifest as BuiltinCopiesManifest
 
 const ROOT = join(import.meta.dir, '..')
 const STUB = join(ROOT, 'server', 'embedded.generated.ts')
@@ -32,14 +36,16 @@ function walk(dir: string): string[] {
 
 const rel = (file: string) => relative(ROOT, file).split(sep).join('/')
 
-/** Every app file the server reads: public/, dist/ (minus copies of public/), the presentations skill. */
+/** Every app file the server reads: public/, dist/ (minus copies of public/), the skills, copyable built-ins. */
 export function embeddedFiles(): string[] {
   const publicFiles = walk(join(ROOT, 'public'))
   const publicNames = new Set(publicFiles.map((f) => relative(join(ROOT, 'public'), f)))
   const distFiles = walk(join(ROOT, 'dist')).filter((f) => !publicNames.has(relative(join(ROOT, 'dist'), f)))
   // The skills Slidecraft copies into vaults (server/lib/skillSync.ts).
   const skillFiles = [...walk(join(ROOT, 'skills', 'slidecraft-presentations')), ...walk(join(ROOT, 'skills', 'slidecraft-components'))]
-  return [...publicFiles, ...distFiles, ...skillFiles].map(rel).sort()
+  // The built-ins a vault can copy (vault components V5): the copy is made from their source.
+  const copyable = Object.values(builtinCopies.components).flatMap((c) => (c.file ? [join(ROOT, BUILTIN_SOURCE_DIR, c.file)] : []))
+  return [...publicFiles, ...distFiles, ...skillFiles, ...copyable].map(rel).sort()
 }
 
 export function embeddedModule(files: string[]): string {

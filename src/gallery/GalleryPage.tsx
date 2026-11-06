@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { AnimatePresence, MotionConfig } from 'motion/react'
-import { ArrowLeft, Copy, PencilLine, Plus, RotateCcw, Search } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, Copy, PencilLine, Plus, RotateCcw, Search } from 'lucide-react'
 import type { ThreadTarget } from '@shared/agent.ts'
+import type { CopyPlan, OriginInfo } from '@shared/builtinCopies.ts'
 import { COMPONENT_NAME_RE } from '@shared/vaultComponents.ts'
 import { TEMPLATE_ID_RE } from '@shared/vaultTemplates.ts'
+import { copyBuiltinToVault, fetchCopyPlan, resetVaultEntry } from '../api'
 import { IS_STATIC } from '../basePath'
 import { EntryWorkspace } from './EntryWorkspace'
 import { BUILT_IN_SOURCE_ID } from '@shared/decks.ts'
@@ -82,6 +84,10 @@ const isVaultEntry = (item: RegistryConfig) => sourceOfEntry(item) !== BUILTIN_C
 const overridesBuiltin = (item: RegistryConfig) =>
   isVaultEntry(item) && (item.category === 'component' ? !!getBuiltinComponent(item.name) : getAllTemplates(null).some((t) => t.name === item.name))
 
+/** The built-in a vault entry replaces, to compare the copy with. */
+const builtinOf = (item: RegistryConfig): RegistryConfig | undefined =>
+  item.category === 'component' ? getBuiltinComponent(item.name)?.registry : getAllTemplates(null).find((t) => t.name === item.name)
+
 /** The folder a vault entry lives in, as a conversation target. */
 const targetOf = (item: RegistryConfig): ThreadTarget =>
   item.category === 'component' ? { kind: 'component', name: item.name } : { kind: 'template', name: item.id.replace(/^template-/, '') }
@@ -127,6 +133,127 @@ function NewEntryDialog({ kind, taken, onCancel, onStart }: { kind: ThreadTarget
           </Button>
         </div>
       </form>
+    </Dialog>
+  )
+}
+
+const code = (text: string) => <code className="tw:rounded tw:bg-field tw:px-1 tw:font-mono tw:text-[12.5px]">{text}</code>
+
+/** What a reset or copy acts on: the built-in's name, and the vault folder of the copy. */
+interface EntryRef {
+  kind: ThreadTarget['kind']
+  name: string
+  folder: string
+}
+
+/**
+ * Board 3: a built-in cannot be changed, so editing one copies it into the vault first, and the
+ * copy replaces it there. A built-in that cannot be copied says why.
+ */
+function CopyDialog({ vault, vaultName, item, onCancel, onCopied }: { vault: string; vaultName: string; item: RegistryConfig; onCancel(): void; onCopied(target: ThreadTarget): void }) {
+  const kind: ThreadTarget['kind'] = item.category === 'component' ? 'component' : 'template'
+  const [plan, setPlan] = useState<CopyPlan | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const state = useVaultComponents(vault)
+  useEffect(() => {
+    let live = true
+    void fetchCopyPlan(vault, kind, item.name).then((r) => live && (r.data ? setPlan(r.data) : setError(r.error ?? 'Could not ask the server')))
+    return () => {
+      live = false
+    }
+  }, [vault, kind, item.name])
+  const copy = async () => {
+    setBusy(true)
+    const result = await copyBuiltinToVault(vault, kind, item.name)
+    setBusy(false)
+    if (!result.data) return setError(result.error ?? 'The copy failed')
+    onCopied({ kind, name: result.data.folder.split('/')[1] })
+  }
+  const blocked = plan?.copyable === false
+  const what = kind === 'component' ? item.name : `the ${item.name} template`
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onCancel()}
+      raised
+      className="tw:w-[min(560px,calc(100vw-32px))]"
+      title={blocked ? `Can’t copy ${item.name} yet` : `Copy ${item.name} to the ${vaultName} vault?`}
+      description={blocked ? undefined : `Built-in ${kind === 'component' ? 'components' : 'templates'} can’t be changed. The agent works on a copy in this vault, and that copy replaces the built-in for this vault’s decks.`}
+    >
+      {!plan && !error && <p className="tw:m-0 tw:text-muted">Checking…</p>}
+      {blocked && (
+        <p className="tw:m-0 tw:text-fg-2">
+          {plan.reason} You can still ask the agent for a new {kind} in its style.
+        </p>
+      )}
+      {plan && !blocked && (
+        <ul className="tw:m-0 tw:flex tw:list-none tw:flex-col tw:gap-2.5 tw:p-0 tw:text-fg-2">
+          <li className="tw:flex tw:items-start tw:gap-2.5">
+            <Check className="tw:mt-0.5 tw:size-4 tw:shrink-0 tw:text-added" aria-hidden />
+            <span>
+              Writes {code(`${plan.folder}/${kind === 'component' ? 'index.tsx' : 'index.mdx'}`)}
+              {plan.parts.length > 0 && <> with {plan.parts.length === 1 ? 'its part' : 'its parts'} {plan.parts.map((p, i) => <span key={p}>{i > 0 && ', '}{code(p)}</span>)}</>}
+              {kind === 'component' && <>, importing from {code('slidecraft')}</>}
+            </span>
+          </li>
+          <li className="tw:flex tw:items-start tw:gap-2.5">
+            <Check className="tw:mt-0.5 tw:size-4 tw:shrink-0 tw:text-added" aria-hidden />
+            <span>
+              {kind === 'template'
+                ? `Add slide in ${vaultName} offers the copy in place of the built-in. Other vaults keep the built-in.`
+                : plan.decks > 0
+                  ? `${plan.decks === 1 ? 'One deck' : `${plan.decks} decks`} in ${vaultName} ${plan.decks === 1 ? 'uses' : 'use'} ${item.name} and will use the copy. Other vaults keep the built-in.`
+                  : `No deck in ${vaultName} uses ${item.name} yet. Other vaults keep the built-in.`}
+            </span>
+          </li>
+          <li className="tw:flex tw:items-start tw:gap-2.5">
+            <AlertTriangle className="tw:mt-0.5 tw:size-4 tw:shrink-0 tw:text-fg-2" aria-hidden />
+            <span>The copy stops getting Slidecraft’s fixes to {what}. You can compare it with the built-in, or reset to the built-in, at any time.</span>
+          </li>
+          {kind === 'component' && state && state.trust !== 'trusted' && (
+            <li className="tw:flex tw:items-start tw:gap-2.5">
+              <AlertTriangle className="tw:mt-0.5 tw:size-4 tw:shrink-0 tw:text-fg-2" aria-hidden />
+              <span>This vault’s components are not allowed to run, so decks keep the built-in until you allow them.</span>
+            </li>
+          )}
+        </ul>
+      )}
+      {plan?.conflict && !blocked && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{plan.conflict}</p>}
+      {error && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{error}</p>}
+      <div className="tw:flex tw:justify-end tw:gap-2">
+        <Button onClick={onCancel}>{blocked ? 'Close' : 'Cancel'}</Button>
+        {!blocked && (
+          <Button variant="primary" disabled={!plan || !!plan.conflict || busy} onClick={() => void copy()}>
+            Copy and edit with agent
+          </Button>
+        )}
+      </div>
+    </Dialog>
+  )
+}
+
+/** Reset to built-in: the vault's copy is deleted, so the built-in is in use again. */
+function ResetDialog({ vault, entry, onCancel, onDone }: { vault: string; entry: EntryRef; onCancel(): void; onDone(): void }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const dir = `${entry.kind === 'component' ? 'components' : 'templates'}/${entry.folder}/`
+  const reset = async () => {
+    setBusy(true)
+    const result = await resetVaultEntry(vault, entry.kind, entry.folder)
+    setBusy(false)
+    if (!result.data) return setError(result.error ?? 'The reset failed')
+    onDone()
+  }
+  return (
+    <Dialog open raised onOpenChange={(open) => !open && onCancel()} title={`Reset ${entry.name} to the built-in?`} description={<>This deletes {code(dir)} from the vault, with every change made to it. The vault’s decks use the built-in {entry.name} again.</>}>
+      {error && <p className="tw:m-0 tw:text-[13px] tw:text-removed">{error}</p>}
+      <div className="tw:flex tw:justify-end tw:gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button variant="danger" disabled={busy} onClick={() => void reset()}>
+          Delete the copy
+        </Button>
+      </div>
     </Dialog>
   )
 }
@@ -243,7 +370,7 @@ function GalleryCard({ item, vaultName, settings, theme, onOpen }: { item: Regis
 }
 
 /** A vault component that is not in use: it failed to compile or load (board 5). */
-function ProblemCard({ problem, vaultName }: { problem: ComponentProblem; vaultName: string }) {
+function ProblemCard({ problem, vaultName, onFix, onReset }: { problem: ComponentProblem; vaultName: string; onFix?: () => void; onReset?: () => void }) {
   const fallback = problem.template ? getAllTemplates(null).find((t) => t.name === problem.name) : getBuiltinComponent(problem.name)
   const [first, ...rest] = problem.message.split('\n')
   return (
@@ -268,6 +395,22 @@ function ProblemCard({ problem, vaultName }: { problem: ComponentProblem; vaultN
             : `${fallback ? `Decks use the built-in ${problem.name}` : 'Slides that use it show a placeholder'} until this is fixed. The code is in components/${problem.name}/.`}
         </span>
       </span>
+      {(onFix || (onReset && fallback)) && (
+        <span className="tw:flex tw:gap-2 tw:px-1 tw:pb-1">
+          {onFix && (
+            <Button size="sm" variant="primary" onClick={onFix}>
+              <PencilLine aria-hidden />
+              Fix with agent
+            </Button>
+          )}
+          {onReset && fallback && (
+            <Button size="sm" onClick={onReset}>
+              <RotateCcw aria-hidden />
+              Reset to built-in
+            </Button>
+          )}
+        </span>
+      )}
     </div>
   )
 }
@@ -401,8 +544,36 @@ function PropsTable({ props }: { props: RegistryProp[] }) {
   )
 }
 
-function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit }: { item: RegistryConfig; vault?: string; vaultName: string; settings: GallerySettings; theme?: ResolvedTheme; onClose(): void; onEdit?: () => void }) {
+function DetailPanel({
+  item,
+  vault,
+  vaultName,
+  settings,
+  theme,
+  origin,
+  onClose,
+  onEdit,
+  onCopy,
+  onReset,
+}: {
+  item: RegistryConfig
+  vault?: string
+  vaultName: string
+  settings: GallerySettings
+  theme?: ResolvedTheme
+  /** The vault entry was copied from a built-in (V5). */
+  origin?: OriginInfo
+  onClose(): void
+  onEdit?: () => void
+  /** A built-in: copy it into the vault, then edit the copy. */
+  onCopy?: () => void
+  onReset?: () => void
+}) {
   const [copied, setCopied] = useState(false)
+  // Built-in / Vault copy: a vault entry that replaces a built-in can show either.
+  const builtin = overridesBuiltin(item) ? builtinOf(item) : undefined
+  const [showBuiltin, setShowBuiltin] = useState(false)
+  const shown = showBuiltin && builtin ? builtin : item
   // Settings per component: the item itself and each of its parts.
   const [values, setValues] = useState<Record<string, PropValues>>({})
   const [step, setStep] = useState(0)
@@ -418,9 +589,10 @@ function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit 
     [item, isComponent, vault],
   )
   const withValues = (code: string) => Object.entries(values).reduce((text, [name, v]) => applyProps(text, name, v), code)
-  const source = useMemo(() => applySettings(withValues(item.previewCode), settings), [item, values, settings])
+  // The settings belong to the vault's entry; the built-in it is compared with shows its own example.
+  const source = useMemo(() => applySettings(shown === item ? withValues(shown.previewCode) : shown.previewCode, settings), [shown, item, values, settings])
   const snippet = useMemo(() => applySettings(withValues(item.snippet), settings), [item, values, settings])
-  const { Component, error, isCompiling } = useLazyPreview(source, true)
+  const { Component, error, isCompiling } = useLazyPreview(source, true, shown !== item)
   const total = useMemo(() => (Component ? countPreviewSteps(Component) : 0), [Component])
 
   // A new preview starts again from its first beat.
@@ -463,8 +635,14 @@ function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit 
           </h2>
           <p className="tw:text-fg-2">{item.description}</p>
         </div>
-        {onEdit && isVaultEntry(item) && (
-          <Button size="sm" variant="primary" onClick={onEdit}>
+        {onReset && builtin && (
+          <Button size="sm" onClick={onReset}>
+            <RotateCcw aria-hidden />
+            Reset to built-in
+          </Button>
+        )}
+        {((onEdit && isVaultEntry(item)) || (onCopy && !isVaultEntry(item))) && (
+          <Button size="sm" variant="primary" onClick={isVaultEntry(item) ? onEdit : onCopy}>
             <PencilLine aria-hidden />
             Edit with agent
           </Button>
@@ -473,6 +651,14 @@ function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit 
           Close (Esc)
         </Button>
       </header>
+      {origin?.changed && (
+        <p className="tw:m-0 tw:flex tw:items-start tw:gap-2 tw:rounded-lg tw:bg-field tw:px-3 tw:py-2 tw:text-[13px] tw:text-fg-2" role="status">
+          <AlertTriangle className="tw:mt-0.5 tw:size-4 tw:shrink-0" aria-hidden />
+          <span>
+            Slidecraft’s built-in {origin.builtin} has changed since this copy was made{origin.appVersion ? ` (app ${origin.appVersion})` : ''}. Compare them below, or reset to get the new one.
+          </span>
+        </p>
+      )}
       {Component ? (
         <LiveStage Component={Component} width={760} theme={theme} step={step} total={total} replay={replay} />
       ) : (
@@ -499,6 +685,23 @@ function DetailPanel({ item, vault, vaultName, settings, theme, onClose, onEdit 
           </div>
         )}
         {error && Component && <span className="tw:text-[12px] tw:text-removed">{error}</span>}
+        {builtin && (
+          <>
+            <span className="tw:flex-1" />
+            <SegmentedControl
+              aria-label="Compare with the built-in"
+              value={showBuiltin ? 'builtin' : 'vault'}
+              onValueChange={(v) => {
+                setShowBuiltin(v === 'builtin')
+                setStep(0)
+              }}
+              items={[
+                { value: 'vault', label: origin ? 'Vault copy' : vaultName },
+                { value: 'builtin', label: 'Built-in' },
+              ]}
+            />
+          </>
+        )}
       </div>
       {groups.length > 0 && (
         <section className="tw:flex tw:flex-col tw:gap-3">
@@ -688,6 +891,12 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
   const canEdit = !!vault && !vaultReadOnly && !IS_STATIC
   const [creating, setCreating] = useState<ThreadTarget['kind'] | null>(null)
   const [workspace, setWorkspace] = useState<{ target: ThreadTarget; isNew: boolean } | null>(null)
+  // V5: copying a built-in into the vault, and resetting a copy.
+  const [copying, setCopying] = useState<RegistryConfig | null>(null)
+  const [resetting, setResetting] = useState<EntryRef | null>(null)
+  const vaultState = useVaultComponents(vault)
+  const originOf = (item: RegistryConfig): OriginInfo | undefined =>
+    item.category === 'component' ? vaultState?.components.find((c) => c.name === item.name)?.origin : vaultState?.templates?.find((t) => `template-${t.id}` === item.id)?.origin
   // By name, so the panel shows the current entry after a vault component reloads.
   const [openName, setOpenName] = useState<{ name: string; category: RegistryConfig['category'] } | null>(null)
   const [settings, setSettings] = useState<GallerySettings>(loadSettings)
@@ -728,13 +937,13 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || workspace || creating) return
+      if (e.key !== 'Escape' || workspace || creating || copying || resetting) return
       if (open) setOpenName(null)
       else if (!(e.target instanceof HTMLInputElement && e.target.value)) onExit()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onExit, workspace, creating])
+  }, [open, onExit, workspace, creating, copying, resetting])
 
   return (
     <div className="sc-app tw:h-full tw:overflow-y-auto tw:bg-ground">
@@ -795,7 +1004,13 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
             </h2>
             <div className="tw:flex tw:flex-wrap tw:gap-5">
               {broken.map((p) => (
-                <ProblemCard key={p.template ? `t:${p.folder ?? p.name}` : `c:${p.name}`} problem={p} vaultName={vaultName} />
+                <ProblemCard
+                  key={p.template ? `t:${p.folder ?? p.name}` : `c:${p.name}`}
+                  problem={p}
+                  vaultName={vaultName}
+                  onFix={canEdit && (!p.template || p.folder) ? () => setWorkspace({ target: { kind: p.template ? 'template' : 'component', name: p.template ? p.folder! : p.name }, isNew: false }) : undefined}
+                  onReset={canEdit && (!p.template || p.folder) ? () => setResetting({ kind: p.template ? 'template' : 'component', name: p.name, folder: p.template ? p.folder! : p.name }) : undefined}
+                />
               ))}
             </div>
           </section>
@@ -824,7 +1039,10 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
             settings={effective}
             theme={theme}
             onClose={() => setOpenName(null)}
+            origin={originOf(open)}
             onEdit={canEdit ? () => setWorkspace({ target: targetOf(open), isNew: false }) : undefined}
+            onCopy={canEdit ? () => setCopying(open) : undefined}
+            onReset={canEdit ? () => setResetting({ kind: open.category === 'component' ? 'component' : 'template', name: open.name, folder: targetOf(open).name }) : undefined}
           />
         )}
       </AnimatePresence>
@@ -839,6 +1057,19 @@ export default function GalleryPage({ vault, vaultName = vault ?? 'This vault', 
           }}
         />
       )}
+      {copying && vault && (
+        <CopyDialog
+          vault={vault}
+          vaultName={vaultName}
+          item={copying}
+          onCancel={() => setCopying(null)}
+          onCopied={(target) => {
+            setCopying(null)
+            setWorkspace({ target, isNew: false })
+          }}
+        />
+      )}
+      {resetting && vault && <ResetDialog vault={vault} entry={resetting} onCancel={() => setResetting(null)} onDone={() => setResetting(null)} />}
       {workspace && vault && <EntryWorkspace vault={vault} vaultName={vaultName} target={workspace.target} isNew={workspace.isNew} onClose={() => setWorkspace(null)} />}
     </div>
   )

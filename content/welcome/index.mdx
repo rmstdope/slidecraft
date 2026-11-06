@@ -874,9 +874,10 @@ import docsShot from './images/docs.png'
       <ListItem>In the gallery, New asks the agent for one, and the preview follows each save.</ListItem>
       <ListItem>Components are code, so a vault you add asks before they run.</ListItem>
       <ListItem>Slide templates in `templates/` join Add slide the same way.</ListItem>
+      <ListItem>Editing a built-in copies it into the vault; compare or reset it at any time.</ListItem>
     </List>
   </TwoColumn>
-  <Notes>A component folder holds an index.tsx that imports only slidecraft, react and motion. It adds to the built-ins in its own vault, and one with a built-in's name replaces it there. Broken ones show in the gallery with the error, and decks fall back to the built-in. Templates are one MDX file each, frontmatter and a single Slide; they are text, so they load without asking. Saving a file updates every deck, the editor and the gallery; the agent works through the slidecraft-components skill and checks its work with validate_component.</Notes>
+  <Notes>A component folder holds an index.tsx that imports only slidecraft, react and motion. It adds to the built-ins in its own vault, and one with a built-in's name replaces it there. Broken ones show in the gallery with the error, and decks fall back to the built-in. Templates are one MDX file each, frontmatter and a single Slide; they are text, so they load without asking. Saving a file updates every deck, the editor and the gallery; the agent works through the slidecraft-components skill and checks its work with validate_component. Edit with agent on a built-in copies it into the vault first, with a record of where it came from: the gallery compares the copy with the built-in, says when the app's built-in has changed, and Reset to built-in deletes the copy.</Notes>
 </Slide>
 
 <Slide hidden>

@@ -1,6 +1,7 @@
 /** Presentations, vaults and themes (Part 4 §5; themes from plan Phase 4b). */
 import type { ContentSourceInfo } from '../../shared/decks.ts'
 import { addVault, configFilePath, getComponentTrust, getContentSource, getContentSources, getDefaultContentSource, removeVault, rememberVault, setComponentTrust, updateVault, VaultError, type ContentSource } from '../lib/contentSources.ts'
+import { copyBuiltin, copyPlan, resetToBuiltin, type EntryKind } from '../lib/builtinCopies.ts'
 import { listVaultComponents } from '../lib/vaultComponents.ts'
 import { broadcast } from '../lib/events.ts'
 import { discoverPresentations } from '../lib/decks.ts'
@@ -43,11 +44,14 @@ async function afterVaultChange(): Promise<void> {
  * PATCH /api/vaults/<id> {name?, readOnly?} · DELETE /api/vaults/<id> (files stay) ·
  * POST /api/vaults/<id>/open (remember it as the last vault) ·
  * GET /api/vaults/<id>/components (its component folders) ·
- * PUT /api/vaults/<id>/components {trust: "trusted" | "blocked"} (whether they may run).
+ * PUT /api/vaults/<id>/components {trust: "trusted" | "blocked"} (whether they may run) ·
+ * GET /api/vaults/<id>/components/copy?kind=&name= (what copying a built-in would do) ·
+ * POST /api/vaults/<id>/components/copy {kind, name} (copy it into the vault) ·
+ * POST /api/vaults/<id>/components/reset {kind, folder} (delete a copy; the built-in is back).
  */
 export async function handleVaults(request: Request, url: URL): Promise<Response> {
   const rest = url.pathname.slice('/api/vaults'.length).replace(/^\/+/, '')
-  const [rawId, action] = rest.split('/')
+  const [rawId, action, sub] = rest.split('/')
   let id: string
   try {
     id = decodeURIComponent(rawId ?? '')
@@ -69,6 +73,11 @@ export async function handleVaults(request: Request, url: URL): Promise<Response
     if (action === 'open' && request.method === 'POST') {
       rememberVault(id)
       return json(vaultsState())
+    }
+    if (action === 'components' && sub) {
+      const source = getContentSource(id)
+      if (!source) return errorJson(404, `No vault "${id}"`)
+      return await handleBuiltinCopies(request, url, source, sub)
     }
     if (action === 'components') {
       const source = getContentSource(id)
@@ -102,6 +111,34 @@ export async function handleVaults(request: Request, url: URL): Promise<Response
     if (error instanceof VaultError) return errorJson(error.status, error.message)
     return errorJson(500, 'Vault change failed', (error as Error).message)
   }
+}
+
+const isKind = (v: unknown): v is EntryKind => v === 'component' || v === 'template'
+
+/** Copying a built-in into a vault and resetting a copy (vault components plan, V5). */
+async function handleBuiltinCopies(request: Request, url: URL, source: ContentSource, sub: string): Promise<Response> {
+  const changed = () => broadcast({ type: 'components-changed', source: source.id, timestamp: Date.now() })
+  if (sub === 'copy' && request.method === 'GET') {
+    const kind = url.searchParams.get('kind')
+    const name = url.searchParams.get('name')
+    if (!isKind(kind) || !name) return errorJson(400, 'Query must have kind=component|template and name')
+    return json(await copyPlan(source, kind, name))
+  }
+  if (sub === 'copy' && request.method === 'POST') {
+    const body = await readJson<{ kind?: unknown; name?: unknown }>(request)
+    if (!isKind(body?.kind) || typeof body.name !== 'string') return errorJson(400, 'Body must be JSON with "kind" ("component" or "template") and "name"')
+    const plan = await copyBuiltin(source, body.kind, body.name)
+    changed()
+    return json(plan, 201)
+  }
+  if (sub === 'reset' && request.method === 'POST') {
+    const body = await readJson<{ kind?: unknown; folder?: unknown }>(request)
+    if (!isKind(body?.kind) || typeof body.folder !== 'string') return errorJson(400, 'Body must be JSON with "kind" ("component" or "template") and "folder"')
+    const builtin = resetToBuiltin(source, body.kind, body.folder)
+    changed()
+    return json({ builtin })
+  }
+  return errorJson(sub === 'copy' || sub === 'reset' ? 405 : 404, sub === 'copy' || sub === 'reset' ? 'Method not allowed' : 'Not found')
 }
 
 /** GET /api/themes[?source=]: theme folders found in content directories, with validation errors. */

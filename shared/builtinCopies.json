@@ -1,0 +1,253 @@
+{
+  "components": {
+    "Accent": {
+      "file": "Accent.tsx",
+      "parts": []
+    },
+    "ActivityDiagram": {
+      "file": "ActivityDiagram.tsx",
+      "parts": []
+    },
+    "Annotate": {
+      "file": "Annotate.tsx",
+      "parts": [
+        "Ring",
+        "Scribble"
+      ]
+    },
+    "AppShellDiagram": {
+      "file": "AppShellDiagram.tsx",
+      "parts": []
+    },
+    "BackgroundImage": {
+      "file": "BackgroundImage.tsx",
+      "parts": []
+    },
+    "BlockDiagram": {
+      "reason": "It uses drawProps, which the public slidecraft module does not offer."
+    },
+    "BracketDiagram": {
+      "file": "BracketDiagram.tsx",
+      "parts": []
+    },
+    "Callout": {
+      "file": "Callout.tsx",
+      "parts": []
+    },
+    "Caption": {
+      "file": "Caption.tsx",
+      "parts": []
+    },
+    "Card": {
+      "file": "Card.tsx",
+      "parts": []
+    },
+    "CenteredStatement": {
+      "file": "CenteredStatement.tsx",
+      "parts": []
+    },
+    "Chapter": {
+      "file": "Chapter.tsx",
+      "parts": []
+    },
+    "Code": {
+      "file": "Code.tsx",
+      "parts": []
+    },
+    "ComparisonLayout": {
+      "reason": "It uses accentZone, which the public slidecraft module does not offer."
+    },
+    "ComparisonTable": {
+      "file": "ComparisonTable.tsx",
+      "parts": []
+    },
+    "ContentBox": {
+      "file": "ContentBox.tsx",
+      "parts": []
+    },
+    "ContentImage": {
+      "file": "ContentImage.tsx",
+      "parts": []
+    },
+    "CycleDiagram": {
+      "reason": "It uses drawProps, which the public slidecraft module does not offer."
+    },
+    "DataModel": {
+      "file": "DataModel.tsx",
+      "parts": []
+    },
+    "DefinitionLayout": {
+      "reason": "It uses accentZone, raisedSurface and wavePath, which the public slidecraft module does not offer."
+    },
+    "Divider": {
+      "file": "Divider.tsx",
+      "parts": []
+    },
+    "FeedbackLoops": {
+      "file": "FeedbackLoops.tsx",
+      "parts": []
+    },
+    "FourColumn": {
+      "file": "FourColumn.tsx",
+      "parts": []
+    },
+    "Gauge": {
+      "reason": "It shares its file with GaugeRow, and a vault folder holds one component and its parts."
+    },
+    "GaugeRow": {
+      "reason": "It shares its file with Gauge, and a vault folder holds one component and its parts."
+    },
+    "Highlight": {
+      "file": "Highlight.tsx",
+      "parts": []
+    },
+    "IconRow": {
+      "file": "IconRow.tsx",
+      "parts": []
+    },
+    "Legend": {
+      "file": "Legend.tsx",
+      "parts": []
+    },
+    "List": {
+      "file": "List.tsx",
+      "parts": [
+        "ListItem"
+      ]
+    },
+    "LowerThird": {
+      "file": "LowerThird.tsx",
+      "parts": []
+    },
+    "Notes": {
+      "reason": "Notes is part of how every deck is built, so a vault cannot replace it."
+    },
+    "NumberPunch": {
+      "file": "NumberPunch.tsx",
+      "parts": []
+    },
+    "PersonCard": {
+      "file": "PersonCard.tsx",
+      "parts": []
+    },
+    "PersonRow": {
+      "file": "PersonRow.tsx",
+      "parts": []
+    },
+    "PhaseRow": {
+      "file": "PhaseRow.tsx",
+      "parts": []
+    },
+    "Presentation": {
+      "reason": "Presentation is part of how every deck is built, so a vault cannot replace it."
+    },
+    "ProConList": {
+      "file": "ProConList.tsx",
+      "parts": []
+    },
+    "ProgressBar": {
+      "file": "ProgressBar.tsx",
+      "parts": []
+    },
+    "Punchline": {
+      "file": "Punchline.tsx",
+      "parts": []
+    },
+    "PyramidDiagram": {
+      "file": "PyramidDiagram.tsx",
+      "parts": []
+    },
+    "Quadrants": {
+      "file": "Quadrants.tsx",
+      "parts": []
+    },
+    "Quote": {
+      "file": "Quote.tsx",
+      "parts": []
+    },
+    "ScatterChart": {
+      "reason": "It uses formatter, linearScale, nearest, niceStep, roundDown, roundUp, thresholdCandidates, ticks and ChartFormat, which the public slidecraft module does not offer."
+    },
+    "Section": {
+      "file": "Section.tsx",
+      "parts": []
+    },
+    "SequenceDiagram": {
+      "file": "SequenceDiagram.tsx",
+      "parts": []
+    },
+    "SignalFlow": {
+      "file": "SignalFlow.tsx",
+      "parts": [
+        "SignalNode",
+        "SignalBypass"
+      ]
+    },
+    "Slide": {
+      "reason": "Slide is part of how every deck is built, so a vault cannot replace it."
+    },
+    "Spectrum": {
+      "file": "Spectrum.tsx",
+      "parts": []
+    },
+    "SplitBackground": {
+      "reason": "It imports @shared/themes.ts, which vault code cannot import."
+    },
+    "Stack": {
+      "file": "Stack.tsx",
+      "parts": []
+    },
+    "StackDiagram": {
+      "reason": "It uses drawProps, which the public slidecraft module does not offer."
+    },
+    "Stat": {
+      "reason": "It uses useCountUp, which the public slidecraft module does not offer."
+    },
+    "Step": {
+      "reason": "Step is part of how every deck is built, so a vault cannot replace it."
+    },
+    "Subtitle": {
+      "file": "Subtitle.tsx",
+      "parts": []
+    },
+    "Svg": {
+      "file": "Svg.tsx",
+      "parts": []
+    },
+    "TagPill": {
+      "file": "TagPill.tsx",
+      "parts": []
+    },
+    "Text": {
+      "file": "Text.tsx",
+      "parts": []
+    },
+    "Timeline": {
+      "file": "Timeline.tsx",
+      "parts": []
+    },
+    "Title": {
+      "reason": "It uses textSignature, which the public slidecraft module does not offer."
+    },
+    "TracedPoints": {
+      "file": "TracedPoints.tsx",
+      "parts": [
+        "TracedPoint"
+      ]
+    },
+    "TraceTimeline": {
+      "file": "TraceTimeline.tsx",
+      "parts": [
+        "Milestone"
+      ]
+    },
+    "TwoColumn": {
+      "file": "TwoColumn.tsx",
+      "parts": []
+    },
+    "YouTube": {
+      "file": "YouTube.tsx",
+      "parts": []
+    }
+  }
+}

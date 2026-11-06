@@ -15,6 +15,8 @@ export interface CompileTarget {
   deck?: DeckRef
   defaultSource?: string
   imports?: string
+  /** Whose components: a vault's, null for the built-ins only (comparing a copy), the active vault's when left out. */
+  vault?: string | null
 }
 
 const cache = new Map<string, Promise<ComponentType>>()
@@ -22,7 +24,7 @@ const MAX_CACHE = 300
 
 export function compileSlidePreview(slide: string, target: CompileTarget = {}): Promise<ComponentType> {
   // The registry version: which names count as components depends on the vault's own.
-  const key = `${getRegistryVersion()}:${target.deck?.source}:${target.deck?.path}\n${target.imports ?? ''}\n${slide}`
+  const key = `${getRegistryVersion()}:${target.vault === null ? '<builtin>' : (target.vault ?? '')}:${target.deck?.source}:${target.deck?.path}\n${target.imports ?? ''}\n${slide}`
   const cached = cache.get(key)
   if (cached) return cached
   const promise = (async () => {
@@ -35,7 +37,7 @@ export function compileSlidePreview(slide: string, target: CompileTarget = {}): 
           rewriteDeckImports,
           {
             deckName: deck ? deckName(deck) : 'preview',
-            knownComponents: Object.keys(getMdxScope()),
+            knownComponents: Object.keys(getMdxScope(target.vault)),
             unsupported: 'keep',
             resolveAsset: (_n: string, asset: string) =>
               deck ? appPath(deck.source === (target.defaultSource ?? BUILT_IN_SOURCE_ID) ? contentAssetUrl(deck.path, asset) : sourceContentAssetUrl(deck.source, deck.path, asset)) : asset,
@@ -47,7 +49,7 @@ export function compileSlidePreview(slide: string, target: CompileTarget = {}): 
     // No hooks: countPreviewSteps calls this as a plain function. The scope is read on each
     // render, and a registry change gives a new cache key, so a recompile picks up new components.
     const Component = () => {
-      const scope = getMdxScope()
+      const scope = getMdxScope(target.vault)
       return <Raw components={scope} {...scope} />
     }
     return Component

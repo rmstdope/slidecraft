@@ -4,6 +4,7 @@
  * server itself, for the tools and checks).
  */
 
+import type { OriginInfo } from './builtinCopies.ts'
 import type { VaultTemplateFile } from './vaultTemplates.ts'
 
 /** Whether a vault's components may run: set per vault in config.json, or not decided yet. */
@@ -24,6 +25,8 @@ export interface VaultComponentInfo {
   url?: string
   /** Why the folder did not compile. */
   error?: string
+  /** It was copied from a built-in (V5). */
+  origin?: OriginInfo
 }
 
 export interface VaultComponentsListing {
