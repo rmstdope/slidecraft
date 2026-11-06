@@ -28,6 +28,7 @@ import { usePresentation } from './usePresentation'
 import { useAutosave } from './useAutosave'
 import { StillPlaceholder } from './components/SlideStill'
 import { Badge, Button, cn, Dialog, Field, LoadingScreen, NativeSelect, Popover, SegmentedControl, Switch } from '../ui'
+import { useRegistryVersion } from '../hooks/useRegistryVersion'
 
 export interface EditorPageProps {
   deck: DeckRef
@@ -137,6 +138,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
   // The language service sees the deck's themes and frames.
   const lsData = useRef({ themes: [] as string[], frames: [] as string[] })
   lsData.current = { themes: themes.map((t) => t.id), frames }
+  const registryVersion = useRegistryVersion()
   const service = useMemo<LanguageService>(
     () =>
       registryLanguageService((component, prop) => {
@@ -144,7 +146,7 @@ export default function EditorPage({ deck, defaultSource, onExit }: EditorPagePr
         if (component === 'Slide' && prop === 'frame') return ['none', ...lsData.current.frames]
         return undefined
       }),
-    [],
+    [registryVersion],
   )
 
   const context: CursorContext = useMemo(() => {

@@ -9,7 +9,7 @@ import * as jsxRuntime from 'react/jsx-runtime'
 import { MDXProvider } from '@mdx-js/react'
 import type { MDXComponents } from 'mdx/types'
 import { assetKey, PAYLOAD_ELEMENT_ID, type ExportPayload } from '@shared/exportPayload.ts'
-import { mdxComponentScope } from './components/mdxScope'
+import { getMdxScope } from './components/mdxScope'
 import { DeckContext } from './components/slides/deckContext'
 import { registerTheme } from './themes/registry'
 
@@ -28,7 +28,7 @@ function start() {
     const body = decodeBase64Utf8(payload.code)
     const { default: Content } = new Function(body)({ ...jsxRuntime, baseUrl: document.baseURI }) as { default: ComponentType<{ components?: MDXComponents }> }
     const resolveAsset = (src: string) => (!src || /^(data:|blob:|https?:)/i.test(src) ? src : (payload.assets[assetKey(src, payload.name)] ?? src))
-    const scope = mdxComponentScope as MDXComponents
+    const scope = getMdxScope() as MDXComponents
     document.title = payload.name
 
     createRoot(root).render(

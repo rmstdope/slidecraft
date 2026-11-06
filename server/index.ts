@@ -3,6 +3,8 @@
  * files for the built app, and the file watcher. One process, a hand-written router.
  */
 import { syncAllFolderInstructions } from './lib/agentContext.ts'
+import { VAULT_RUNTIME_PREFIX } from '../shared/vaultRuntime.ts'
+import { handleVaultRuntime } from './routes/vaultRuntime.ts'
 import { syncSkillsToVaults } from './lib/skillSync.ts'
 import { getBuiltInSource, getContentDir, getContentSource, getContentSources, getDefaultContentSource, getLibraryDir, persistMigratedConfig } from './lib/contentSources.ts'
 import { eventsResponse } from './lib/events.ts'
@@ -42,6 +44,7 @@ export async function router(request: Request): Promise<Response> {
   if (method === 'DELETE' && pathname === '/api/images') return handleDeleteImage(request)
   if (method === 'GET' && pathname.startsWith('/api/images/')) return handleListImages(url)
   if (pathname.startsWith('/api/')) return errorJson(404, 'Not found')
+  if (method === 'GET' && pathname.startsWith(VAULT_RUNTIME_PREFIX)) return handleVaultRuntime(pathname)
 
   if (method === 'GET' && pathname.startsWith('/content-source/')) {
     const [sourceSegment, ...rest] = pathname.slice('/content-source/'.length).split('/')

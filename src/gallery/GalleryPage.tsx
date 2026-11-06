@@ -10,6 +10,7 @@ import { getAllComponents, getAllTemplates, getParts, getTopLevelComponents, own
 import { DESIGN_HEIGHT, DESIGN_WIDTH } from '../components/slides/Slide'
 import { StageScaleContext } from '../components/slides/thumbnailContext'
 import { useInView } from '../hooks/useInView'
+import { useRegistryVersion } from '../hooks/useRegistryVersion'
 import { BUILTIN_SOURCE, listAllThemes, resolveTheme, type ResolvedTheme, type ThemeSummary } from '../themes/registry'
 import { ThemeContext, useThemesVersion } from '../themes/ThemeContext'
 import {
@@ -535,8 +536,9 @@ export default function GalleryPage({ vault, onExit }: { vault?: string; onExit(
   const theme = chosenTheme(settings.theme, themes)
   // A theme that has gone (a content folder changed) falls back to each example's own.
   const effective = useMemo(() => (settings.theme && !theme ? { ...settings, theme: '', frame: '' } : settings), [settings, theme])
-  const items = useMemo(allItems, [])
-  const parts = useMemo(allParts, [])
+  const registryVersion = useRegistryVersion()
+  const items = useMemo(allItems, [registryVersion])
+  const parts = useMemo(allParts, [registryVersion])
   const visible = useMemo(() => {
     // A search that finds a part (SignalNode) shows its parent's card.
     const owners = new Set(searchItems(parts, query).map(ownerName))

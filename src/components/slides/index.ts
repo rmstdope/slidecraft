@@ -3,6 +3,7 @@
  * Helpers (defineComponent, accents, contexts, geometry) are imported from their own modules.
  */
 import './templates'
+import { sealBuiltins } from './defineComponent'
 
 export { Presentation } from './Presentation'
 export { Slide } from './Slide'
@@ -73,3 +74,6 @@ export { BackgroundImage } from './BackgroundImage'
 export { YouTube } from './YouTube'
 export { Code } from './Code'
 export { PersonCard } from './PersonCard'
+
+// Every built-in has registered: later definitions must come from a vault component loading.
+sealBuiltins()

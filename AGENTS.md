@@ -6,7 +6,9 @@ on decks from inside the app. The decisions behind it are in
 [`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md) and
 [`docs/plans/ux-overhaul-plan.md`](docs/plans/ux-overhaul-plan.md), which wins where they disagree.
 The look of the app itself is being redesigned per
-[`docs/plans/ui-redesign-plan.md`](docs/plans/ui-redesign-plan.md).
+[`docs/plans/ui-redesign-plan.md`](docs/plans/ui-redesign-plan.md). Vaults are getting their own
+components and templates per
+[`docs/plans/vault-components-plan.md`](docs/plans/vault-components-plan.md).
 
 ## Pick a skill
 

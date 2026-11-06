@@ -5,14 +5,13 @@ import type { MDXComponents } from 'mdx/types'
 import { AlertTriangle, FileCode2, FileDown, Loader2, PencilLine, Play } from 'lucide-react'
 import type { PresentationInfo } from '@shared/decks.ts'
 import { SlideThumbnail } from '../components/editor/SlideThumbnail'
-import { mdxComponentScope } from '../components/mdxScope'
+import { getMdxScope } from '../components/mdxScope'
 import { assetResolverFor, DeckContext } from '../components/slides/deckContext'
 import { useInView } from '../hooks/useInView'
+import { useRegistryVersion } from '../hooks/useRegistryVersion'
 import { displayName } from './filterDecks'
 import { downloadHtmlExport, downloadPdfExport } from '../api'
 import { Button, cn } from '../ui'
-
-const scope = mdxComponentScope as MDXComponents
 
 /** Compiled decks, keyed by deck and modification time, so returning home does not recompile. */
 const compiled = new Map<string, Promise<ComponentType>>()
@@ -58,6 +57,7 @@ function ExportButton({ kind, deck }: { kind: 'html' | 'pdf'; deck: Presentation
 
 /** One deck on the home grid: its first slide, launch buttons and actions (Part 3 §1.6). */
 export function PresentationCard({ deck, index, defaultSource, load, onPresent, onEdit, canExport = false }: PresentationCardProps) {
+  useRegistryVersion()
   const [ref, inView] = useInView<HTMLDivElement>()
   const [thumb, setThumb] = useState<Thumb>({ state: 'loading' })
   const key = `${deck.source}:${deck.path}:${deck.updatedAt}`
@@ -105,7 +105,7 @@ export function PresentationCard({ deck, index, defaultSource, load, onPresent, 
           )}
           {thumb.state === 'ready' && (
             <DeckContext.Provider value={deckContext}>
-              <MDXProvider components={scope}>
+              <MDXProvider components={getMdxScope() as MDXComponents}>
                 <SlideThumbnail>
                   <thumb.Content />
                 </SlideThumbnail>

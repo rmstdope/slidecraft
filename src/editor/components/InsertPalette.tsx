@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRegistryVersion } from '../../hooks/useRegistryVersion'
 import { getAllComponents, getAllTemplates, type RegistryConfig } from '../../components/slides/defineComponent'
 import { Button, Sheet, SheetGroup, SheetSearch, sheetRowClass } from '../../ui'
 import type { CompileTarget } from '../compileSlide'
@@ -26,6 +27,7 @@ export function InsertPalette({ isOpen, filter, target, theme, onClose, onInsert
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
+  const registryVersion = useRegistryVersion()
   const items = useMemo(() => {
     // Parts (SignalNode, ListItem…) appear only when searched for; the parent's snippet already contains them.
     const listed = getAllComponents()
@@ -34,7 +36,7 @@ export function InsertPalette({ isOpen, filter, target, theme, onClose, onInsert
     const components = filter === 'templates' ? [] : filterItems(listed, query)
     const templates = filterItems([...getAllTemplates()], query)
     return [...components, ...templates]
-  }, [filter, query])
+  }, [filter, query, registryVersion])
 
   useEffect(() => {
     if (!isOpen) return

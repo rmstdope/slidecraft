@@ -29,6 +29,17 @@
         r.setAttribute('data-sc-accent', accents.indexOf(a.darkAccent) >= 0 ? a.darkAccent : 'violet')
       })()
     </script>
+    <!-- Bare imports of vault components go to the app's own modules (shared/vaultRuntime.ts). -->
+    <script type="importmap">
+      {
+        "imports": {
+          "slidecraft": "%BASE_URL%vault-runtime/slidecraft.js",
+          "react": "%BASE_URL%vault-runtime/react.js",
+          "react/jsx-runtime": "%BASE_URL%vault-runtime/react-jsx-runtime.js",
+          "motion/react": "%BASE_URL%vault-runtime/motion-react.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

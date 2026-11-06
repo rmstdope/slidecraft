@@ -11,7 +11,8 @@ import { stripMdxFrontmatter } from '@shared/frontmatter.ts'
 import { contentAssetUrl, rewriteDeckImports, sourceContentAssetUrl } from '@shared/mdxImports.ts'
 import { fetchDeckSource } from './api'
 import { appPath } from './basePath'
-import { mdxComponentScope } from './components/mdxScope'
+import { getMdxScope } from './components/mdxScope'
+import { useRegistryVersion } from './hooks/useRegistryVersion'
 import { DeckNotFoundError } from './deckLoading'
 import type { DeckModule } from './deckTypes'
 
@@ -24,7 +25,7 @@ export async function compileDeck(deck: DeckRef, source: string, defaultSource =
         rewriteDeckImports,
         {
           deckName: deckName(deck),
-          knownComponents: Object.keys(mdxComponentScope),
+          knownComponents: Object.keys(getMdxScope()),
           resolveAsset: (_name: string, asset: string) =>
             appPath(deck.source === defaultSource ? contentAssetUrl(deck.path, asset) : sourceContentAssetUrl(deck.source, deck.path, asset)),
         },
@@ -32,7 +33,10 @@ export async function compileDeck(deck: DeckRef, source: string, defaultSource =
     ],
   })
   const { default: Raw } = await run(compiled, { ...(jsxRuntime as Parameters<typeof run>[1]), baseUrl: import.meta.url })
-  const Deck = (props: Record<string, unknown>) => <Raw components={mdxComponentScope} {...props} />
+  const Deck = (props: Record<string, unknown>) => {
+    useRegistryVersion()
+    return <Raw components={getMdxScope()} {...props} />
+  }
   return Deck
 }
 

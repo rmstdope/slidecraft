@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { compile } from '@mdx-js/mdx'
-import { mdxComponentScope } from '../src/components/mdxScope'
+import { builtinMdxScope } from '../src/components/mdxScope'
 import * as slides from '../src/components/slides'
 import { getAllComponents, getAllTemplates, getParts, getTopLevelComponents } from '../src/components/slides/defineComponent'
 
@@ -14,7 +14,7 @@ describe('every export of the slides barrel', () => {
       expect(definition).toBeDefined()
       expect(typeof Component).toBe('function')
       expect((Component as { displayName?: string }).displayName).toBe(exportName)
-      expect(Object.keys(mdxComponentScope)).toContain(exportName)
+      expect(Object.keys(builtinMdxScope)).toContain(exportName)
     })
   }
 })

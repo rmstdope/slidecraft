@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Trash2 } from 'lucide-react'
+import { useRegistryVersion } from '../../hooks/useRegistryVersion'
 import { getAllComponents, getComponentById, getToolbarConfig, type ToolbarPropEditor } from '../../components/slides/defineComponent'
 import { cn, Kbd, NativeSelect } from '../../ui'
 import type { CursorContext } from '../cursorContext'
@@ -69,6 +70,7 @@ function NumberInput({ value, editor, onCommit }: { value: string; editor: Toolb
 
 /** The bar above the code editor (Part 3 §2.10): edits props of whatever the cursor is on. */
 export function ContextualToolbar(props: ContextualToolbarProps) {
+  useRegistryVersion()
   const { context } = props
   return (
     <div className="tw:flex tw:h-11 tw:shrink-0 tw:items-center tw:overflow-x-auto tw:overflow-y-hidden tw:border-b tw:border-line tw:px-3">
