@@ -52,15 +52,21 @@ Date: 2026-11-06.
 | Catalogue | The vault's copy of the presentations skill gets a generated `references/vault-components.md` listing the vault's components and templates. It is regenerated when they change, and recorded in the skill marker so it counts as generated. |
 | Export | The HTML export inlines the bundles of the vault components the deck uses and an import map with `data:` URLs; the viewer registers them before it renders. |
 
-### Open items to verify (in Phase V1, before building on them)
+### Open items, checked in Phase V1
 
-- `Bun.build` and `Bun.plugin` virtual modules (`build.module`) work inside a `bun build --compile`
-  binary. Fallback: per-file `Bun.Transpiler` plus a small import rewriter.
-- An inline import map in `index.html` does not interfere with Vite's dev server and HMR.
-- Re-importing a changed bundle under a new `?h=` URL is cheap enough, in the browser and in Bun.
-  Old module instances are never freed, which should be fine for one person's session.
-- Watching `components/` and `templates/` needs the polling watcher on macOS (directory watchers
-  miss file edits here).
+- **Verified:** `Bun.build` (with the four packages external) and `Bun.plugin` virtual modules
+  (`build.module`) work inside a `bun build --compile` binary, and so does re-importing a module
+  under a new `?h=` URL. Bundles must be built with production JSX (`jsx.development: false` and
+  `NODE_ENV` defined as `production`), or they import `react/jsx-dev-runtime`.
+- **Verified:** the inline import map in `index.html` leaves Vite's dev server alone (Vite rewrites
+  the app's own bare imports before the browser sees them), and a module with bare imports gets
+  the app's own React, JSX runtime, motion and `slidecraft` instances in the browser. The release
+  binary serves the shims too.
+- **Found:** a shim must not hold the module in a variable an export can be named (`motion/react`
+  exports `m`).
+- **Still open (Phase V2):** watching `components/` and `templates/` needs the polling watcher on
+  macOS (directory watchers miss file edits here). Old module instances are never freed, which
+  should be fine for one person's session.
 
 ---
 
@@ -97,6 +103,9 @@ No vault loading yet; the built-ins move onto the new structure, and nothing vis
 
 **Done when** the app behaves as before and a test can register a fake source that overrides
 `Stat`.
+
+**Status:** done (2026-11-06). Exports of the `slidecraft` module are recorded in
+`tests/fixtures/vault-api-exports.json`; the shims are served at `/vault-runtime/<file>.js`.
 
 ### Phase V2: Loading vault components
 

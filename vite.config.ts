@@ -59,6 +59,7 @@ export default defineConfig(({ command }) => {
       proxy: {
         '/api': { target: API_URL, changeOrigin: true },
         '/content-source': { target: API_URL, changeOrigin: true },
+        '/vault-runtime': { target: API_URL, changeOrigin: true },
         '/images/library': { target: API_URL, changeOrigin: true },
         '/content': {
           target: API_URL,
